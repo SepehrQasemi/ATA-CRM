@@ -20,6 +20,10 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - Manual email + test email + logs + 72h follow-up
 - Email analytics (open/click counts and rates)
 - Idempotent automation jobs with DB locks + `dry_run` mode
+- Export reports in CSV/PDF from dashboard
+- Real-time notifications (Supabase Realtime + polling fallback)
+- BI-ready secured KPI endpoint (`/api/bi/kpis`)
+- Dockerized runtime (`Dockerfile` + `docker-compose.yml`)
 
 ## Main APIs
 - `GET/POST /api/contacts`
@@ -36,6 +40,8 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `POST /api/products/:id/links`
 - `PATCH/DELETE /api/products/:id/links/:linkId`
 - `GET /api/dashboard?range=7d|30d|90d`
+- `GET /api/exports/report?format=csv|pdf&range=7d|30d|90d`
+- `GET /api/bi/kpis?range=7d|30d|90d` (requires `BI_API_KEY`)
 - `POST /api/emails/send`
 - `GET /api/emails/logs`
 - `POST /api/jobs/followup?dry_run=true`
@@ -76,6 +82,7 @@ Optional:
 - `BREVO_API_KEY`
 - `BREVO_WEBHOOK_SECRET` (protect `/api/webhooks/brevo`)
 - `CRON_SECRET` (protect job endpoints for cron calls)
+- `BI_API_KEY` (protect `/api/bi/kpis`)
 - `NEXT_PUBLIC_APP_NAME`
 
 ## Quality Checks
@@ -109,6 +116,28 @@ The seed is idempotent and creates `[DEMO]` data for live presentation.
   - `Production`: real production secrets
   - `Preview`: isolated testing secrets
   - `Development`: local developer secrets
+
+## Docker (Bonus)
+Build and run with Docker Compose:
+
+```bash
+cd C:\dev\crm-food-trading
+docker compose up --build -d
+```
+
+App URL:
+- `http://localhost:3000`
+
+Stop:
+
+```bash
+docker compose down
+```
+
+Notes:
+- `docker-compose.yml` reads runtime secrets from `web/.env.local`.
+- For BI tools, call:
+  - `GET /api/bi/kpis?range=30d&api_key=YOUR_BI_API_KEY`
 
 ## Branch Policy (target)
 - Protected `main`

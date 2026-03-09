@@ -418,6 +418,74 @@ th {
   border-color: #c6dcff;
 }
 
+.realtime-notify {
+  margin-bottom: 14px;
+}
+
+.notify-status {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.notify-status-connected {
+  background: #ddf3e7;
+  border-color: #addbbf;
+  color: #115f35;
+}
+
+.notify-status-connecting {
+  background: #edf2f7;
+  border-color: #d4dce3;
+  color: #435061;
+}
+
+.notify-status-fallback {
+  background: #fff2dc;
+  border-color: #f0d6a7;
+  color: #6d4a1a;
+}
+
+.notify-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.notify-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+}
+
+.notify-item p {
+  margin: 6px 0;
+  color: #33433a;
+}
+
+.notify-info {
+  background: #ecf5ff;
+  border-color: #cde0f9;
+}
+
+.notify-success {
+  background: #e8f7ec;
+  border-color: #c0e5cb;
+}
+
+.notify-warning {
+  background: #fff4e5;
+  border-color: #f2d8aa;
+}
+
+.notify-danger {
+  background: #ffeaea;
+  border-color: #f4c1c1;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));

@@ -1,0 +1,11 @@
+services:
+  crm-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crm-food-trading-web
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./web/.env.local
+    restart: unless-stopped
