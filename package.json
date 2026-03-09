@@ -1,0 +1,12 @@
+{
+  "name": "crm-food-trading",
+  "private": true,
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm --workspace web run dev",
+    "build": "npm --workspace web run build",
+    "lint": "npm --workspace web run lint"
+  }
+}
