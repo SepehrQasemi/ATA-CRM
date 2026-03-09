@@ -116,13 +116,13 @@ export default function CompaniesPage() {
     <div className="stack">
       <section className="page-head">
         <h1>Companies</h1>
-        <p>Gestion des entreprises partenaires et fournisseurs.</p>
+        <p>Manage partner companies and suppliers.</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <h2>Filtrer les entreprises</h2>
+        <h2>Company filters</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
           <label className="col-5 stack">
             Search (name)
@@ -162,7 +162,7 @@ export default function CompaniesPage() {
       </section>
 
       <section className="panel stack">
-        <h2>{editingId ? "Edit company" : "Nouvelle entreprise"}</h2>
+        <h2>{editingId ? "Edit company" : "New company"}</h2>
         <form className="stack" onSubmit={handleSubmit}>
           <div className="row">
             <label className="col-4 stack">
@@ -223,7 +223,7 @@ export default function CompaniesPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Liste des entreprises</h2>
+        <h2>Company list</h2>
         <table>
           <thead>
             <tr>

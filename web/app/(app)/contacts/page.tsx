@@ -134,13 +134,13 @@ export default function ContactsPage() {
     <div className="stack">
       <section className="page-head">
         <h1>Contacts</h1>
-        <p>Gestion des fiches contacts clients et prospects.</p>
+        <p>Manage customer and prospect contact records.</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <h2>Filtrer les contacts</h2>
+        <h2>Contact filters</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
           <label className="col-5 stack">
             Search
@@ -186,7 +186,7 @@ export default function ContactsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>{editingId ? "Edit contact" : "Nouveau contact"}</h2>
+        <h2>{editingId ? "Edit contact" : "New contact"}</h2>
         <form className="stack" onSubmit={handleSubmit}>
           <div className="row">
             <label className="col-3 stack">
@@ -263,7 +263,7 @@ export default function ContactsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Liste des contacts</h2>
+        <h2>Contact list</h2>
         <table>
           <thead>
             <tr>

@@ -29,13 +29,13 @@ export default function SettingsPage() {
     <div className="stack">
       <section className="page-head">
         <h1>Settings</h1>
-        <p>Vue rapide de la configuration CRM, roles et automatisations.</p>
+        <p>Quick view of CRM setup, roles, and automations.</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <h2>Pipeline configure</h2>
+        <h2>Configured pipeline</h2>
         <table>
           <thead>
             <tr>

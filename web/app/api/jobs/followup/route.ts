@@ -27,13 +27,15 @@ export async function POST(request: Request) {
   const requestUrl = new URL(request.url);
   const dryRun = requestUrl.searchParams.get("dry_run") === "true";
 
+  const quoteSentStageNames = ["Quote Sent", "Devis envoye"];
   const { data: stage } = await supabaseAdmin
     .from("pipeline_stages")
     .select("id,name")
-    .eq("name", "Devis envoye")
+    .in("name", quoteSentStageNames)
+    .limit(1)
     .single();
 
-  if (!stage) return fail("Stage 'Devis envoye' is missing", 400);
+  if (!stage) return fail("Missing pipeline stage: Quote Sent / Devis envoye", 400);
 
   const threshold = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
   const { data: leads, error: leadsError } = await supabaseAdmin
@@ -56,10 +58,10 @@ export async function POST(request: Request) {
     .eq("is_active", true)
     .single();
 
-  const subject = template?.subject ?? "Relance de votre devis";
+  const subject = template?.subject ?? "Quote follow-up";
   const bodyTpl =
     template?.body ??
-    "Bonjour {{name}},\n\nNous revenons vers vous concernant votre devis.\n\nCordialement.";
+    "Hello {{name}},\n\nWe are following up on your quote. Please let us know if you have any questions.\n\nBest regards.";
 
   let eligible = 0;
   let sent = 0;

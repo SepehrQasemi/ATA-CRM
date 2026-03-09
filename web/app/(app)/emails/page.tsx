@@ -194,7 +194,7 @@ export default function EmailsPage() {
     <div className="stack">
       <section className="page-head">
         <h1>Email Automation</h1>
-        <p>Envois manuels, test templates et relance automatique 72h.</p>
+        <p>Manual sends, template tests, and automated 72h follow-up.</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
@@ -223,7 +223,7 @@ export default function EmailsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Envoyer un email manuel</h2>
+        <h2>Send manual email</h2>
         <form className="stack" onSubmit={handleSend}>
           <div className="row">
             <label className="col-4 stack">
@@ -286,7 +286,7 @@ export default function EmailsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Envoyer un email test</h2>
+        <h2>Send test email</h2>
         <form className="stack" onSubmit={handleSendTest}>
           <div className="row">
             <label className="col-4 stack">
