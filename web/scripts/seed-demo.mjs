@@ -222,6 +222,7 @@ async function main() {
 
   const companyA = await ensureCompany({
     name: "Demo BioTrade SAS",
+    company_role: "supplier",
     sector: "Food Ingredients",
     city: "Lyon",
     country: "France",
@@ -232,6 +233,7 @@ async function main() {
 
   const companyB = await ensureCompany({
     name: "Demo AgroNord SARL",
+    company_role: "customer",
     sector: "Food Ingredients",
     city: "Lille",
     country: "France",
@@ -242,6 +244,7 @@ async function main() {
 
   const companyC = await ensureCompany({
     name: "Demo SpiceHub Europe",
+    company_role: "both",
     sector: "Food Ingredients",
     city: "Marseille",
     country: "France",
@@ -417,54 +420,54 @@ async function main() {
   await ensureProductLink({
     product_id: productA,
     company_id: companyA,
-    relation_type: "supplier",
+    relation_type: "traded",
     last_price: 3800,
-    notes: "[DEMO] Main supplier",
+    notes: "[DEMO] Traded in previous order cycle",
     owner_id: ownerId,
   });
 
   await ensureProductLink({
     product_id: productA,
     company_id: companyB,
-    relation_type: "customer",
+    relation_type: "potential",
     last_price: 4200,
-    notes: "[DEMO] Recurring customer account",
+    notes: "[DEMO] Potential opportunity for next quarter",
     owner_id: ownerId,
   });
 
   await ensureProductLink({
     product_id: productB,
     company_id: companyB,
-    relation_type: "supplier",
+    relation_type: "traded",
     last_price: 2500,
-    notes: "[DEMO] Contract supplier",
+    notes: "[DEMO] Already traded with this company",
     owner_id: ownerId,
   });
 
   await ensureProductLink({
     product_id: productB,
     company_id: companyC,
-    relation_type: "customer",
+    relation_type: "potential",
     last_price: 2950,
-    notes: "[DEMO] Active customer",
+    notes: "[DEMO] Potential product expansion",
     owner_id: ownerId,
   });
 
   await ensureProductLink({
     product_id: productC,
     company_id: companyC,
-    relation_type: "supplier",
+    relation_type: "traded",
     last_price: 2100,
-    notes: "[DEMO] Specialist supplier",
+    notes: "[DEMO] Traded recently",
     owner_id: ownerId,
   });
 
   await ensureProductLink({
     product_id: productC,
     company_id: companyA,
-    relation_type: "customer",
+    relation_type: "potential",
     last_price: 2780,
-    notes: "[DEMO] Test customer for demo flow",
+    notes: "[DEMO] Potential upsell candidate",
     owner_id: ownerId,
   });
 

@@ -3,6 +3,7 @@ import { fail, ok } from "@/lib/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const companyOwnershipFilter = (userId: string) => `owner_id.eq.${userId},owner_id.is.null`;
+const RELATION_TYPES = new Set(["traded", "potential"]);
 
 export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
 
   const companyQuery = supabaseAdmin
     .from("companies")
-    .select("id,name,sector,owner_id")
+    .select("id,name,company_role,sector,owner_id")
     .order("name", { ascending: true });
 
   if (!isAdmin) {
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
     linksQuery.eq("owner_id", user.id);
   }
 
-  if (relationType === "supplier" || relationType === "customer") {
+  if (relationType && RELATION_TYPES.has(relationType)) {
     linksQuery.eq("relation_type", relationType);
   }
 

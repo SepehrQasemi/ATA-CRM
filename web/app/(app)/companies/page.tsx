@@ -1,12 +1,26 @@
-﻿"use client";
+"use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Company } from "@/lib/types";
 
-type CompaniesResponse = { companies: Company[]; error?: string };
+type ProductOption = { id: string; name: string };
+type CompanyProductLink = {
+  id: string;
+  company_id: string;
+  product_id: string;
+  relation_type: "traded" | "potential";
+};
+
+type CompaniesResponse = {
+  companies: Company[];
+  products: ProductOption[];
+  links: CompanyProductLink[];
+  error?: string;
+};
 
 type CompanyForm = {
   name: string;
+  company_role: "supplier" | "customer" | "both";
   sector: string;
   city: string;
   country: string;
@@ -16,6 +30,7 @@ type CompanyForm = {
 
 const initialForm: CompanyForm = {
   name: "",
+  company_role: "both",
   sector: "Food Ingredients",
   city: "",
   country: "",
@@ -23,18 +38,31 @@ const initialForm: CompanyForm = {
   notes: "",
 };
 
+type CompanyFilters = { q: string; sector: string; company_role: string };
+const initialFilters: CompanyFilters = { q: "", sector: "", company_role: "" };
+
+function companyRoleLabel(role: "supplier" | "customer" | "both") {
+  if (role === "supplier") return "Supplier";
+  if (role === "customer") return "Customer";
+  return "Supplier + Customer";
+}
+
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [links, setLinks] = useState<CompanyProductLink[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<CompanyForm>(initialForm);
-  const [filters, setFilters] = useState({ q: "", sector: "" });
+  const [filters, setFilters] = useState<CompanyFilters>(initialFilters);
 
   async function loadCompanies(activeFilters = filters) {
     const params = new URLSearchParams();
     if (activeFilters.q.trim()) params.set("q", activeFilters.q.trim());
     if (activeFilters.sector.trim()) params.set("sector", activeFilters.sector.trim());
+    if (activeFilters.company_role.trim())
+      params.set("company_role", activeFilters.company_role.trim());
 
     const query = params.toString();
     const response = await fetch(`/api/companies${query ? `?${query}` : ""}`);
@@ -46,12 +74,38 @@ export default function CompaniesPage() {
     }
 
     setCompanies(json.companies ?? []);
+    setProducts(json.products ?? []);
+    setLinks(json.links ?? []);
   }
 
   useEffect(() => {
     void loadCompanies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const productById = useMemo(() => {
+    const map: Record<string, ProductOption> = {};
+    products.forEach((product) => {
+      map[product.id] = product;
+    });
+    return map;
+  }, [products]);
+
+  const productBucketsByCompany = useMemo(() => {
+    const map: Record<string, { traded: string[]; potential: string[] }> = {};
+    links.forEach((link) => {
+      if (!map[link.company_id]) {
+        map[link.company_id] = { traded: [], potential: [] };
+      }
+      const productName = productById[link.product_id]?.name ?? "Unknown product";
+      if (link.relation_type === "traded") {
+        map[link.company_id].traded.push(productName);
+      } else {
+        map[link.company_id].potential.push(productName);
+      }
+    });
+    return map;
+  }, [links, productById]);
 
   function resetForm() {
     setForm(initialForm);
@@ -98,6 +152,7 @@ export default function CompaniesPage() {
     setEditingId(company.id);
     setForm({
       name: company.name,
+      company_role: company.company_role ?? "both",
       sector: company.sector ?? "",
       city: company.city ?? "",
       country: company.country ?? "",
@@ -116,7 +171,7 @@ export default function CompaniesPage() {
     <div className="stack">
       <section className="page-head">
         <h1>Companies</h1>
-        <p>Manage partner companies and suppliers.</p>
+        <p>Manage partner companies, define their role, and track traded/potential product buckets.</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
@@ -124,7 +179,7 @@ export default function CompaniesPage() {
       <section className="panel stack">
         <h2>Company filters</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
-          <label className="col-5 stack">
+          <label className="col-4 stack">
             Search (name)
             <input
               value={filters.q}
@@ -132,7 +187,7 @@ export default function CompaniesPage() {
               placeholder="Search by company name"
             />
           </label>
-          <label className="col-5 stack">
+          <label className="col-4 stack">
             Sector
             <input
               value={filters.sector}
@@ -142,6 +197,20 @@ export default function CompaniesPage() {
               placeholder="Food Ingredients"
             />
           </label>
+          <label className="col-2 stack">
+            Role
+            <select
+              value={filters.company_role}
+              onChange={(event) =>
+                setFilters((prev) => ({ ...prev, company_role: event.target.value }))
+              }
+            >
+              <option value="">All</option>
+              <option value="supplier">Supplier or Both</option>
+              <option value="customer">Customer or Both</option>
+              <option value="both">Both only</option>
+            </select>
+          </label>
           <div className="col-2 stack action-end">
             <button className="btn btn-secondary" type="submit">
               Apply filters
@@ -150,9 +219,8 @@ export default function CompaniesPage() {
               className="btn"
               type="button"
               onClick={() => {
-                const cleared = { q: "", sector: "" };
-                setFilters(cleared);
-                void loadCompanies(cleared);
+                setFilters(initialFilters);
+                void loadCompanies(initialFilters);
               }}
             >
               Clear
@@ -165,7 +233,7 @@ export default function CompaniesPage() {
         <h2>{editingId ? "Edit company" : "New company"}</h2>
         <form className="stack" onSubmit={handleSubmit}>
           <div className="row">
-            <label className="col-4 stack">
+            <label className="col-3 stack">
               Name
               <input
                 value={form.name}
@@ -173,35 +241,51 @@ export default function CompaniesPage() {
                 required
               />
             </label>
-            <label className="col-4 stack">
+            <label className="col-3 stack">
+              Company role
+              <select
+                value={form.company_role}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    company_role: e.target.value as "supplier" | "customer" | "both",
+                  }))
+                }
+              >
+                <option value="supplier">Supplier</option>
+                <option value="customer">Customer</option>
+                <option value="both">Supplier + Customer</option>
+              </select>
+            </label>
+            <label className="col-3 stack">
               Sector
               <input
                 value={form.sector}
                 onChange={(e) => setForm((prev) => ({ ...prev, sector: e.target.value }))}
               />
             </label>
-            <label className="col-4 stack">
+            <label className="col-3 stack">
               City
               <input
                 value={form.city}
                 onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
               />
             </label>
-            <label className="col-4 stack">
+            <label className="col-3 stack">
               Country
               <input
                 value={form.country}
                 onChange={(e) => setForm((prev) => ({ ...prev, country: e.target.value }))}
               />
             </label>
-            <label className="col-4 stack">
+            <label className="col-3 stack">
               Website
               <input
                 value={form.website}
                 onChange={(e) => setForm((prev) => ({ ...prev, website: e.target.value }))}
               />
             </label>
-            <label className="col-4 stack">
+            <label className="col-6 stack">
               Notes
               <input
                 value={form.notes}
@@ -228,41 +312,72 @@ export default function CompaniesPage() {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Role</th>
               <th>Sector</th>
               <th>City</th>
               <th>Country</th>
-              <th>Website</th>
+              <th>Traded products</th>
+              <th>Potential products</th>
               <th />
             </tr>
           </thead>
           <tbody>
-            {companies.map((company) => (
-              <tr key={company.id}>
-                <td>{company.name}</td>
-                <td>{company.sector ?? "-"}</td>
-                <td>{company.city ?? "-"}</td>
-                <td>{company.country ?? "-"}</td>
-                <td>{company.website ?? "-"}</td>
-                <td>
-                  <div className="inline-actions">
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => startEdit(company)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-danger"
-                      onClick={() => void deleteCompany(company.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {companies.map((company) => {
+              const buckets = productBucketsByCompany[company.id] ?? { traded: [], potential: [] };
+              return (
+                <tr key={company.id}>
+                  <td>{company.name}</td>
+                  <td>{companyRoleLabel(company.company_role ?? "both")}</td>
+                  <td>{company.sector ?? "-"}</td>
+                  <td>{company.city ?? "-"}</td>
+                  <td>{company.country ?? "-"}</td>
+                  <td>
+                    {buckets.traded.length === 0 ? (
+                      <span className="small">-</span>
+                    ) : (
+                      <div className="tag-list">
+                        {buckets.traded.map((name) => (
+                          <span className="tag tag-traded" key={`${company.id}-traded-${name}`}>
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    {buckets.potential.length === 0 ? (
+                      <span className="small">-</span>
+                    ) : (
+                      <div className="tag-list">
+                        {buckets.potential.map((name) => (
+                          <span className="tag tag-potential" key={`${company.id}-potential-${name}`}>
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <div className="inline-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => startEdit(company)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={() => void deleteCompany(company.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>

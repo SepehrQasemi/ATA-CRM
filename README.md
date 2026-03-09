@@ -11,7 +11,8 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 ## Main Features
 - Authentication (login, signup, reset) + roles (`admin`, `commercial`, `standard_user`)
 - Full CRUD with edit support for `contacts`, `companies`, `leads`, `tasks`
-- Full CRUD for `products` with supplier/customer relationships
+- Full CRUD for `products` with traded/potential relationship buckets
+- Company role model (`supplier`, `customer`, `both`)
 - Sales pipeline with stage change, quick move, and history
 - Multi-criteria filters on leads/tasks/contacts/companies
 - KPI dashboard (7/30/90 days) + funnel + leaderboard + stage aging
@@ -41,7 +42,7 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `GET /api/leads`: `stage_id`, `status`, `assigned_to`, `source`, `q`, `from`, `to`
 - `GET /api/tasks`: `status`, `priority`, `overdue`, `from`, `to`, `q`
 - `GET /api/contacts`: `q`, `company_id`
-- `GET /api/companies`: `q`, `sector`
+- `GET /api/companies`: `q`, `sector`, `company_role`
 - `GET /api/products`: `q`, `category`, `is_active`, `relation_type`
 
 ## Local Setup

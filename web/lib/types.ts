@@ -3,6 +3,7 @@ export type Role = "admin" | "commercial" | "standard_user";
 export type Company = {
   id: string;
   name: string;
+  company_role: "supplier" | "customer" | "both";
   sector: string | null;
   city: string | null;
   country: string | null;
@@ -91,7 +92,7 @@ export type ProductCompanyLink = {
   id: string;
   product_id: string;
   company_id: string;
-  relation_type: "supplier" | "customer";
+  relation_type: "traded" | "potential";
   last_price: number | null;
   notes: string | null;
   owner_id: string | null;

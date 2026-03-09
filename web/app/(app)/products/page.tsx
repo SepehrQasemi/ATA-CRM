@@ -3,7 +3,12 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Product, ProductCompanyLink } from "@/lib/types";
 
-type CompanyOption = { id: string; name: string; sector: string | null };
+type CompanyOption = {
+  id: string;
+  name: string;
+  company_role: "supplier" | "customer" | "both";
+  sector: string | null;
+};
 
 type ProductsResponse = {
   products: Product[];
@@ -51,7 +56,7 @@ const initialForm: ProductForm = {
 type RelationForm = {
   product_id: string;
   company_id: string;
-  relation_type: "supplier" | "customer";
+  relation_type: "traded" | "potential";
   last_price: string;
   notes: string;
 };
@@ -59,10 +64,20 @@ type RelationForm = {
 const initialRelationForm: RelationForm = {
   product_id: "",
   company_id: "",
-  relation_type: "supplier",
+  relation_type: "traded",
   last_price: "",
   notes: "",
 };
+
+function relationLabel(value: "traded" | "potential") {
+  return value === "traded" ? "Traded" : "Potential";
+}
+
+function companyRoleLabel(role: "supplier" | "customer" | "both") {
+  if (role === "supplier") return "Supplier";
+  if (role === "customer") return "Customer";
+  return "Supplier + Customer";
+}
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -264,16 +279,16 @@ export default function ProductsPage() {
     void loadData(filters);
   }
 
-  const supplierCount = links.filter((link) => link.relation_type === "supplier").length;
-  const customerCount = links.filter((link) => link.relation_type === "customer").length;
+  const tradedCount = links.filter((link) => link.relation_type === "traded").length;
+  const potentialCount = links.filter((link) => link.relation_type === "potential").length;
 
   return (
     <div className="stack">
       <section className="page-head">
         <h1>Products</h1>
         <p>
-          Manage product catalog and connect each product to customer companies and supplier
-          companies.
+          Manage your product catalog and classify each company relation as traded history or
+          potential opportunity.
         </p>
       </section>
 
@@ -283,12 +298,12 @@ export default function ProductsPage() {
           <p className="kpi">{visibleProducts.length}</p>
         </article>
         <article className="card">
-          <p className="muted">Supplier links</p>
-          <p className="kpi">{supplierCount}</p>
+          <p className="muted">Traded links</p>
+          <p className="kpi">{tradedCount}</p>
         </article>
         <article className="card">
-          <p className="muted">Customer links</p>
-          <p className="kpi">{customerCount}</p>
+          <p className="muted">Potential links</p>
+          <p className="kpi">{potentialCount}</p>
         </article>
         <article className="card">
           <p className="muted">Active products</p>
@@ -334,7 +349,7 @@ export default function ProductsPage() {
             </select>
           </label>
           <label className="col-2 stack">
-            Relation type
+            Product relation
             <select
               value={filters.relation_type}
               onChange={(event) =>
@@ -342,8 +357,8 @@ export default function ProductsPage() {
               }
             >
               <option value="">All</option>
-              <option value="supplier">Supplier</option>
-              <option value="customer">Customer</option>
+              <option value="traded">Traded</option>
+              <option value="potential">Potential</option>
             </select>
           </label>
           <div className="col-1 stack action-end">
@@ -477,8 +492,12 @@ export default function ProductsPage() {
                   <td>{product.sku ?? "-"}</td>
                   <td>{product.category ?? "-"}</td>
                   <td>
-                    <div className="small">Buy: {Number(product.default_purchase_price || 0).toLocaleString()} EUR</div>
-                    <div className="small">Sell: {Number(product.default_sale_price || 0).toLocaleString()} EUR</div>
+                    <div className="small">
+                      Buy: {Number(product.default_purchase_price || 0).toLocaleString()} EUR
+                    </div>
+                    <div className="small">
+                      Sell: {Number(product.default_sale_price || 0).toLocaleString()} EUR
+                    </div>
                   </td>
                   <td>
                     {related.length === 0 ? (
@@ -487,7 +506,8 @@ export default function ProductsPage() {
                       <div className="tag-list">
                         {related.map((link) => (
                           <span key={link.id} className={`tag tag-${link.relation_type}`}>
-                            {link.relation_type}: {companyById[link.company_id]?.name ?? "Company"}
+                            {relationLabel(link.relation_type)}:{" "}
+                            {companyById[link.company_id]?.name ?? "Company"}
                           </span>
                         ))}
                       </div>
@@ -495,10 +515,18 @@ export default function ProductsPage() {
                   </td>
                   <td>
                     <div className="inline-actions">
-                      <button className="btn btn-secondary" type="button" onClick={() => startEdit(product)}>
+                      <button
+                        className="btn btn-secondary"
+                        type="button"
+                        onClick={() => startEdit(product)}
+                      >
                         Edit
                       </button>
-                      <button className="btn btn-danger" type="button" onClick={() => void deleteProduct(product.id)}>
+                      <button
+                        className="btn btn-danger"
+                        type="button"
+                        onClick={() => void deleteProduct(product.id)}
+                      >
                         Delete
                       </button>
                     </div>
@@ -543,24 +571,24 @@ export default function ProductsPage() {
                 <option value="">Select company</option>
                 {companies.map((company) => (
                   <option key={company.id} value={company.id}>
-                    {company.name}
+                    {company.name} ({companyRoleLabel(company.company_role)})
                   </option>
                 ))}
               </select>
             </label>
             <label className="col-2 stack">
-              Relation
+              Category
               <select
                 value={relationForm.relation_type}
                 onChange={(event) =>
                   setRelationForm((prev) => ({
                     ...prev,
-                    relation_type: event.target.value as "supplier" | "customer",
+                    relation_type: event.target.value as "traded" | "potential",
                   }))
                 }
               >
-                <option value="supplier">Supplier</option>
-                <option value="customer">Customer</option>
+                <option value="traded">Traded</option>
+                <option value="potential">Potential</option>
               </select>
             </label>
             <label className="col-2 stack">
@@ -593,7 +621,7 @@ export default function ProductsPage() {
             <tr>
               <th>Product</th>
               <th>Company</th>
-              <th>Type</th>
+              <th>Category</th>
               <th>Last price</th>
               <th>Notes</th>
               <th />
@@ -604,7 +632,7 @@ export default function ProductsPage() {
               <tr key={link.id}>
                 <td>{products.find((product) => product.id === link.product_id)?.name ?? "-"}</td>
                 <td>{companyById[link.company_id]?.name ?? "-"}</td>
-                <td>{link.relation_type}</td>
+                <td>{relationLabel(link.relation_type)}</td>
                 <td>{link.last_price == null ? "-" : `${Number(link.last_price).toLocaleString()} EUR`}</td>
                 <td>{link.notes ?? "-"}</td>
                 <td>

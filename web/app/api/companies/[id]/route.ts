@@ -2,6 +2,8 @@ import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
 import { fail, ok } from "@/lib/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
+const COMPANY_ROLES = new Set(["supplier", "customer", "both"]);
+
 async function ensureAccess(companyId: string, userId: string, isAdmin: boolean) {
   const { data, error } = await supabaseAdmin
     .from("companies")
@@ -30,8 +32,15 @@ export async function PATCH(
   if (!allowed) return fail("Forbidden", 403);
 
   const body = await request.json();
+  const companyRoleRaw =
+    body.company_role === null ? null : body.company_role ? String(body.company_role) : undefined;
+  if (companyRoleRaw !== undefined && companyRoleRaw !== null && !COMPANY_ROLES.has(companyRoleRaw)) {
+    return fail("company_role must be supplier, customer, or both", 400);
+  }
+
   const payload = {
     name: body.name ? String(body.name) : undefined,
+    company_role: companyRoleRaw ?? undefined,
     sector: body.sector === null ? null : body.sector ? String(body.sector) : undefined,
     city: body.city === null ? null : body.city ? String(body.city) : undefined,
     country: body.country === null ? null : body.country ? String(body.country) : undefined,
@@ -43,7 +52,7 @@ export async function PATCH(
     .from("companies")
     .update(payload)
     .eq("id", id)
-    .select("id,name,sector,city,country,website,notes,created_at")
+    .select("id,name,company_role,sector,city,country,website,notes,created_at")
     .single();
 
   if (error) return fail("Failed to update company", 500, error.message);

@@ -19,7 +19,7 @@
 ## During Presentation (8-10 min)
 1. Login and business context
 2. Create company + contact
-3. Create product and link it to supplier/customer companies
+3. Set company role (supplier/customer/both), then link products as traded/potential
 4. Create lead and assign owner
 5. Move lead stage (select + quick move)
 6. Create task and update status

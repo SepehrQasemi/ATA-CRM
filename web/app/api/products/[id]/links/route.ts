@@ -2,6 +2,8 @@ import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
 import { fail, ok } from "@/lib/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
+const RELATION_TYPES = new Set(["traded", "potential"]);
+
 async function ensureProductAccess(productId: string, userId: string, isAdmin: boolean) {
   const { data, error } = await supabaseAdmin
     .from("products")
@@ -32,8 +34,8 @@ export async function POST(
   const companyId = body.company_id ? String(body.company_id) : "";
   const relationType = body.relation_type ? String(body.relation_type) : "";
   if (!companyId) return fail("company_id is required", 400);
-  if (relationType !== "supplier" && relationType !== "customer") {
-    return fail("relation_type must be supplier or customer", 400);
+  if (!RELATION_TYPES.has(relationType)) {
+    return fail("relation_type must be traded or potential", 400);
   }
 
   const { data: company, error: companyError } = await supabaseAdmin

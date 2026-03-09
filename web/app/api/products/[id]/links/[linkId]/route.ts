@@ -3,6 +3,7 @@ import { fail, ok } from "@/lib/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 type Params = { id: string; linkId: string };
+const RELATION_TYPES = new Set(["traded", "potential"]);
 
 async function ensureProductAccess(productId: string, userId: string, isAdmin: boolean) {
   const { data, error } = await supabaseAdmin
@@ -32,8 +33,8 @@ export async function PATCH(
 
   const body = (await request.json()) as Record<string, unknown>;
   const relationType = body.relation_type ? String(body.relation_type) : undefined;
-  if (relationType && relationType !== "supplier" && relationType !== "customer") {
-    return fail("relation_type must be supplier or customer", 400);
+  if (relationType && !RELATION_TYPES.has(relationType)) {
+    return fail("relation_type must be traded or potential", 400);
   }
 
   const payload = {

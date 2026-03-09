@@ -404,13 +404,15 @@ th {
   border: 1px solid transparent;
 }
 
-.tag-supplier {
+.tag-supplier,
+.tag-traded {
   color: #0a5a30;
   background: #dff3e6;
   border-color: #b7e0c4;
 }
 
-.tag-customer {
+.tag-customer,
+.tag-potential {
   color: #1f4a7d;
   background: #e4efff;
   border-color: #c6dcff;
