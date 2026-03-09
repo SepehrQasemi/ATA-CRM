@@ -3,6 +3,8 @@ node_modules/
 web/node_modules/
 web/.next/
 web/out/
+web/test-results/
+web/playwright-report/
 
 # Env files
 web/.env.local

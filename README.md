@@ -68,6 +68,17 @@ npm run lint
 npm run build
 ```
 
+## End-to-End Tests (Playwright)
+```bash
+npm run test:e2e
+```
+
+Notes:
+- E2E setup auto-creates/updates an admin test user and runs the demo seed.
+- Test credentials can be overridden with:
+  - `E2E_USER_EMAIL`
+  - `E2E_USER_PASSWORD`
+
 ## Demo Seed (under 2 minutes)
 ```bash
 npm run seed:demo

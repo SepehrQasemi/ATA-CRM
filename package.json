@@ -8,6 +8,7 @@
     "dev": "npm --workspace web run dev",
     "build": "npm --workspace web run build",
     "lint": "npm --workspace web run lint",
-    "seed:demo": "npm --workspace web run seed:demo"
+    "seed:demo": "npm --workspace web run seed:demo",
+    "test:e2e": "npm --workspace web run test:e2e"
   }
 }
