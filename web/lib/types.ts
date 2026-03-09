@@ -72,3 +72,28 @@ export type EmailLog = {
   provider_message_id?: string | null;
   error_message: string | null;
 };
+
+export type Product = {
+  id: string;
+  name: string;
+  sku: string | null;
+  category: string | null;
+  unit: string;
+  default_purchase_price: number;
+  default_sale_price: number;
+  is_active: boolean;
+  notes: string | null;
+  owner_id: string | null;
+  created_at: string;
+};
+
+export type ProductCompanyLink = {
+  id: string;
+  product_id: string;
+  company_id: string;
+  relation_type: "supplier" | "customer";
+  last_price: number | null;
+  notes: string | null;
+  owner_id: string | null;
+  created_at: string;
+};

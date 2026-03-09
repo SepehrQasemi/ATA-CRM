@@ -137,6 +137,43 @@ async function ensureTask(payload) {
   return data.id;
 }
 
+async function ensureProduct(payload) {
+  const { data: existing, error: findError } = await supabase
+    .from("products")
+    .select("id")
+    .eq("name", payload.name)
+    .limit(1);
+  if (findError) throw new Error(`Product lookup failed: ${findError.message}`);
+
+  if (existing && existing.length > 0) {
+    const { error: updateError } = await supabase
+      .from("products")
+      .update(payload)
+      .eq("id", existing[0].id);
+    if (updateError) throw new Error(`Product update failed: ${updateError.message}`);
+    return existing[0].id;
+  }
+
+  const { data, error } = await supabase
+    .from("products")
+    .insert(payload)
+    .select("id")
+    .single();
+  if (error) throw new Error(`Product insert failed: ${error.message}`);
+  return data.id;
+}
+
+async function ensureProductLink(payload) {
+  const { data, error } = await supabase
+    .from("product_company_links")
+    .upsert(payload, { onConflict: "product_id,company_id,relation_type" })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(`Product link upsert failed: ${error.message}`);
+  return data.id;
+}
+
 async function main() {
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
@@ -341,8 +378,98 @@ async function main() {
     contact_id: contactC,
   });
 
+  const productA = await ensureProduct({
+    name: "[DEMO] Premium Cocoa Powder",
+    sku: "DEMO-COCOA-001",
+    category: "Cocoa",
+    unit: "kg",
+    default_purchase_price: 3800,
+    default_sale_price: 4200,
+    is_active: true,
+    notes: "[DEMO] High grade cocoa for industrial recipes",
+    owner_id: ownerId,
+  });
+
+  const productB = await ensureProduct({
+    name: "[DEMO] Instant Milk Powder",
+    sku: "DEMO-DAIRY-002",
+    category: "Dairy",
+    unit: "kg",
+    default_purchase_price: 2500,
+    default_sale_price: 2950,
+    is_active: true,
+    notes: "[DEMO] Fast-dissolving powder for bakery and sauces",
+    owner_id: ownerId,
+  });
+
+  const productC = await ensureProduct({
+    name: "[DEMO] Savory Spice Blend",
+    sku: "DEMO-SPICE-003",
+    category: "Spices",
+    unit: "kg",
+    default_purchase_price: 2100,
+    default_sale_price: 2780,
+    is_active: true,
+    notes: "[DEMO] Blend prepared for food-service manufacturers",
+    owner_id: ownerId,
+  });
+
+  await ensureProductLink({
+    product_id: productA,
+    company_id: companyA,
+    relation_type: "supplier",
+    last_price: 3800,
+    notes: "[DEMO] Main supplier",
+    owner_id: ownerId,
+  });
+
+  await ensureProductLink({
+    product_id: productA,
+    company_id: companyB,
+    relation_type: "customer",
+    last_price: 4200,
+    notes: "[DEMO] Recurring customer account",
+    owner_id: ownerId,
+  });
+
+  await ensureProductLink({
+    product_id: productB,
+    company_id: companyB,
+    relation_type: "supplier",
+    last_price: 2500,
+    notes: "[DEMO] Contract supplier",
+    owner_id: ownerId,
+  });
+
+  await ensureProductLink({
+    product_id: productB,
+    company_id: companyC,
+    relation_type: "customer",
+    last_price: 2950,
+    notes: "[DEMO] Active customer",
+    owner_id: ownerId,
+  });
+
+  await ensureProductLink({
+    product_id: productC,
+    company_id: companyC,
+    relation_type: "supplier",
+    last_price: 2100,
+    notes: "[DEMO] Specialist supplier",
+    owner_id: ownerId,
+  });
+
+  await ensureProductLink({
+    product_id: productC,
+    company_id: companyA,
+    relation_type: "customer",
+    last_price: 2780,
+    notes: "[DEMO] Test customer for demo flow",
+    owner_id: ownerId,
+  });
+
   console.log("Demo seed completed successfully.");
-  console.log("Companies: 3 | Contacts: 3 | Leads: 4 | Tasks: 3");
+  console.log("Companies: 3 | Contacts: 3 | Leads: 4 | Tasks: 3 | Products: 3 | Links: 6");
 }
 
 main().catch((error) => {

@@ -11,6 +11,7 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 ## Main Features
 - Authentication (login, signup, reset) + roles (`admin`, `commercial`, `standard_user`)
 - Full CRUD with edit support for `contacts`, `companies`, `leads`, `tasks`
+- Full CRUD for `products` with supplier/customer relationships
 - Sales pipeline with stage change, quick move, and history
 - Multi-criteria filters on leads/tasks/contacts/companies
 - KPI dashboard (7/30/90 days) + funnel + leaderboard + stage aging
@@ -27,6 +28,10 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `POST /api/leads/:id/stage`
 - `GET/POST /api/tasks`
 - `PATCH/DELETE /api/tasks/:id`
+- `GET/POST /api/products`
+- `PATCH/DELETE /api/products/:id`
+- `POST /api/products/:id/links`
+- `PATCH/DELETE /api/products/:id/links/:linkId`
 - `GET /api/dashboard?range=7d|30d|90d`
 - `POST /api/emails/send`
 - `GET /api/emails/logs`
@@ -37,6 +42,7 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `GET /api/tasks`: `status`, `priority`, `overdue`, `from`, `to`, `q`
 - `GET /api/contacts`: `q`, `company_id`
 - `GET /api/companies`: `q`, `sector`
+- `GET /api/products`: `q`, `category`, `is_active`, `relation_type`
 
 ## Local Setup
 1. Copy secrets into `web/.env.local`

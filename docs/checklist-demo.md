@@ -19,13 +19,14 @@
 ## During Presentation (8-10 min)
 1. Login and business context
 2. Create company + contact
-3. Create lead and assign owner
-4. Move lead stage (select + quick move)
-5. Create task and update status
-6. Send test email (template + contact)
-7. Run follow-up in dry-run, then real run
-8. Show dashboard: KPI + funnel + leaderboard + stage aging
-9. Conclusion: limitations and next iteration
+3. Create product and link it to supplier/customer companies
+4. Create lead and assign owner
+5. Move lead stage (select + quick move)
+6. Create task and update status
+7. Send test email (template + contact)
+8. Run follow-up in dry-run, then real run
+9. Show dashboard: KPI + funnel + leaderboard + stage aging
+10. Conclusion: limitations and next iteration
 
 ## Technical Fallback
 - If Brevo is unavailable:
