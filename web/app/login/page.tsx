@@ -98,7 +98,7 @@ export default function LoginPage() {
               <input
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
-                placeholder="Sepehr Qasemi"
+                placeholder="Your Name"
                 required
               />
             </label>
