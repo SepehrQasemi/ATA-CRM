@@ -44,8 +44,10 @@ Le schema MCD est fourni dans `docs/mcd.mmd`.
 - Frontend et API: Next.js 16
 - Data + auth + RLS: Supabase PostgreSQL
 - Email provider: Brevo API + webhook events
+- Realtime layer: Supabase Realtime (notifications live)
 - Hebergement: Vercel
 - Versioning et CI: GitHub + GitHub Actions
+- Container runtime bonus: Docker
 
 Le schema d architecture est fourni dans `docs/architecture.mmd`.
 
@@ -111,6 +113,12 @@ KPI complementaires:
 - journal detaille (status, error, provider_message_id)
 - analytics email via webhook Brevo (`open_count`, `click_count`, timestamps)
 
+### 6.7 Bonus engineering
+- export dashboard en CSV/PDF
+- endpoint BI securise (`/api/bi/kpis`) pour Power BI/Metabase
+- notifications live (leads, tasks, emails) avec fallback polling
+- containerisation Docker (`Dockerfile`, `docker-compose.yml`)
+
 ## 7. API REST
 Routes principales:
 - `/api/contacts`
@@ -127,6 +135,8 @@ Routes principales:
 - `/api/tasks`
 - `/api/tasks/:id`
 - `/api/dashboard?range=7d|30d|90d`
+- `/api/exports/report?format=csv|pdf&range=7d|30d|90d`
+- `/api/bi/kpis?range=7d|30d|90d` (x-api-key requis)
 - `/api/emails/send`
 - `/api/emails/logs`
 - `/api/jobs/followup?dry_run=true`
@@ -154,6 +164,8 @@ Validation technique:
 - `npm run build` : OK
 - `npm run test:e2e` : OK (2 scenarios Playwright)
 - migration Supabase appliquee (`20260309224000_email_analytics_and_task_reminders.sql`)
+- export CSV/PDF valide en local et production
+- endpoint BI valide avec cle API
 
 CI:
 - GitHub Actions `lint + build` sur push/PR
@@ -177,15 +189,15 @@ Checklist complete dans `docs/checklist-demo.md`.
 
 ## 11. Limitations & Next iteration
 Limitations actuelles:
-- pas encore d export PDF/CSV natif
-- pas de notifications in-app en temps reel (hors jobs email)
-- pas de connecteur BI externe (Power BI / Metabase) pret a l emploi
+- pas encore de dashboard BI multi-pages preconfigure (uniquement endpoint API)
+- pas encore de gestion avancee des permissions BI par scope
+- pas encore de module forecasting previsionnel commercial
 
 Next iteration:
-- module reporting exportable
-- notification center in-app + realtime events
+- connecteur Power BI template + data model documente
+- notifications push navigateur avec preferances utilisateur
 - segmentation avancee et scoring lead
-- containerisation Docker (bonus apres exigences principales)
+- hardening Docker multi-stage + image slim
 
 ## 12. Conclusion
 Le projet couvre les criteres fonctionnels majeurs d un CRM pedagogique MIAGE:

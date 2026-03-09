@@ -49,6 +49,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState<"csv" | "pdf" | null>(null);
 
   async function loadDashboard(nextRange: RangeKey) {
     setError(null);
@@ -70,6 +71,29 @@ export default function DashboardPage() {
   useEffect(() => {
     void loadDashboard(range);
   }, [range]);
+
+  async function handleExport(format: "csv" | "pdf") {
+    setExporting(format);
+    setError(null);
+
+    const response = await fetch(`/api/exports/report?format=${format}&range=${range}`);
+    if (!response.ok) {
+      const json = (await response.json().catch(() => ({}))) as { error?: string };
+      setError(json.error ?? `Failed to export ${format.toUpperCase()}`);
+      setExporting(null);
+      return;
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = `crm-dashboard-${range}.${format}`;
+    anchor.click();
+    URL.revokeObjectURL(objectUrl);
+
+    setExporting(null);
+  }
 
   return (
     <div className="stack">
@@ -104,6 +128,22 @@ export default function DashboardPage() {
             disabled={loading}
           >
             90 days
+          </button>
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={() => void handleExport("csv")}
+            disabled={loading || exporting !== null}
+          >
+            {exporting === "csv" ? "Exporting CSV..." : "Export CSV"}
+          </button>
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={() => void handleExport("pdf")}
+            disabled={loading || exporting !== null}
+          >
+            {exporting === "pdf" ? "Exporting PDF..." : "Export PDF"}
           </button>
         </div>
       </section>

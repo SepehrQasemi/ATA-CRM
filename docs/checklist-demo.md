@@ -5,6 +5,8 @@
 - Verify Supabase project access
 - Run `npm run seed:demo` to load demo data
 - Verify email templates are active
+- Verify dashboard export buttons (CSV/PDF)
+- Verify BI endpoint key is set (`BI_API_KEY`)
 - Open tabs:
   - Login
   - Dashboard
@@ -29,7 +31,8 @@
 8. Run follow-up in dry-run, then real run
 9. Run task reminders in dry-run
 10. Show dashboard: KPI + funnel + leaderboard + stage aging + email rates
-11. Conclusion: limitations and next iteration
+11. Export dashboard report (CSV/PDF) in front of jury
+12. Conclusion: limitations and next iteration
 
 ## Technical Fallback
 - If Brevo is unavailable:
@@ -50,4 +53,5 @@
 - Automation reliability (idempotency)
 - End-to-end quality (Playwright scenario)
 - Delivery quality (CI, demo seed, docs)
+- Bonus engineering (CSV/PDF export + BI endpoint + Docker)
 - Improvement roadmap (next iteration)

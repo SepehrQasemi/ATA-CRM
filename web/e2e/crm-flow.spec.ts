@@ -21,6 +21,10 @@ test.describe("CRM end-to-end", () => {
     await expect(page.getByText("Pipeline by stage (count + value)")).toBeVisible();
     await page.getByRole("button", { name: "30 days" }).click();
     await expect(page.getByText("Sales leaderboard (won leads value)")).toBeVisible();
+    const csvDownloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export CSV" }).click();
+    const csvDownload = await csvDownloadPromise;
+    expect(csvDownload.suggestedFilename()).toContain(".csv");
 
     await page.getByRole("link", { name: "Companies" }).click();
     await expect(page).toHaveURL(/\/companies$/);

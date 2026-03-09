@@ -24,12 +24,18 @@
   - open/click rate
   - ثبت timestamp باز شدن و کلیک
 - جلوگیری از ارسال تکراری jobها با قفل idempotent در دیتابیس
+- خروجی گزارش داشبورد به صورت CSV/PDF
+- نوتیفیکیشن real-time داخل اپ (با fallback polling)
+- API آماده BI با کلید امنیتی (`/api/bi/kpis`)
+- اجرای پروژه با Docker و Docker Compose
 
 ## APIهای مهم
 - `GET /api/leads` با فیلترهای کامل
 - `GET /api/tasks` با فیلترهای کامل
 - `GET /api/products` با فیلترهای `q/category/is_active/relation_type`
 - `GET /api/dashboard?range=7d|30d|90d`
+- `GET /api/exports/report?format=csv|pdf&range=7d|30d|90d`
+- `GET /api/bi/kpis?range=7d|30d|90d&api_key=...`
 - `POST /api/jobs/followup?dry_run=true`
 - `POST /api/jobs/task-reminders?dry_run=true`
 - `POST /api/webhooks/brevo`
@@ -52,6 +58,6 @@
 8. نمایش KPIها، Funnel، Leaderboard و نرخ open/click
 
 ## محدودیت فعلی و گام بعدی
-- خروجی PDF/CSV هنوز بومی‌سازی نشده
-- اعلان real-time داخل خود اپ هنوز اضافه نشده
-- گام بعدی: گزارش‌گیری پیشرفته، اتصال BI، و Docker به عنوان bonus
+- داشبورد BI چندصفحه‌ای (Power BI template) هنوز آماده نشده
+- کنترل دسترسی BI به صورت role/scope هنوز ساده است
+- گام بعدی: forecasting فروش، push notification، و hardening بیشتر Docker

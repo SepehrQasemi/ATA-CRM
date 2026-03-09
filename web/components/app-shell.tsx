@@ -5,6 +5,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { SignOutButton } from "@/components/sign-out-button";
+import { RealtimeNotifications } from "@/components/realtime-notifications";
 
 type AppShellProps = {
   children: ReactNode;
@@ -84,6 +85,7 @@ export function AppShell({ children, user }: AppShellProps) {
             <span className="small">{user.role}</span>
           </div>
         </div>
+        <RealtimeNotifications />
         {children}
       </main>
     </div>
