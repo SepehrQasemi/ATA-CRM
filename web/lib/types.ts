@@ -68,6 +68,10 @@ export type EmailLog = {
   recipient_email: string;
   subject: string;
   status: "pending" | "sent" | "failed";
+  open_count: number;
+  click_count: number;
+  opened_at: string | null;
+  clicked_at: string | null;
   created_at: string;
   sent_at: string | null;
   provider_message_id?: string | null;

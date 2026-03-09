@@ -10,6 +10,8 @@
   - Dashboard
   - Leads
   - Tasks
+  - Products
+  - Companies
   - Emails
 - Prepare links:
   - GitHub repo
@@ -22,15 +24,17 @@
 3. Set company role (supplier/customer/both), then link products as traded/potential
 4. Create lead and assign owner
 5. Move lead stage (select + quick move)
-6. Create task and update status
+6. Create task, show monthly calendar, and update status
 7. Send test email (template + contact)
 8. Run follow-up in dry-run, then real run
-9. Show dashboard: KPI + funnel + leaderboard + stage aging
-10. Conclusion: limitations and next iteration
+9. Run task reminders in dry-run
+10. Show dashboard: KPI + funnel + leaderboard + stage aging + email rates
+11. Conclusion: limitations and next iteration
 
 ## Technical Fallback
 - If Brevo is unavailable:
   - Show follow-up `dry_run`
+  - Show task reminders `dry_run`
   - Show `failed` logs and error handling
 - If Vercel is unavailable:
   - Run locally (`npm run dev`)
@@ -44,5 +48,6 @@
 - Functional coverage of requirements
 - Security (roles + RLS)
 - Automation reliability (idempotency)
+- End-to-end quality (Playwright scenario)
 - Delivery quality (CI, demo seed, docs)
 - Improvement roadmap (next iteration)

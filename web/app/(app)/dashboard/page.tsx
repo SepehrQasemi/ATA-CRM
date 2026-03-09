@@ -13,7 +13,10 @@ type DashboardResponse = {
     conversionRate: number;
     pipelineValue: number;
     overdueTasks: number;
+    dueSoonTasks: number;
     emailsSent: number;
+    emailOpenRate: number;
+    emailClickRate: number;
   };
   stageMetrics: Array<{ stageId: string; stageName: string; count: number; value: number }>;
   funnel: {
@@ -30,6 +33,14 @@ type DashboardResponse = {
   salesByCommercial: Array<{ userId: string; name: string; amount: number }>;
   stageAging: Array<{ stageId: string; stageName: string; avgDays: number }>;
   leaderboard: Array<{ userId: string; amount: number; name: string }>;
+  deadlineAlerts: Array<{
+    taskId: string;
+    title: string;
+    priority: string;
+    status: string;
+    dueDate: string;
+    kind: "overdue" | "due_soon";
+  }>;
   error?: string;
 };
 
@@ -123,9 +134,51 @@ export default function DashboardPage() {
           <p className="kpi">{data?.kpis.overdueTasks ?? 0}</p>
         </article>
         <article className="card">
+          <p className="muted">Due in 24h</p>
+          <p className="kpi">{data?.kpis.dueSoonTasks ?? 0}</p>
+        </article>
+        <article className="card">
           <p className="muted">Sent emails</p>
           <p className="kpi">{data?.kpis.emailsSent ?? 0}</p>
         </article>
+        <article className="card">
+          <p className="muted">Email open rate</p>
+          <p className="kpi">{data?.kpis.emailOpenRate ?? 0}%</p>
+        </article>
+        <article className="card">
+          <p className="muted">Email click rate</p>
+          <p className="kpi">{data?.kpis.emailClickRate ?? 0}%</p>
+        </article>
+      </section>
+
+      <section className="panel stack">
+        <h2>Deadline notifications</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Alert</th>
+              <th>Task</th>
+              <th>Priority</th>
+              <th>Due date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data?.deadlineAlerts ?? []).length === 0 ? (
+              <tr>
+                <td colSpan={4}>No urgent deadline alerts</td>
+              </tr>
+            ) : (
+              (data?.deadlineAlerts ?? []).map((alert) => (
+                <tr key={alert.taskId}>
+                  <td>{alert.kind === "overdue" ? "Overdue" : "Due soon"}</td>
+                  <td>{alert.title}</td>
+                  <td>{alert.priority}</td>
+                  <td>{new Date(alert.dueDate).toLocaleString()}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </section>
 
       <section className="panel stack">

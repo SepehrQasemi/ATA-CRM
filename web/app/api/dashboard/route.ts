@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
   const tasksQuery = supabaseAdmin
     .from("tasks")
-    .select("id,status,due_date,owner_id,assigned_to,created_at")
+    .select("id,title,status,priority,due_date,owner_id,assigned_to,created_at")
     .order("created_at", { ascending: false });
 
   if (!isAdmin) {
@@ -94,10 +94,43 @@ export async function GET(request: Request) {
 
   const emailsQuery = supabaseAdmin
     .from("email_logs")
-    .select("id,status,created_at,lead_id")
+    .select("id,status,created_at,lead_id,open_count,click_count")
     .gte("created_at", cutoff)
     .order("created_at", { ascending: false })
     .limit(500);
+
+  const nowMs = Date.now();
+  const dueSoonCutoffMs = Date.now() + 24 * 60 * 60 * 1000;
+  const dueSoonTasks = visibleTasks.filter((task) => {
+    if (task.status === "done" || !task.due_date) return false;
+    const dueMs = new Date(task.due_date).getTime();
+    return dueMs >= nowMs && dueMs <= dueSoonCutoffMs;
+  }).length;
+
+  const deadlineAlerts = visibleTasks
+    .filter((task) => task.status !== "done" && !!task.due_date)
+    .map((task) => {
+      const dueMs = new Date(task.due_date as string).getTime();
+      const kind = dueMs < nowMs ? "overdue" : dueMs <= dueSoonCutoffMs ? "due_soon" : null;
+      return {
+        taskId: task.id,
+        title: task.title,
+        priority: task.priority,
+        status: task.status,
+        dueDate: task.due_date as string,
+        kind,
+      };
+    })
+    .filter((item): item is {
+      taskId: string;
+      title: string;
+      priority: string;
+      status: string;
+      dueDate: string;
+      kind: "overdue" | "due_soon";
+    } => item.kind === "overdue" || item.kind === "due_soon")
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .slice(0, 20);
 
   if (!isAdmin) {
     if (!visibleLeadIds || visibleLeadIds.length === 0) {
@@ -109,8 +142,14 @@ export async function GET(request: Request) {
           lostLeads: 0,
           conversionRate: 0,
           pipelineValue: 0,
-          overdueTasks: 0,
+          overdueTasks: rangeTasks.filter((task) => {
+            if (task.status === "done" || !task.due_date) return false;
+            return new Date(task.due_date).getTime() < nowMs;
+          }).length,
+          dueSoonTasks,
           emailsSent: 0,
+          emailOpenRate: 0,
+          emailClickRate: 0,
         },
         stageMetrics: [],
         funnel: {
@@ -121,6 +160,7 @@ export async function GET(request: Request) {
         salesByCommercial: [],
         stageAging: [],
         leaderboard: [],
+        deadlineAlerts,
       });
     }
     emailsQuery.in("lead_id", visibleLeadIds);
@@ -141,13 +181,19 @@ export async function GET(request: Request) {
     0,
   );
 
-  const nowMs = Date.now();
   const overdueTasks = rangeTasks.filter((task) => {
     if (task.status === "done" || !task.due_date) return false;
     return new Date(task.due_date).getTime() < nowMs;
   }).length;
 
-  const emailsSent = (emails ?? []).filter((email) => email.status === "sent").length;
+  const sentEmailLogs = (emails ?? []).filter((email) => email.status === "sent");
+  const emailsSent = sentEmailLogs.length;
+  const openedEmails = sentEmailLogs.filter((email) => Number(email.open_count || 0) > 0).length;
+  const clickedEmails = sentEmailLogs.filter((email) => Number(email.click_count || 0) > 0).length;
+  const emailOpenRate =
+    emailsSent === 0 ? 0 : Number(((openedEmails / emailsSent) * 100).toFixed(2));
+  const emailClickRate =
+    emailsSent === 0 ? 0 : Number(((clickedEmails / emailsSent) * 100).toFixed(2));
 
   const stageCounts: Record<string, number> = {};
   const stageValues: Record<string, number> = {};
@@ -273,7 +319,10 @@ export async function GET(request: Request) {
       conversionRate,
       pipelineValue,
       overdueTasks,
+      dueSoonTasks,
       emailsSent,
+      emailOpenRate,
+      emailClickRate,
     },
     stageMetrics,
     funnel: {
@@ -284,5 +333,6 @@ export async function GET(request: Request) {
     salesByCommercial,
     stageAging,
     leaderboard,
+    deadlineAlerts,
   });
 }

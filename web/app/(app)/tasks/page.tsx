@@ -1,7 +1,18 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
+import {
+  addDays,
+  addMonths,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameDay,
+  isSameMonth,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from "date-fns";
 import { Company, Contact, Lead, Task } from "@/lib/types";
 
 type TasksResponse = { tasks: Task[]; error?: string };
@@ -55,6 +66,18 @@ const initialForm: TaskForm = {
   contact_id: "",
 };
 
+type DeadlineAlert = {
+  task: Task;
+  kind: "overdue" | "due_soon";
+};
+
+function getTaskDueDate(task: Task): Date | null {
+  if (!task.due_date) return null;
+  const due = new Date(task.due_date);
+  if (Number.isNaN(due.getTime())) return null;
+  return due;
+}
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -66,6 +89,7 @@ export default function TasksPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filters, setFilters] = useState<TaskFilters>(initialFilters);
   const [form, setForm] = useState<TaskForm>(initialForm);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(startOfMonth(new Date()));
 
   async function loadData(activeFilters = filters) {
     const params = new URLSearchParams();
@@ -205,18 +229,76 @@ export default function TasksPage() {
     void loadData(filters);
   }
 
+  const nowMs = Date.now();
+  const dueSoonCutoff = Date.now() + 24 * 60 * 60 * 1000;
+
   const overdueCount = useMemo(() => {
-    const now = Date.now();
-    return tasks.filter(
-      (task) => task.status !== "done" && task.due_date && new Date(task.due_date).getTime() < now,
-    ).length;
+    return tasks.filter((task) => {
+      const due = getTaskDueDate(task);
+      if (!due || task.status === "done") return false;
+      return due.getTime() < nowMs;
+    }).length;
+  }, [tasks, nowMs]);
+
+  const dueSoonCount = useMemo(() => {
+    return tasks.filter((task) => {
+      const due = getTaskDueDate(task);
+      if (!due || task.status === "done") return false;
+      const dueMs = due.getTime();
+      return dueMs >= nowMs && dueMs <= dueSoonCutoff;
+    }).length;
+  }, [tasks, nowMs, dueSoonCutoff]);
+
+  const deadlineAlerts = useMemo<DeadlineAlert[]>(() => {
+    return tasks
+      .filter((task) => task.status !== "done")
+      .map((task) => {
+        const due = getTaskDueDate(task);
+        if (!due) return null;
+        const dueMs = due.getTime();
+        if (dueMs < nowMs) return { task, kind: "overdue" as const };
+        if (dueMs <= dueSoonCutoff) return { task, kind: "due_soon" as const };
+        return null;
+      })
+      .filter((item): item is DeadlineAlert => item !== null)
+      .sort((a, b) => {
+        const aDue = getTaskDueDate(a.task)?.getTime() ?? 0;
+        const bDue = getTaskDueDate(b.task)?.getTime() ?? 0;
+        return aDue - bDue;
+      })
+      .slice(0, 20);
+  }, [tasks, nowMs, dueSoonCutoff]);
+
+  const monthStart = startOfMonth(calendarMonth);
+  const monthEnd = endOfMonth(monthStart);
+  const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+  const calendarDays: Date[] = [];
+  let cursor = gridStart;
+  while (cursor <= gridEnd) {
+    calendarDays.push(cursor);
+    cursor = addDays(cursor, 1);
+  }
+
+  const tasksByDay = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    tasks.forEach((task) => {
+      const due = getTaskDueDate(task);
+      if (!due) return;
+      const key = format(due, "yyyy-MM-dd");
+      const bucket = map.get(key) ?? [];
+      bucket.push(task);
+      map.set(key, bucket);
+    });
+    return map;
   }, [tasks]);
 
   return (
     <div className="stack">
       <section className="page-head">
         <h1>Tasks & Calendar</h1>
-        <p>Plan calls, meetings, and sales follow-up reminders.</p>
+        <p>Plan calls, meetings, and follow-up reminders with deadline notifications.</p>
       </section>
 
       <section className="card-grid">
@@ -228,9 +310,43 @@ export default function TasksPage() {
           <p className="muted">Overdue</p>
           <p className="kpi">{overdueCount}</p>
         </article>
+        <article className="card">
+          <p className="muted">Due in 24h</p>
+          <p className="kpi">{dueSoonCount}</p>
+        </article>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
+
+      <section className="panel stack">
+        <h2>Deadline notifications</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Alert</th>
+              <th>Task</th>
+              <th>Priority</th>
+              <th>Due date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deadlineAlerts.length === 0 ? (
+              <tr>
+                <td colSpan={4}>No urgent deadline alerts</td>
+              </tr>
+            ) : (
+              deadlineAlerts.map(({ task, kind }) => (
+                <tr key={task.id}>
+                  <td>{kind === "overdue" ? "Overdue" : "Due soon"}</td>
+                  <td>{task.title}</td>
+                  <td>{task.priority}</td>
+                  <td>{task.due_date ? new Date(task.due_date).toLocaleString() : "-"}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </section>
 
       <section className="panel stack">
         <h2>Task filters</h2>
@@ -442,6 +558,68 @@ export default function TasksPage() {
             ) : null}
           </div>
         </form>
+      </section>
+
+      <section className="panel stack">
+        <div className="inline-actions">
+          <h2>Calendar view</h2>
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={() => setCalendarMonth((prev) => startOfMonth(subMonths(prev, 1)))}
+          >
+            Prev month
+          </button>
+          <strong>{format(calendarMonth, "MMMM yyyy")}</strong>
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={() => setCalendarMonth((prev) => startOfMonth(addMonths(prev, 1)))}
+          >
+            Next month
+          </button>
+        </div>
+
+        <div className="calendar-grid calendar-weekdays">
+          <div>Mon</div>
+          <div>Tue</div>
+          <div>Wed</div>
+          <div>Thu</div>
+          <div>Fri</div>
+          <div>Sat</div>
+          <div>Sun</div>
+        </div>
+
+        <div className="calendar-grid">
+          {calendarDays.map((day) => {
+            const key = format(day, "yyyy-MM-dd");
+            const dayTasks = tasksByDay.get(key) ?? [];
+            const inMonth = isSameMonth(day, calendarMonth);
+            const today = isSameDay(day, new Date());
+
+            return (
+              <article
+                key={key}
+                className={`calendar-cell ${inMonth ? "" : "is-outside"} ${today ? "is-today" : ""}`}
+              >
+                <header>
+                  <strong>{format(day, "d")}</strong>
+                  {dayTasks.length > 0 ? <span className="small">{dayTasks.length} task(s)</span> : null}
+                </header>
+                <div className="calendar-task-list">
+                  {dayTasks.slice(0, 3).map((task) => (
+                    <div key={task.id} className={`calendar-task task-${task.status}`}>
+                      {task.title}
+                    </div>
+                  ))}
+                  {dayTasks.length > 3 ? (
+                    <div className="small">+{dayTasks.length - 3} more</div>
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </section>
 
       <section className="panel stack">

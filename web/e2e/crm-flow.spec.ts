@@ -130,8 +130,8 @@ test.describe("CRM end-to-end", () => {
 
     await page.getByRole("link", { name: "Emails" }).click();
     await expect(page).toHaveURL(/\/emails$/);
-    await page.getByRole("button", { name: "Dry run" }).click();
-    await expect(page.getByText(/Dry-run done:/)).toBeVisible();
+    await sectionByHeading(page, "Run follow-up 72h").getByRole("button", { name: "Dry run follow-up" }).click();
+    await expect(page.getByText(/Follow-up dry-run:/)).toBeVisible();
     await expect(sectionByHeading(page, "Email logs")).toBeVisible();
   });
 

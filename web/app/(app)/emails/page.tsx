@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Lead, Contact } from "@/lib/types";
 
 type MetaResponse = {
@@ -23,6 +23,10 @@ type LogsResponse = {
     subject: string;
     status: string;
     provider_message_id: string | null;
+    open_count: number;
+    click_count: number;
+    opened_at: string | null;
+    clicked_at: string | null;
     created_at: string;
     sent_at: string | null;
     error_message: string | null;
@@ -39,7 +43,8 @@ export default function EmailsPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
-  const [runningJob, setRunningJob] = useState(false);
+  const [runningFollowupJob, setRunningFollowupJob] = useState(false);
+  const [runningTaskReminders, setRunningTaskReminders] = useState(false);
   const [form, setForm] = useState({
     lead_id: "",
     template_id: "",
@@ -91,6 +96,17 @@ export default function EmailsPage() {
     void loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const emailStats = useMemo(() => {
+    const sentLogs = logs.filter((log) => log.status === "sent");
+    const sent = sentLogs.length;
+    const opened = sentLogs.filter((log) => Number(log.open_count || 0) > 0).length;
+    const clicked = sentLogs.filter((log) => Number(log.click_count || 0) > 0).length;
+    const openRate = sent === 0 ? 0 : Number(((opened / sent) * 100).toFixed(2));
+    const clickRate = sent === 0 ? 0 : Number(((clicked / sent) * 100).toFixed(2));
+
+    return { sent, opened, clicked, openRate, clickRate };
+  }, [logs]);
 
   async function handleSend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -161,7 +177,7 @@ export default function EmailsPage() {
   }
 
   async function runFollowupJob(dryRun: boolean) {
-    setRunningJob(true);
+    setRunningFollowupJob(true);
     setError(null);
     setSuccess(null);
 
@@ -172,21 +188,51 @@ export default function EmailsPage() {
 
     if (!response.ok) {
       setError(json.error ?? "Follow-up job failed");
-      setRunningJob(false);
+      setRunningFollowupJob(false);
       return;
     }
 
     if (dryRun) {
       setSuccess(
-        `Dry-run done: processed ${json.processed}, eligible ${json.eligible}, duplicates ${json.skippedDuplicate}`,
+        `Follow-up dry-run: processed ${json.processed}, eligible ${json.eligible}, duplicates ${json.skippedDuplicate}`,
       );
     } else {
       setSuccess(
-        `Follow-up done: processed ${json.processed}, sent ${json.sent}, failed ${json.failed}, duplicates ${json.skippedDuplicate}`,
+        `Follow-up run: processed ${json.processed}, sent ${json.sent}, failed ${json.failed}, duplicates ${json.skippedDuplicate}`,
       );
     }
 
-    setRunningJob(false);
+    setRunningFollowupJob(false);
+    void loadData();
+  }
+
+  async function runTaskReminderJob(dryRun: boolean) {
+    setRunningTaskReminders(true);
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/jobs/task-reminders${dryRun ? "?dry_run=true" : ""}`, {
+      method: "POST",
+    });
+    const json = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      setError(json.error ?? "Task reminder job failed");
+      setRunningTaskReminders(false);
+      return;
+    }
+
+    if (dryRun) {
+      setSuccess(
+        `Task reminder dry-run: processed ${json.processed}, eligible ${json.eligible}, duplicates ${json.skippedDuplicate}`,
+      );
+    } else {
+      setSuccess(
+        `Task reminders: processed ${json.processed}, sent ${json.sent}, failed ${json.failed}, duplicates ${json.skippedDuplicate}`,
+      );
+    }
+
+    setRunningTaskReminders(false);
     void loadData();
   }
 
@@ -194,7 +240,7 @@ export default function EmailsPage() {
     <div className="stack">
       <section className="page-head">
         <h1>Email Automation</h1>
-        <p>Manual sends, template tests, and automated 72h follow-up.</p>
+        <p>Manual sends, template tests, follow-up automation, and email performance analytics.</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
@@ -207,17 +253,39 @@ export default function EmailsPage() {
             type="button"
             className="btn btn-secondary"
             onClick={() => void runFollowupJob(true)}
-            disabled={runningJob}
+            disabled={runningFollowupJob}
           >
-            {runningJob ? "Running..." : "Dry run"}
+            {runningFollowupJob ? "Running..." : "Dry run follow-up"}
           </button>
           <button
             type="button"
             className="btn btn-primary"
             onClick={() => void runFollowupJob(false)}
-            disabled={runningJob}
+            disabled={runningFollowupJob}
           >
-            {runningJob ? "Running..." : "Run real send"}
+            {runningFollowupJob ? "Running..." : "Run real send"}
+          </button>
+        </div>
+      </section>
+
+      <section className="panel stack">
+        <div className="inline-actions">
+          <h2>Run task deadline reminders</h2>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => void runTaskReminderJob(true)}
+            disabled={runningTaskReminders}
+          >
+            {runningTaskReminders ? "Running..." : "Dry run reminders"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void runTaskReminderJob(false)}
+            disabled={runningTaskReminders}
+          >
+            {runningTaskReminders ? "Running..." : "Run reminder sends"}
           </button>
         </div>
       </section>
@@ -340,6 +408,28 @@ export default function EmailsPage() {
       </section>
 
       <section className="panel stack">
+        <h2>Email analytics</h2>
+        <div className="card-grid">
+          <article className="card">
+            <p className="muted">Sent emails</p>
+            <p className="kpi">{emailStats.sent}</p>
+          </article>
+          <article className="card">
+            <p className="muted">Opened emails</p>
+            <p className="kpi">{emailStats.opened}</p>
+          </article>
+          <article className="card">
+            <p className="muted">Open rate</p>
+            <p className="kpi">{emailStats.openRate}%</p>
+          </article>
+          <article className="card">
+            <p className="muted">Click rate</p>
+            <p className="kpi">{emailStats.clickRate}%</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="panel stack">
         <h2>Email logs</h2>
         <table>
           <thead>
@@ -348,6 +438,10 @@ export default function EmailsPage() {
               <th>Subject</th>
               <th>Status</th>
               <th>Provider ID</th>
+              <th>Opens</th>
+              <th>Clicks</th>
+              <th>Opened at</th>
+              <th>Clicked at</th>
               <th>Created</th>
               <th>Error</th>
             </tr>
@@ -359,6 +453,10 @@ export default function EmailsPage() {
                 <td>{log.subject}</td>
                 <td>{log.status}</td>
                 <td>{log.provider_message_id ?? "-"}</td>
+                <td>{log.open_count ?? 0}</td>
+                <td>{log.click_count ?? 0}</td>
+                <td>{log.opened_at ? new Date(log.opened_at).toLocaleString() : "-"}</td>
+                <td>{log.clicked_at ? new Date(log.clicked_at).toLocaleString() : "-"}</td>
                 <td>{new Date(log.created_at).toLocaleString()}</td>
                 <td>{log.error_message ?? "-"}</td>
               </tr>

@@ -16,8 +16,10 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - Sales pipeline with stage change, quick move, and history
 - Multi-criteria filters on leads/tasks/contacts/companies
 - KPI dashboard (7/30/90 days) + funnel + leaderboard + stage aging
+- Task planning with monthly calendar + deadline alerts (overdue / due soon)
 - Manual email + test email + logs + 72h follow-up
-- Idempotent follow-up job with DB lock + `dry_run` mode
+- Email analytics (open/click counts and rates)
+- Idempotent automation jobs with DB locks + `dry_run` mode
 
 ## Main APIs
 - `GET/POST /api/contacts`
@@ -37,6 +39,8 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `POST /api/emails/send`
 - `GET /api/emails/logs`
 - `POST /api/jobs/followup?dry_run=true`
+- `POST /api/jobs/task-reminders?dry_run=true`
+- `POST /api/webhooks/brevo`
 
 ## Useful Query Params
 - `GET /api/leads`: `stage_id`, `status`, `assigned_to`, `source`, `q`, `from`, `to`
@@ -61,6 +65,18 @@ npx -y supabase@latest db push
 ```bash
 npm run dev
 ```
+
+## Environment Variables
+Required:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Optional:
+- `BREVO_API_KEY`
+- `BREVO_WEBHOOK_SECRET` (protect `/api/webhooks/brevo`)
+- `CRON_SECRET` (protect job endpoints for cron calls)
+- `NEXT_PUBLIC_APP_NAME`
 
 ## Quality Checks
 ```bash

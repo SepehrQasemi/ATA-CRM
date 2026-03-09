@@ -15,6 +15,7 @@ export const env = {
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
   brevoApiKey: process.env.BREVO_API_KEY ?? "",
+  brevoWebhookSecret: process.env.BREVO_WEBHOOK_SECRET ?? "",
   appName: process.env.NEXT_PUBLIC_APP_NAME ?? "CRM Food Trading",
   cronSecret: process.env.CRON_SECRET ?? "",
 };

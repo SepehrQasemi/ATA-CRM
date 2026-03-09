@@ -418,6 +418,81 @@ th {
   border-color: #c6dcff;
 }
 
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.calendar-weekdays > div {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  padding: 4px 0;
+}
+
+.calendar-cell {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-height: 120px;
+  padding: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendar-cell.is-outside {
+  background: #f7faf8;
+  opacity: 0.72;
+}
+
+.calendar-cell.is-today {
+  border-color: #80c39a;
+  box-shadow: 0 0 0 2px rgba(31, 143, 75, 0.16) inset;
+}
+
+.calendar-cell > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendar-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.calendar-task {
+  border-radius: 7px;
+  padding: 4px 6px;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  border: 1px solid #d6e4db;
+  background: #edf7f1;
+}
+
+.calendar-task.task-done {
+  background: #e9edf1;
+  border-color: #d4dce3;
+  color: #4d5963;
+}
+
+.calendar-task.task-in_progress {
+  background: #fdf1df;
+  border-color: #f1d4a8;
+  color: #6d4512;
+}
+
+.calendar-task.task-todo {
+  background: #eaf2ff;
+  border-color: #cfe0ff;
+  color: #1d4270;
+}
+
 @media (max-width: 1200px) {
   .card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -493,6 +568,10 @@ th {
   .board,
   .card-grid-wide {
     grid-template-columns: 1fr;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .col-1,
