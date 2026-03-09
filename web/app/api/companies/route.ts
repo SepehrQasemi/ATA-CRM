@@ -13,7 +13,8 @@ export async function GET(request: Request) {
   const isAdmin = role === "admin";
 
   const url = new URL(request.url);
-  const search = url.searchParams.get("search");
+  const search = url.searchParams.get("q") ?? url.searchParams.get("search");
+  const sector = url.searchParams.get("sector");
 
   const query = supabaseAdmin
     .from("companies")
@@ -24,8 +25,12 @@ export async function GET(request: Request) {
     query.or(ownershipFilter(user.id));
   }
 
+  if (sector) {
+    query.ilike("sector", `%${sector}%`);
+  }
+
   if (search) {
-    query.or(`name.ilike.%${search}%,city.ilike.%${search}%,sector.ilike.%${search}%`);
+    query.ilike("name", `%${search}%`);
   }
 
   const { data, error } = await query;

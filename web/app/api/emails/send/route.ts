@@ -1,4 +1,4 @@
-import { requireAuthenticatedUser } from "@/lib/auth";
+﻿import { requireAuthenticatedUser } from "@/lib/auth";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { fail, ok } from "@/lib/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -7,45 +7,43 @@ function renderTemplate(template: string, name: string) {
   return template.replaceAll("{{name}}", name || "Client");
 }
 
-export async function POST(request: Request) {
-  const auth = await requireAuthenticatedUser();
-  if (auth.response) return auth.response;
+type Recipient = {
+  email: string;
+  name: string;
+  contactId: string | null;
+  leadId: string | null;
+};
 
-  const body = await request.json();
+async function resolveRecipient(body: Record<string, unknown>): Promise<Recipient | null> {
   const leadId = body.lead_id ? String(body.lead_id) : null;
-  const templateId = body.template_id ? String(body.template_id) : null;
-  const eventType = body.event_type ? String(body.event_type) : "custom";
+  const contactId = body.contact_id ? String(body.contact_id) : null;
+  const explicitEmail = body.recipient_email ? String(body.recipient_email) : null;
 
-  if (!leadId && !body.recipient_email) {
-    return fail("lead_id or recipient_email is required", 400);
+  if (contactId) {
+    const { data: contact } = await supabaseAdmin
+      .from("contacts")
+      .select("id,first_name,last_name,email")
+      .eq("id", contactId)
+      .single();
+
+    if (!contact?.email) return null;
+
+    return {
+      email: contact.email,
+      name: `${contact.first_name} ${contact.last_name}`.trim() || "Client",
+      contactId: contact.id,
+      leadId,
+    };
   }
-
-  const { data: template } = templateId
-    ? await supabaseAdmin
-        .from("email_templates")
-        .select("id,name,event_type,subject,body")
-        .eq("id", templateId)
-        .single()
-    : await supabaseAdmin
-        .from("email_templates")
-        .select("id,name,event_type,subject,body")
-        .eq("event_type", eventType)
-        .eq("is_active", true)
-        .limit(1)
-        .single();
-
-  let recipientEmail = body.recipient_email ? String(body.recipient_email) : null;
-  let recipientName = "Client";
-  let contactId: string | null = null;
 
   if (leadId) {
     const { data: lead } = await supabaseAdmin
       .from("leads")
-      .select("id,contact_id,title")
+      .select("id,contact_id")
       .eq("id", leadId)
       .single();
 
-    if (!lead) return fail("Lead not found", 404);
+    if (!lead) return null;
 
     if (lead.contact_id) {
       const { data: contact } = await supabaseAdmin
@@ -55,25 +53,88 @@ export async function POST(request: Request) {
         .single();
 
       if (contact?.email) {
-        recipientEmail = contact.email;
-        recipientName = `${contact.first_name} ${contact.last_name}`.trim();
-        contactId = contact.id;
+        return {
+          email: contact.email,
+          name: `${contact.first_name} ${contact.last_name}`.trim() || "Client",
+          contactId: contact.id,
+          leadId: lead.id,
+        };
       }
     }
+
+    if (!explicitEmail) return null;
+
+    return {
+      email: explicitEmail,
+      name: "Client",
+      contactId: null,
+      leadId: lead.id,
+    };
   }
 
-  if (!recipientEmail) return fail("Recipient email not found", 400);
+  if (!explicitEmail) return null;
 
-  const subject = body.subject
+  return {
+    email: explicitEmail,
+    name: "Client",
+    contactId: null,
+    leadId: null,
+  };
+}
+
+export async function POST(request: Request) {
+  const auth = await requireAuthenticatedUser();
+  if (auth.response) return auth.response;
+
+  const body = (await request.json()) as Record<string, unknown>;
+  const templateId = body.template_id ? String(body.template_id) : null;
+  const eventType = body.event_type ? String(body.event_type) : "custom";
+  const isTest = body.is_test === true;
+
+  const recipient = await resolveRecipient(body);
+  if (!recipient) {
+    return fail("lead_id/contact_id/recipient_email required with resolvable recipient", 400);
+  }
+
+  let template:
+    | { id: string; name: string; event_type: string; subject: string; body: string }
+    | null = null;
+
+  if (templateId) {
+    const { data } = await supabaseAdmin
+      .from("email_templates")
+      .select("id,name,event_type,subject,body")
+      .eq("id", templateId)
+      .single();
+    template = data ?? null;
+  } else {
+    const { data } = await supabaseAdmin
+      .from("email_templates")
+      .select("id,name,event_type,subject,body")
+      .eq("event_type", eventType)
+      .eq("is_active", true)
+      .limit(1)
+      .single();
+    template = data ?? null;
+  }
+
+  if (templateId && !template) {
+    return fail("Template not found", 404);
+  }
+
+  const subjectBase = body.subject
     ? String(body.subject)
     : template?.subject ?? "CRM Notification";
+
   const bodyText = body.body
     ? String(body.body)
-    : renderTemplate(template?.body ?? "Bonjour {{name}}", recipientName);
+    : renderTemplate(template?.body ?? "Bonjour {{name}}", recipient.name);
+
+  const subject = isTest ? `[TEST] ${subjectBase}` : subjectBase;
 
   const sent = await sendBrevoEmail({
-    toEmail: recipientEmail,
-    toName: recipientName,
+    toEmail: recipient.email,
+    toName: recipient.name,
     subject,
     text: bodyText,
   });
@@ -83,10 +144,10 @@ export async function POST(request: Request) {
   const { data: log, error: logError } = await supabaseAdmin
     .from("email_logs")
     .insert({
-      lead_id: leadId,
-      contact_id: contactId,
+      lead_id: recipient.leadId,
+      contact_id: recipient.contactId,
       template_id: template?.id ?? null,
-      recipient_email: recipientEmail,
+      recipient_email: recipient.email,
       subject,
       body: bodyText,
       status,
@@ -103,6 +164,7 @@ export async function POST(request: Request) {
 
   return ok({
     sent: sent.ok,
+    isTest,
     log,
     provider: sent.payload ?? null,
     error: sent.ok ? null : sent.error,

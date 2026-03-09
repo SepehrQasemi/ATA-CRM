@@ -12,7 +12,7 @@ export async function GET() {
   const query = supabaseAdmin
     .from("email_logs")
     .select(
-      "id,lead_id,contact_id,recipient_email,subject,status,error_message,created_at,sent_at",
+      "id,lead_id,contact_id,recipient_email,subject,status,provider_message_id,error_message,created_at,sent_at",
     )
     .order("created_at", { ascending: false })
     .limit(100);

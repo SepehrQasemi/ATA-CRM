@@ -1,60 +1,39 @@
-# خلاصه پروژه CRM (فارسی)
+﻿# خلاصه اجرایی پروژه CRM (FA)
 
-## هدف پروژه
-ساخت یک CRM وب برای شرکت بازرگانی مواد اولیه غذایی با معماری SaaS کامل:
-- فرانت + API روی Next.js
-- دیتابیس و احراز هویت روی Supabase
-- ایمیل روی Brevo
-- دیپلوی روی Vercel
+## هدف
+این پروژه یک CRM عملیاتی برای شرکت بازرگانی مواد اولیه غذایی است تا کل مسیر فروش از سرنخ تا قرارداد را پوشش دهد.
 
-## ماژول‌های تحویل‌شده
-- ورود/ثبت‌نام/فراموشی رمز
-- نقش‌های کاربری (admin/commercial/standard)
-- مدیریت مخاطب‌ها و شرکت‌ها
-- مدیریت لیدها
-- Pipeline فروش اختصاصی 7 مرحله‌ای
-- ثبت تاریخچه تغییر مرحله لید
-- مدیریت تسک‌ها و بررسی overdue
-- ارسال ایمیل دستی + لاگ ایمیل
-- اتوماسیون follow-up بعد از 72 ساعت
-- داشبورد KPI
+## خروجی‌های اصلی
+- احراز هویت و نقش‌ها (admin / commercial / standard_user)
+- CRUD کامل برای Contacts، Companies، Leads، Tasks با قابلیت Edit
+- پایپ‌لاین فروش ۷ مرحله‌ای با جابه‌جایی سریع و تاریخچه مرحله
+- داشبورد KPI با بازه‌های ۷/۳۰/۹۰ روز
+- Funnel و نرخ تبدیل بین مراحل
+- اتوماسیون ایمیل (ارسال دستی، ارسال تست، follow-up 72h)
+- جلوگیری از ارسال تکراری follow-up با قفل idempotent در دیتابیس
+- لاگ کامل ایمیل شامل status، error و provider_message_id
 
-## Pipeline انتخاب‌شده
-1. Nouveau lead  
-2. Qualification  
-3. Echantillon envoye  
-4. Devis envoye  
-5. Negociation  
-6. Gagne  
-7. Perdu
+## APIهای مهم
+- `GET /api/leads` با فیلترهای کامل
+- `GET /api/tasks` با فیلترهای کامل
+- `GET /api/dashboard?range=7d|30d|90d`
+- `POST /api/jobs/followup?dry_run=true`
 
-## APIهای اصلی
-- `/api/contacts`
-- `/api/companies`
-- `/api/leads`
-- `/api/leads/:id/stage`
-- `/api/tasks`
-- `/api/dashboard`
-- `/api/emails/send`
-- `/api/emails/logs`
-- `/api/jobs/followup`
+## تحویل فنی
+- CI با GitHub Actions (`lint + build`)
+- اسکریپت seed دمو: `npm run seed:demo`
+- گزارش کامل FR: `docs/rapport-projet-fr.md`
+- چک‌لیست دفاع: `docs/checklist-demo.md`
 
-## امنیت
-- RLS روی جداول کلیدی
-- محدودسازی دسترسی براساس مالک/مسئول لید
-- استفاده از service role فقط در بک‌اند سرور
+## مسیر دمو پیشنهادی
+1. ورود به سیستم
+2. ساخت شرکت و مخاطب
+3. ساخت lead و تغییر مرحله
+4. ساخت task و تغییر وضعیت
+5. ارسال ایمیل تست
+6. اجرای follow-up dry-run و اجرای واقعی
+7. نمایش KPI و Funnel در داشبورد
 
-## وضعیت فنی
-- `npm run lint` پاس
-- `npm run build` پاس
-- migration دیتابیس روی Supabase اعمال شده
-
-## مسیر فایل‌ها
-- کد اپ: `C:\dev\crm-food-trading\web`
-- SQL migration: `C:\dev\crm-food-trading\supabase\migrations`
-- گزارش FR: `C:\dev\crm-food-trading\docs\rapport-projet-fr.md`
-
-## گام بعدی
-- انتشار ریپو CRM روی GitHub
-- دیپلوی Vercel (root = web)
-- اتصال لینک‌ها در Portfolio
+## محدودیت فعلی و گام بعدی
+- خروجی PDF/CSV و نوتیفیکیشن real-time هنوز پیاده نشده
+- در نسخه بعدی: تست E2E و بهبود گزارش‌گیری

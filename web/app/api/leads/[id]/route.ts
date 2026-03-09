@@ -41,6 +41,12 @@ export async function PATCH(
       body.contact_id === null ? null : body.contact_id ? String(body.contact_id) : undefined,
     assigned_to:
       body.assigned_to === null ? null : body.assigned_to ? String(body.assigned_to) : undefined,
+    current_stage_id:
+      body.current_stage_id === null
+        ? null
+        : body.current_stage_id
+          ? String(body.current_stage_id)
+          : undefined,
     notes: body.notes === null ? null : body.notes ? String(body.notes) : undefined,
     last_activity_at: new Date().toISOString(),
   };

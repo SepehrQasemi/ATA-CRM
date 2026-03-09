@@ -137,6 +137,10 @@ a {
   gap: 12px;
 }
 
+.card-grid-wide {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .card {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -172,6 +176,17 @@ a {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 10px;
+}
+
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.action-end {
+  justify-content: flex-end;
 }
 
 .col-6 {
@@ -257,6 +272,10 @@ th {
   gap: 12px;
 }
 
+.board-wide {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .stage {
   background: #f7fbf8;
   border: 1px solid var(--line);
@@ -302,6 +321,10 @@ th {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .card-grid-wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -314,6 +337,10 @@ th {
 
   .card-grid,
   .board {
+    grid-template-columns: 1fr;
+  }
+
+  .card-grid-wide {
     grid-template-columns: 1fr;
   }
 

@@ -2,8 +2,6 @@ import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
 import { fail, ok } from "@/lib/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const ownershipFilter = (userId: string) => `owner_id.eq.${userId}`;
-
 export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
@@ -13,7 +11,8 @@ export async function GET(request: Request) {
   const isAdmin = role === "admin";
 
   const url = new URL(request.url);
-  const search = url.searchParams.get("search");
+  const search = url.searchParams.get("q") ?? url.searchParams.get("search");
+  const companyId = url.searchParams.get("company_id");
 
   const query = supabaseAdmin
     .from("contacts")
@@ -21,7 +20,11 @@ export async function GET(request: Request) {
     .order("created_at", { ascending: false });
 
   if (!isAdmin) {
-    query.or(ownershipFilter(user.id));
+    query.eq("owner_id", user.id);
+  }
+
+  if (companyId) {
+    query.eq("company_id", companyId);
   }
 
   if (search) {

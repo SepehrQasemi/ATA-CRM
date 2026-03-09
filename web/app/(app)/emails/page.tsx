@@ -1,32 +1,44 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Lead } from "@/lib/types";
+import { Lead, Contact } from "@/lib/types";
 
 type MetaResponse = {
-  templates: Array<{ id: string; name: string; event_type: string; subject: string; is_active: boolean }>;
+  templates: Array<{
+    id: string;
+    name: string;
+    event_type: string;
+    subject: string;
+    is_active: boolean;
+  }>;
+  error?: string;
 };
 
-type LeadsResponse = { leads: Lead[] };
+type LeadsResponse = { leads: Lead[]; error?: string };
+type ContactsResponse = { contacts: Contact[]; error?: string };
 type LogsResponse = {
   logs: Array<{
     id: string;
     recipient_email: string;
     subject: string;
     status: string;
+    provider_message_id: string | null;
     created_at: string;
     sent_at: string | null;
     error_message: string | null;
   }>;
+  error?: string;
 };
 
 export default function EmailsPage() {
   const [templates, setTemplates] = useState<MetaResponse["templates"]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [logs, setLogs] = useState<LogsResponse["logs"]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
   const [runningJob, setRunningJob] = useState(false);
   const [form, setForm] = useState({
     lead_id: "",
@@ -35,29 +47,49 @@ export default function EmailsPage() {
     subject: "",
     body: "",
   });
+  const [testForm, setTestForm] = useState({
+    template_id: "",
+    contact_id: "",
+    subject: "",
+  });
 
   async function loadData() {
-    const [metaRes, leadRes, logsRes] = await Promise.all([
+    const [metaRes, leadRes, logsRes, contactsRes] = await Promise.all([
       fetch("/api/meta"),
       fetch("/api/leads"),
       fetch("/api/emails/logs"),
+      fetch("/api/contacts"),
     ]);
 
-    const metaJson = (await metaRes.json()) as MetaResponse & { error?: string };
-    const leadJson = (await leadRes.json()) as LeadsResponse & { error?: string };
-    const logsJson = (await logsRes.json()) as LogsResponse & { error?: string };
+    const metaJson = (await metaRes.json()) as MetaResponse;
+    const leadJson = (await leadRes.json()) as LeadsResponse;
+    const logsJson = (await logsRes.json()) as LogsResponse;
+    const contactsJson = (await contactsRes.json()) as ContactsResponse;
 
-    if (!logsRes.ok) {
-      setError(logsJson.error ?? "Failed to load email logs");
+    if (!metaRes.ok || !leadRes.ok || !logsRes.ok || !contactsRes.ok) {
+      setError(
+        metaJson.error ??
+          leadJson.error ??
+          logsJson.error ??
+          contactsJson.error ??
+          "Failed to load email module",
+      );
       return;
     }
+
     setTemplates(metaJson.templates ?? []);
     setLeads(leadJson.leads ?? []);
     setLogs(logsJson.logs ?? []);
+    setContacts(contactsJson.contacts ?? []);
+
+    if (!testForm.template_id && (metaJson.templates?.length ?? 0) > 0) {
+      setTestForm((prev) => ({ ...prev, template_id: metaJson.templates[0].id }));
+    }
   }
 
   useEffect(() => {
     void loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleSend(event: FormEvent<HTMLFormElement>) {
@@ -78,12 +110,14 @@ export default function EmailsPage() {
         body: form.body || null,
       }),
     });
-    const json = await response.json();
+    const json = await response.json().catch(() => ({}));
+
     if (!response.ok) {
       setError(json.error ?? "Failed to send email");
       setSending(false);
       return;
     }
+
     setSuccess(json.sent ? "Email sent successfully" : "Email logged as failed");
     setSending(false);
     setForm({
@@ -96,18 +130,62 @@ export default function EmailsPage() {
     void loadData();
   }
 
-  async function runFollowupJob() {
+  async function handleSendTest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSendingTest(true);
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch("/api/emails/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        template_id: testForm.template_id,
+        contact_id: testForm.contact_id,
+        subject: testForm.subject || null,
+        is_test: true,
+      }),
+    });
+
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setError(json.error ?? "Failed to send test email");
+      setSendingTest(false);
+      return;
+    }
+
+    setSuccess(json.sent ? "Test email sent successfully" : "Test email failed");
+    setSendingTest(false);
+    setTestForm((prev) => ({ ...prev, subject: "" }));
+    void loadData();
+  }
+
+  async function runFollowupJob(dryRun: boolean) {
     setRunningJob(true);
     setError(null);
     setSuccess(null);
-    const response = await fetch("/api/jobs/followup", { method: "POST" });
-    const json = await response.json();
+
+    const response = await fetch(`/api/jobs/followup${dryRun ? "?dry_run=true" : ""}`, {
+      method: "POST",
+    });
+    const json = await response.json().catch(() => ({}));
+
     if (!response.ok) {
       setError(json.error ?? "Follow-up job failed");
       setRunningJob(false);
       return;
     }
-    setSuccess(`Follow-up job done: ${json.sent} sent / ${json.failed} failed`);
+
+    if (dryRun) {
+      setSuccess(
+        `Dry-run done: processed ${json.processed}, eligible ${json.eligible}, duplicates ${json.skippedDuplicate}`,
+      );
+    } else {
+      setSuccess(
+        `Follow-up done: processed ${json.processed}, sent ${json.sent}, failed ${json.failed}, duplicates ${json.skippedDuplicate}`,
+      );
+    }
+
     setRunningJob(false);
     void loadData();
   }
@@ -116,29 +194,36 @@ export default function EmailsPage() {
     <div className="stack">
       <section className="page-head">
         <h1>Email Automation</h1>
-        <p>Envois manuels, journal des emails et relance automatique 72h.</p>
+        <p>Envois manuels, test templates et relance automatique 72h.</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
       {success ? <p className="success">{success}</p> : null}
 
       <section className="panel stack">
-        <div className="row">
-          <div className="col-6">
-            <h2>Envoyer un email</h2>
-          </div>
-          <div className="col-6" style={{ textAlign: "right" }}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => void runFollowupJob()}
-              disabled={runningJob}
-            >
-              {runningJob ? "Running..." : "Run follow-up 72h"}
-            </button>
-          </div>
+        <div className="inline-actions">
+          <h2>Run follow-up 72h</h2>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => void runFollowupJob(true)}
+            disabled={runningJob}
+          >
+            {runningJob ? "Running..." : "Dry run"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void runFollowupJob(false)}
+            disabled={runningJob}
+          >
+            {runningJob ? "Running..." : "Run real send"}
+          </button>
         </div>
+      </section>
 
+      <section className="panel stack">
+        <h2>Envoyer un email manuel</h2>
         <form className="stack" onSubmit={handleSend}>
           <div className="row">
             <label className="col-4 stack">
@@ -201,6 +286,60 @@ export default function EmailsPage() {
       </section>
 
       <section className="panel stack">
+        <h2>Envoyer un email test</h2>
+        <form className="stack" onSubmit={handleSendTest}>
+          <div className="row">
+            <label className="col-4 stack">
+              Template
+              <select
+                value={testForm.template_id}
+                onChange={(event) =>
+                  setTestForm((prev) => ({ ...prev, template_id: event.target.value }))
+                }
+                required
+              >
+                <option value="">Select template</option>
+                {templates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} ({template.event_type})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="col-4 stack">
+              Contact
+              <select
+                value={testForm.contact_id}
+                onChange={(event) =>
+                  setTestForm((prev) => ({ ...prev, contact_id: event.target.value }))
+                }
+                required
+              >
+                <option value="">Select contact</option>
+                {contacts.map((contact) => (
+                  <option key={contact.id} value={contact.id}>
+                    {contact.first_name} {contact.last_name} ({contact.email ?? "no-email"})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="col-4 stack">
+              Subject override (optional)
+              <input
+                value={testForm.subject}
+                onChange={(event) =>
+                  setTestForm((prev) => ({ ...prev, subject: event.target.value }))
+                }
+              />
+            </label>
+          </div>
+          <button className="btn btn-primary" type="submit" disabled={sendingTest}>
+            {sendingTest ? "Sending..." : "Send test email"}
+          </button>
+        </form>
+      </section>
+
+      <section className="panel stack">
         <h2>Email logs</h2>
         <table>
           <thead>
@@ -208,6 +347,7 @@ export default function EmailsPage() {
               <th>Recipient</th>
               <th>Subject</th>
               <th>Status</th>
+              <th>Provider ID</th>
               <th>Created</th>
               <th>Error</th>
             </tr>
@@ -218,6 +358,7 @@ export default function EmailsPage() {
                 <td>{log.recipient_email}</td>
                 <td>{log.subject}</td>
                 <td>{log.status}</td>
+                <td>{log.provider_message_id ?? "-"}</td>
                 <td>{new Date(log.created_at).toLocaleString()}</td>
                 <td>{log.error_message ?? "-"}</td>
               </tr>

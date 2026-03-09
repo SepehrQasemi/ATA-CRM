@@ -4,12 +4,20 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const ownershipFilter = (userId: string) => `owner_id.eq.${userId},assigned_to.eq.${userId}`;
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
   const user = auth.user!;
   const role = await getUserRole(user.id);
   const isAdmin = role === "admin";
+  const url = new URL(request.url);
+  const stageId = url.searchParams.get("stage_id");
+  const status = url.searchParams.get("status");
+  const assignedTo = url.searchParams.get("assigned_to");
+  const source = url.searchParams.get("source");
+  const queryText = url.searchParams.get("q");
+  const from = url.searchParams.get("from");
+  const to = url.searchParams.get("to");
 
   const query = supabaseAdmin
     .from("leads")
@@ -19,6 +27,17 @@ export async function GET() {
     .order("created_at", { ascending: false });
 
   if (!isAdmin) query.or(ownershipFilter(user.id));
+  if (stageId) query.eq("current_stage_id", stageId);
+  if (status) query.eq("status", status);
+  if (assignedTo) query.eq("assigned_to", assignedTo);
+  if (source) query.ilike("source", `%${source}%`);
+  if (queryText) query.ilike("title", `%${queryText}%`);
+
+  const fromValue = from ? Number(from) : NaN;
+  if (!Number.isNaN(fromValue)) query.gte("estimated_value", fromValue);
+
+  const toValue = to ? Number(to) : NaN;
+  if (!Number.isNaN(toValue)) query.lte("estimated_value", toValue);
 
   const [{ data: leads, error }, { data: stages }, { data: contacts }, { data: companies }] =
     await Promise.all([

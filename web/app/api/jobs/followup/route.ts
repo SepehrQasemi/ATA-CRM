@@ -1,4 +1,4 @@
-import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
+﻿import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { env } from "@/lib/env";
 import { fail, ok } from "@/lib/http";
@@ -16,9 +16,16 @@ async function canRunJob(request: Request) {
   return role === "admin" || role === "commercial";
 }
 
+function buildExecutionKey(leadId: string, pivotDate: string) {
+  return `followup:${leadId}:${pivotDate}`;
+}
+
 export async function POST(request: Request) {
   const allowed = await canRunJob(request);
   if (!allowed) return fail("Unauthorized to run followup job", 401);
+
+  const requestUrl = new URL(request.url);
+  const dryRun = requestUrl.searchParams.get("dry_run") === "true";
 
   const { data: stage } = await supabaseAdmin
     .from("pipeline_stages")
@@ -31,14 +38,16 @@ export async function POST(request: Request) {
   const threshold = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
   const { data: leads, error: leadsError } = await supabaseAdmin
     .from("leads")
-    .select("id,title,contact_id")
+    .select("id,title,contact_id,updated_at,created_at")
     .eq("current_stage_id", stage.id)
     .eq("status", "open")
     .lt("updated_at", threshold)
     .limit(200);
 
   if (leadsError) return fail("Failed to load leads for followup", 500, leadsError.message);
-  if (!leads || leads.length === 0) return ok({ processed: 0, sent: 0, failed: 0 });
+  if (!leads || leads.length === 0) {
+    return ok({ dryRun, processed: 0, eligible: 0, sent: 0, failed: 0, skippedDuplicate: 0 });
+  }
 
   const { data: template } = await supabaseAdmin
     .from("email_templates")
@@ -52,8 +61,16 @@ export async function POST(request: Request) {
     template?.body ??
     "Bonjour {{name}},\n\nNous revenons vers vous concernant votre devis.\n\nCordialement.";
 
+  let eligible = 0;
   let sent = 0;
   let failed = 0;
+  let skippedDuplicate = 0;
+  const previews: Array<{
+    leadId: string;
+    leadTitle: string;
+    contactEmail: string;
+    subject: string;
+  }> = [];
 
   for (const lead of leads) {
     if (!lead.contact_id) {
@@ -72,8 +89,42 @@ export async function POST(request: Request) {
       continue;
     }
 
+    eligible += 1;
+
     const name = `${contact.first_name} ${contact.last_name}`.trim() || "Client";
     const body = bodyTpl.replaceAll("{{name}}", name);
+
+    if (dryRun) {
+      previews.push({
+        leadId: lead.id,
+        leadTitle: lead.title,
+        contactEmail: contact.email,
+        subject,
+      });
+      continue;
+    }
+
+    const lockKey = buildExecutionKey(lead.id, lead.updated_at ?? lead.created_at);
+    const { error: lockError } = await supabaseAdmin.from("automation_execution_locks").insert({
+      job_name: "followup_72h",
+      lock_key: lockKey,
+      lead_id: lead.id,
+      window_start: lead.updated_at,
+      metadata: {
+        stage: stage.name,
+        contact_id: contact.id,
+      },
+    });
+
+    if (lockError) {
+      if (lockError.code === "23505") {
+        skippedDuplicate += 1;
+        continue;
+      }
+      failed += 1;
+      continue;
+    }
+
     const send = await sendBrevoEmail({
       toEmail: contact.email,
       toName: name,
@@ -100,8 +151,12 @@ export async function POST(request: Request) {
   }
 
   return ok({
+    dryRun,
     processed: leads.length,
+    eligible,
     sent,
     failed,
+    skippedDuplicate,
+    previews: previews.slice(0, 25),
   });
 }

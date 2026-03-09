@@ -44,6 +44,7 @@ export type Lead = {
   notes: string | null;
   last_activity_at: string | null;
   created_at: string;
+  updated_at?: string;
 };
 
 export type Task = {
@@ -55,6 +56,9 @@ export type Task = {
   status: "todo" | "in_progress" | "done";
   assigned_to: string | null;
   lead_id: string | null;
+  company_id?: string | null;
+  contact_id?: string | null;
+  owner_id?: string | null;
   created_at: string;
 };
 
@@ -65,5 +69,6 @@ export type EmailLog = {
   status: "pending" | "sent" | "failed";
   created_at: string;
   sent_at: string | null;
+  provider_message_id?: string | null;
   error_message: string | null;
 };

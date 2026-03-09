@@ -1,77 +1,27 @@
-# Rapport Projet CRM (Version FR)
+﻿# Rapport Projet CRM (FR)
 
 ## 1. Contexte et besoin
-L entreprise cible est une societe de negoce en matieres premieres alimentaires.  
-Le besoin principal est de centraliser les prospects, structurer le cycle de vente, automatiser les relances et visualiser les KPIs commerciaux.
+Le projet cible une societe de negoce en matieres premieres alimentaires.
+Le besoin metier est de centraliser la relation client, standardiser le cycle de vente et piloter les performances commerciales avec des KPI fiables.
 
-## 2. Objectifs
-- Construire un CRM web full SaaS (sans serveur a gerer)
-- Organiser le suivi lead -> client
-- Automatiser les emails de bienvenue et de relance 72h
-- Fournir un dashboard KPI pour les decisions commerciales
+## 2. Exigences fonctionnelles
+- Gestion des contacts et entreprises
+- Gestion des leads avec pipeline commercial
+- Gestion des taches commerciales
+- Suivi email (manuel + relance automatique 72h)
+- Dashboard KPI pour la prise de decision
+- Securite par roles et isolation des donnees
 
-## 3. Choix techniques
-- Frontend/API: Next.js 16
-- Base relationnelle + Auth + RLS: Supabase PostgreSQL
-- Emailing: Brevo API
-- Deployment: Vercel
-- Versioning: GitHub
+## 3. Use cases principaux
+- Un commercial cree un lead, l assigne, puis le fait progresser dans le pipeline
+- Un manager suit la conversion, la valeur pipeline et les retards de taches
+- Le systeme lance une relance automatique sur les leads bloques a 72h
+- L equipe envoie un email test avant campagne reale
 
-## 4. Modules implementes
-### 4.1 Utilisateurs & roles
-- Authentification: login, signup, reset password
-- Roles: admin, commercial, standard_user
-- RLS active sur les tables metier
+Le diagramme UML use case est fourni dans `docs/use-case.puml`.
 
-### 4.2 Contacts
-- Creation / consultation / suppression
-- Association a une entreprise
-- Champs: nom, email, telephone, poste, notes
-
-### 4.3 Entreprises
-- Gestion des partenaires et clients B2B
-- Champs: secteur, ville, pays, site web, notes
-
-### 4.4 Leads
-- CRUD leads avec valeur estimee
-- Assignation a un commercial
-- Liaison contact/entreprise
-
-### 4.5 Pipeline & funnel
-Pipeline metier retenu:
-1. Nouveau lead
-2. Qualification
-3. Echantillon envoye
-4. Devis envoye
-5. Negociation
-6. Gagne
-7. Perdu
-
-- Visualisation en board par etapes
-- Changement d etape avec historique (`lead_stage_history`)
-
-### 4.6 Taches
-- Creation des rappels/appels/rendez-vous
-- Priorites, echeance, statut
-- Suivi des retards (overdue)
-
-### 4.7 Emails & automatisation
-- Envoi manuel d emails via API
-- Template "welcome" a l arrivee d un lead
-- Job "followup" automatique a 72h si lead bloque en "Devis envoye"
-- Journal complet des envois et erreurs (`email_logs`)
-
-### 4.8 Dashboard analytique
-- Nombre total de leads
-- Leads gagnes/perdus
-- Taux de conversion
-- Valeur pipeline
-- Taches en retard
-- Volume d emails envoyes
-- Pipeline par etape + mini leaderboard commerciaux
-
-## 5. Modele de donnees (resume)
-Tables principales:
+## 4. Modele de donnees (MCD/Merise)
+Entites principales:
 - `profiles`
 - `companies`
 - `contacts`
@@ -81,47 +31,134 @@ Tables principales:
 - `tasks`
 - `email_templates`
 - `email_logs`
+- `automation_execution_locks` (idempotence follow-up)
 
-Contraintes:
-- cles etrangeres sur les entites metier
-- checks sur role/status/priority
-- indexes sur les champs de recherche et de suivi
+Le schema MCD est fourni dans `docs/mcd.mmd`.
 
-## 6. API REST
+## 5. Architecture technique
+- Frontend et API: Next.js 16
+- Data + auth + RLS: Supabase PostgreSQL
+- Email provider: Brevo API
+- Hebergement: Vercel
+- Versioning et CI: GitHub + GitHub Actions
+
+Le schema d architecture est fourni dans `docs/architecture.mmd`.
+
+## 6. Modules implementes
+### 6.1 Authentification et roles
+- Login / signup / reset password
+- Roles: `admin`, `commercial`, `standard_user`
+- Premier compte inscrit auto-promu `admin`
+
+### 6.2 CRUD metier complet
+- `contacts`: create/read/update/delete + filtres q/company
+- `companies`: create/read/update/delete + filtres q/sector
+- `leads`: create/read/update/delete + pipeline stage move + quick move
+- `tasks`: create/read/update/delete + statuts/priorites/echeances
+
+### 6.3 Pipeline et funnel
+Pipeline metier:
+1. Nouveau lead
+2. Qualification
+3. Echantillon envoye
+4. Devis envoye
+5. Negociation
+6. Gagne
+7. Perdu
+
+Fonctions:
+- compteur par etape
+- valeur totale par etape
+- historique de changement de stage
+- funnel avec chaines de conversion et taux inter-etapes
+
+### 6.4 Dashboard KPI
+KPI principaux:
+- total leads
+- won / lost
+- conversion rate
+- pipeline value
+- overdue tasks
+- sent emails
+
+KPI complementaires:
+- leads by source
+- sales by commercial (sur leads won)
+- stage aging (moyenne jours dans etape)
+- range selector: `7d`, `30d`, `90d`
+
+### 6.5 Email automation robuste
+- envoi manuel avec templates
+- envoi test (template + contact)
+- job follow-up 72h
+- mode `dry_run` pour demo
+- journal detaille (status, error, provider_message_id)
+- verrou idempotent DB pour bloquer les doubles envois
+
+## 7. API REST
 Routes principales:
 - `/api/contacts`
 - `/api/companies`
 - `/api/leads`
+- `/api/leads/:id`
 - `/api/leads/:id/stage`
 - `/api/tasks`
-- `/api/dashboard`
+- `/api/tasks/:id`
+- `/api/dashboard?range=7d|30d|90d`
 - `/api/emails/send`
 - `/api/emails/logs`
-- `/api/jobs/followup`
+- `/api/jobs/followup?dry_run=true`
 
-## 7. Securite
-- Auth Supabase avec session JWT
-- RLS active sur les tables
-- Filtrage proprietaire/assignee pour les non-admins
-- Service role uniquement cote serveur
+Filtres exposes:
+- leads: `stage_id`, `status`, `assigned_to`, `source`, `q`, `from`, `to`
+- tasks: `status`, `priority`, `overdue`, `from`, `to`, `q`
+- contacts: `q`, `company_id`
+- companies: `q`, `sector`
 
-## 8. Tests de validation
-- Build TypeScript: OK
-- Lint: OK
-- Migrations poussees sur Supabase: OK
-- Parcours de demonstration prepare:
-  - Creation entreprise + contact
-  - Creation lead
-  - Deplacement pipeline
-  - Creation tache
-  - Envoi email + log
-  - Lecture dashboard
+## 8. Securite
+- Auth Supabase (JWT session)
+- RLS active sur les tables metier
+- Filtrage owner/assigned pour utilisateurs non-admin
+- Cle service role uniquement cote serveur
+- Job follow-up protege par role ou secret cron
 
-## 9. Limites actuelles et pistes
-- Edition inline avancee des entites (v2)
-- Notifications temps reel (v2)
-- Exports PDF/CSV (v2)
-- Docker dev env (bonus)
+## 9. Qualite, tests et CI/CD
+Validation technique:
+- `npm run lint` : OK
+- `npm run build` : OK
+- migrations Supabase appliquees
 
-## 10. Conclusion
-Le projet livre un CRM full SaaS coherent avec l enonce, techniquement deployable et pedagogiquement aligné avec les objectifs MIAGE/Communication Digitale.
+CI:
+- GitHub Actions `lint + build` sur push/PR
+
+Demo reproductible:
+- script `npm run seed:demo` (idempotent, < 2 minutes)
+
+## 10. Plan de soutenance (8-10 min)
+Scenario recommande:
+1. login
+2. creation company + contact
+3. creation lead
+4. progression pipeline (quick move + stage select)
+5. creation task et statut
+6. envoi email test
+7. run follow-up dry-run puis execution reelle
+8. lecture dashboard (KPI + funnel + leaderboard)
+
+Checklist complete dans `docs/checklist-demo.md`.
+
+## 11. Limitations & Next iteration
+Limitations actuelles:
+- pas encore d export PDF/CSV natif
+- pas de notifications temps reel
+- pas de suite E2E automatisee
+
+Next iteration:
+- module reporting exportable
+- notifications in-app/email
+- tests E2E Playwright
+- containerisation Docker (bonus apres exigences principales)
+
+## 12. Conclusion
+Le projet couvre les criteres fonctionnels majeurs d un CRM pedagogique MIAGE: collecte, qualification, conversion, suivi, automatisation et pilotage KPI.
+La solution est deployable, demonstrable en soutenance et maintenable avec CI.

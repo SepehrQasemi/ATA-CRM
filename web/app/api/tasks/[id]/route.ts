@@ -45,6 +45,11 @@ export async function PATCH(
     status: statusValue,
     assigned_to:
       body.assigned_to === null ? null : body.assigned_to ? String(body.assigned_to) : undefined,
+    lead_id: body.lead_id === null ? null : body.lead_id ? String(body.lead_id) : undefined,
+    company_id:
+      body.company_id === null ? null : body.company_id ? String(body.company_id) : undefined,
+    contact_id:
+      body.contact_id === null ? null : body.contact_id ? String(body.contact_id) : undefined,
     completed_at: statusValue === "done" ? new Date().toISOString() : undefined,
   };
 

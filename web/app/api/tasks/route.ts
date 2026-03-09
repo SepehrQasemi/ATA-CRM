@@ -4,12 +4,19 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const ownershipFilter = (userId: string) => `owner_id.eq.${userId},assigned_to.eq.${userId}`;
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
   const user = auth.user!;
   const role = await getUserRole(user.id);
   const isAdmin = role === "admin";
+  const url = new URL(request.url);
+  const status = url.searchParams.get("status");
+  const priority = url.searchParams.get("priority");
+  const overdue = url.searchParams.get("overdue");
+  const from = url.searchParams.get("from");
+  const to = url.searchParams.get("to");
+  const queryText = url.searchParams.get("q");
 
   const query = supabaseAdmin
     .from("tasks")
@@ -19,6 +26,30 @@ export async function GET() {
     .order("due_date", { ascending: true, nullsFirst: false });
 
   if (!isAdmin) query.or(ownershipFilter(user.id));
+  if (status) query.eq("status", status);
+  if (priority) query.eq("priority", priority);
+  if (queryText) query.ilike("title", `%${queryText}%`);
+
+  if (from) {
+    const fromDate = new Date(from);
+    if (!Number.isNaN(fromDate.getTime())) {
+      query.gte("due_date", fromDate.toISOString());
+    }
+  }
+
+  if (to) {
+    const toDate = new Date(to);
+    if (!Number.isNaN(toDate.getTime())) {
+      query.lte("due_date", toDate.toISOString());
+    }
+  }
+
+  if (overdue === "true") {
+    query
+      .not("due_date", "is", "null")
+      .lt("due_date", new Date().toISOString())
+      .neq("status", "done");
+  }
 
   const { data, error } = await query;
   if (error) return fail("Failed to load tasks", 500, error.message);
