@@ -65,7 +65,7 @@ export default function LoginPage() {
     <div className="auth-wrap">
       <div className="auth-card stack">
         <h1>CRM Food Trading</h1>
-        <p>Connectez-vous pour gerer vos leads, contacts et campagnes email.</p>
+        <p>Sign in to manage your leads, contacts, and email campaigns.</p>
 
         <div className="row">
           <button

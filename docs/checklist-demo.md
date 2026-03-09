@@ -1,47 +1,47 @@
-# Checklist Demo (Avant / Pendant / Fallback)
+# Demo Checklist (Before / During / Fallback)
 
-## Avant la soutenance (T-30 min)
-- Verifier `npm run lint` et `npm run build`
-- Verifier que le projet Supabase est accessible
-- Lancer `npm run seed:demo` pour charger les donnees de demo
-- Verifier que les templates email sont actifs
-- Ouvrir les onglets:
+## Before Presentation (T-30 min)
+- Verify `npm run lint` and `npm run build`
+- Verify Supabase project access
+- Run `npm run seed:demo` to load demo data
+- Verify email templates are active
+- Open tabs:
   - Login
   - Dashboard
   - Leads
   - Tasks
   - Emails
-- Preparer les liens:
-  - Repo GitHub
-  - Demo Vercel
-  - Rapport FR
+- Prepare links:
+  - GitHub repo
+  - Vercel demo
+  - Main report
 
-## Pendant la soutenance (8-10 min)
-1. Login et contexte metier
-2. Creation company + contact
-3. Creation lead et assignment
-4. Changement de stage (select + quick move)
-5. Creation task et mise a jour du status
-6. Email test (template + contact)
-7. Follow-up dry-run puis run reel
-8. Dashboard: KPI + funnel + leaderboard + stage aging
-9. Conclusion: limites et next iteration
+## During Presentation (8-10 min)
+1. Login and business context
+2. Create company + contact
+3. Create lead and assign owner
+4. Move lead stage (select + quick move)
+5. Create task and update status
+6. Send test email (template + contact)
+7. Run follow-up in dry-run, then real run
+8. Show dashboard: KPI + funnel + leaderboard + stage aging
+9. Conclusion: limitations and next iteration
 
-## Fallback technique
-- Si Brevo indisponible:
-  - Montrer `dry_run` du job follow-up
-  - Montrer les logs `failed` et la gestion d erreur
-- Si Vercel indisponible:
-  - Lancer en local (`npm run dev`)
-  - Montrer la meme demo sur `localhost`
-- Si donnees incoherentes:
-  - Relancer `npm run seed:demo`
-- Si compte bloque:
-  - Utiliser un compte admin de secours
+## Technical Fallback
+- If Brevo is unavailable:
+  - Show follow-up `dry_run`
+  - Show `failed` logs and error handling
+- If Vercel is unavailable:
+  - Run locally (`npm run dev`)
+  - Present the same flow on `localhost`
+- If data is inconsistent:
+  - Rerun `npm run seed:demo`
+- If account is blocked:
+  - Use a backup admin account
 
-## Points d evaluation a verbaliser
-- Couverture fonctionnelle des exigences
-- Securite (roles + RLS)
-- Fiabilite automation (idempotence)
-- Qualite livrable (CI, seed demo, docs)
-- Vision d amelioration (next iteration)
+## Evaluation Points To Mention
+- Functional coverage of requirements
+- Security (roles + RLS)
+- Automation reliability (idempotency)
+- Delivery quality (CI, demo seed, docs)
+- Improvement roadmap (next iteration)

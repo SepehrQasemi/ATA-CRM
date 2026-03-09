@@ -1,5 +1,6 @@
-﻿import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
+import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
 import { ok, fail } from "@/lib/http";
+import { normalizeStageName } from "@/lib/pipeline-stage-labels";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 type RangeKey = "7d" | "30d" | "90d";
@@ -161,7 +162,7 @@ export async function GET(request: Request) {
   const orderedStages = stages ?? [];
   const stageMetrics = orderedStages.map((stage) => ({
     stageId: stage.id,
-    stageName: stage.name,
+    stageName: normalizeStageName(stage.name),
     count: stageCounts[stage.id] ?? 0,
     value: stageValues[stage.id] ?? 0,
   }));
@@ -180,9 +181,9 @@ export async function GET(request: Request) {
 
     return {
       fromStageId: stage.id,
-      fromStageName: stage.name,
+      fromStageName: normalizeStageName(stage.name),
       toStageId: nextStage.id,
-      toStageName: nextStage.name,
+      toStageName: normalizeStageName(nextStage.name),
       rate,
     };
   });
@@ -208,7 +209,7 @@ export async function GET(request: Request) {
     .map(([userId, amount]) => ({
       userId,
       amount,
-      name: profiles?.find((profile) => profile.id === userId)?.full_name ?? "Commercial",
+      name: profiles?.find((profile) => profile.id === userId)?.full_name ?? "Sales Rep",
     }))
     .sort((a, b) => b.amount - a.amount);
 
@@ -250,14 +251,14 @@ export async function GET(request: Request) {
       if (!bucket || bucket.count === 0) {
         return {
           stageId: stage.id,
-          stageName: stage.name,
+          stageName: normalizeStageName(stage.name),
           avgDays: 0,
         };
       }
 
       return {
         stageId: stage.id,
-        stageName: stage.name,
+        stageName: normalizeStageName(stage.name),
         avgDays: Number((bucket.totalDays / bucket.count).toFixed(2)),
       };
     })

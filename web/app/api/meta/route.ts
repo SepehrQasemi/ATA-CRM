@@ -1,5 +1,6 @@
 import { requireAuthenticatedUser } from "@/lib/auth";
 import { fail, ok } from "@/lib/http";
+import { normalizeStageRows } from "@/lib/pipeline-stage-labels";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function GET() {
@@ -27,7 +28,7 @@ export async function GET() {
 
   return ok({
     profiles: profilesRes.data ?? [],
-    stages: stagesRes.data ?? [],
+    stages: stagesRes.data ? normalizeStageRows(stagesRes.data) : [],
     templates: templatesRes.data ?? [],
   });
 }

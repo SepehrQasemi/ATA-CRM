@@ -156,10 +156,29 @@ async function main() {
     .select("id,name");
   if (stagesError) throw new Error(`Failed to load stages: ${stagesError.message}`);
 
+  const stageAliases = {
+    "New Lead": ["New Lead", "Nouveau lead"],
+    Qualification: ["Qualification"],
+    "Sample Sent": ["Sample Sent", "Echantillon envoye"],
+    "Quote Sent": ["Quote Sent", "Devis envoye"],
+    Negotiation: ["Negotiation", "Negociation"],
+    Won: ["Won", "Gagne"],
+    Lost: ["Lost", "Perdu"],
+  };
+
   const stageByName = new Map((stages ?? []).map((stage) => [stage.name, stage.id]));
-  const requiredStages = ["Qualification", "Devis envoye", "Negociation", "Gagne", "Perdu"];
+  function getStageId(canonicalName) {
+    const aliases = stageAliases[canonicalName] ?? [canonicalName];
+    for (const alias of aliases) {
+      const stageId = stageByName.get(alias);
+      if (stageId) return stageId;
+    }
+    return null;
+  }
+
+  const requiredStages = ["Qualification", "Quote Sent", "Negotiation", "Won", "Lost"];
   for (const stageName of requiredStages) {
-    if (!stageByName.has(stageName)) {
+    if (!getStageId(stageName)) {
       throw new Error(`Missing pipeline stage: ${stageName}`);
     }
   }
@@ -170,7 +189,7 @@ async function main() {
     city: "Lyon",
     country: "France",
     website: "https://example.com/biotrade",
-    notes: "[DEMO] Importateur de cacao et poudre de lait",
+    notes: "[DEMO] Importer of cocoa and milk powder",
     owner_id: ownerId,
   });
 
@@ -180,7 +199,7 @@ async function main() {
     city: "Lille",
     country: "France",
     website: "https://example.com/agronord",
-    notes: "[DEMO] Distribution B2B de matieres premieres",
+    notes: "[DEMO] B2B distribution of raw food ingredients",
     owner_id: ownerId,
   });
 
@@ -190,7 +209,7 @@ async function main() {
     city: "Marseille",
     country: "France",
     website: "https://example.com/spicehub",
-    notes: "[DEMO] Melanges et epices pour industrie alimentaire",
+    notes: "[DEMO] Spice blends for the food industry",
     owner_id: ownerId,
   });
 
@@ -199,8 +218,8 @@ async function main() {
     last_name: "Belaid",
     email: "demo.amine@crm-food-trading.local",
     phone: "+33 6 11 22 33 44",
-    job_title: "Acheteur Senior",
-    notes: "[DEMO] Contact prioritaire",
+    job_title: "Senior Buyer",
+    notes: "[DEMO] Priority contact",
     company_id: companyA,
     owner_id: ownerId,
   });
@@ -222,7 +241,7 @@ async function main() {
     email: "demo.karim@crm-food-trading.local",
     phone: "+33 6 33 44 55 66",
     job_title: "Purchasing Director",
-    notes: "[DEMO] Bon potentiel de conversion",
+    notes: "[DEMO] Strong conversion potential",
     company_id: companyC,
     owner_id: ownerId,
   });
@@ -235,57 +254,57 @@ async function main() {
     company_id: companyA,
     contact_id: contactA,
     assigned_to: ownerId,
-    current_stage_id: stageByName.get("Qualification"),
+    current_stage_id: getStageId("Qualification"),
     last_activity_at: new Date().toISOString(),
     owner_id: ownerId,
-    notes: "[DEMO] Qualification en cours",
+    notes: "[DEMO] Qualification in progress",
   });
 
   const leadB = await ensureLead({
-    title: "[DEMO] Poudre de lait instant - appel d'offres",
+    title: "[DEMO] Instant milk powder - tender request",
     source: "Referral",
     status: "open",
     estimated_value: 67000,
     company_id: companyB,
     contact_id: contactB,
     assigned_to: ownerId,
-    current_stage_id: stageByName.get("Devis envoye"),
+    current_stage_id: getStageId("Quote Sent"),
     last_activity_at: new Date(Date.now() - 80 * 60 * 60 * 1000).toISOString(),
     owner_id: ownerId,
-    notes: "[DEMO] Pret pour scenario follow-up 72h",
+    notes: "[DEMO] Ready for 72h follow-up scenario",
   });
 
   const leadC = await ensureLead({
-    title: "[DEMO] Mix epices sauces industrielles",
-    source: "Salon SIAL",
+    title: "[DEMO] Spice mix for industrial sauces",
+    source: "SIAL Expo",
     status: "won",
     estimated_value: 53000,
     company_id: companyC,
     contact_id: contactC,
     assigned_to: ownerId,
-    current_stage_id: stageByName.get("Gagne"),
+    current_stage_id: getStageId("Won"),
     last_activity_at: new Date().toISOString(),
     owner_id: ownerId,
-    notes: "[DEMO] Contrat signe",
+    notes: "[DEMO] Contract signed",
   });
 
   await ensureLead({
-    title: "[DEMO] Additif conservation naturel",
+    title: "[DEMO] Natural preservation additive",
     source: "Website",
     status: "lost",
     estimated_value: 19000,
     company_id: companyA,
     contact_id: contactA,
     assigned_to: ownerId,
-    current_stage_id: stageByName.get("Perdu"),
+    current_stage_id: getStageId("Lost"),
     last_activity_at: new Date().toISOString(),
     owner_id: ownerId,
-    notes: "[DEMO] Dossier perdu sur le prix",
+    notes: "[DEMO] Opportunity lost on pricing",
   });
 
   await ensureTask({
-    title: "[DEMO] Relancer devis cacao premium",
-    description: "Appel client pour valider les conditions de paiement",
+    title: "[DEMO] Follow up on premium cocoa quote",
+    description: "Call client to confirm payment terms",
     due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     priority: "high",
     status: "todo",
@@ -297,8 +316,8 @@ async function main() {
   });
 
   await ensureTask({
-    title: "[DEMO] Verification logistique poudre de lait",
-    description: "Confirmer le delai transport et incoterms",
+    title: "[DEMO] Verify milk powder logistics",
+    description: "Confirm transport lead time and Incoterms",
     due_date: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
     priority: "urgent",
     status: "in_progress",
@@ -310,8 +329,8 @@ async function main() {
   });
 
   await ensureTask({
-    title: "[DEMO] Preparer onboarding client SpiceHub",
-    description: "Checklist documents commerciaux",
+    title: "[DEMO] Prepare SpiceHub customer onboarding",
+    description: "Commercial documents checklist",
     due_date: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
     priority: "normal",
     status: "todo",

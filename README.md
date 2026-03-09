@@ -1,23 +1,23 @@
-﻿# CRM Food Trading
+# CRM Food Trading
 
-Projet CRM SaaS pour une entreprise de negoce en matieres premieres alimentaires.
+SaaS CRM project for a B2B company trading raw food ingredients.
 
 ## Structure
-- `supabase/`: migrations SQL et schema
-- `web/`: application Next.js (frontend + API routes)
-- `docs/`: rapport, diagrammes et checklist demo
-- `.github/workflows/ci.yml`: pipeline lint + build
+- `supabase/`: SQL migrations and schema assets
+- `web/`: Next.js application (frontend + API routes)
+- `docs/`: reports, diagrams, and demo checklist
+- `.github/workflows/ci.yml`: lint + build pipeline
 
-## Fonctionnalites principales
-- Authentification (login, signup, reset) + roles (`admin`, `commercial`, `standard_user`)
-- CRUD complet avec edition pour `contacts`, `companies`, `leads`, `tasks`
-- Pipeline de vente avec changement de stage, quick move et historique
-- Filtres multi-criteres sur leads/tasks/contacts/companies
-- Dashboard KPI 7/30/90 jours + funnel + leaderboard + stage aging
-- Email manuel + email test + logs + follow-up 72h
-- Job follow-up idempotent avec verrou DB + mode `dry_run`
+## Main Features
+- Authentication (login, signup, reset) + roles (`admin`, `commercial`, `standard_user`)
+- Full CRUD with edit support for `contacts`, `companies`, `leads`, `tasks`
+- Sales pipeline with stage change, quick move, and history
+- Multi-criteria filters on leads/tasks/contacts/companies
+- KPI dashboard (7/30/90 days) + funnel + leaderboard + stage aging
+- Manual email + test email + logs + 72h follow-up
+- Idempotent follow-up job with DB lock + `dry_run` mode
 
-## APIs principales
+## Main APIs
 - `GET/POST /api/contacts`
 - `PATCH/DELETE /api/contacts/:id`
 - `GET/POST /api/companies`
@@ -32,57 +32,59 @@ Projet CRM SaaS pour une entreprise de negoce en matieres premieres alimentaires
 - `GET /api/emails/logs`
 - `POST /api/jobs/followup?dry_run=true`
 
-## Query params utiles
+## Useful Query Params
 - `GET /api/leads`: `stage_id`, `status`, `assigned_to`, `source`, `q`, `from`, `to`
 - `GET /api/tasks`: `status`, `priority`, `overdue`, `from`, `to`, `q`
 - `GET /api/contacts`: `q`, `company_id`
 - `GET /api/companies`: `q`, `sector`
 
-## Setup local
-1. Copier les secrets dans `web/.env.local`
-   - source conseillee: `C:\dev\crm-secrets.env`
-2. Installer deps:
+## Local Setup
+1. Copy secrets into `web/.env.local`
+   - Recommended source: `C:\dev\crm-secrets.env`
+2. Install dependencies:
 ```bash
 cd C:\dev\crm-food-trading
 npm ci
 ```
-3. Appliquer les migrations Supabase (projet deja link):
+3. Apply Supabase migrations (linked project):
 ```bash
 npx -y supabase@latest db push
 ```
-4. Lancer l'app:
+4. Run the app:
 ```bash
 npm run dev
 ```
 
-## Qualite
+## Quality Checks
 ```bash
 npm run lint
 npm run build
 ```
 
-## Seed demo (moins de 2 minutes)
+## Demo Seed (under 2 minutes)
 ```bash
 npm run seed:demo
 ```
 
-Le seed est idempotent et cree des donnees ` [DEMO] ` pour la soutenance.
+The seed is idempotent and creates `[DEMO]` data for live presentation.
 
-## Deploiement
-- Vercel: root directory = `web`
-- Supabase: projet linke
-- Environnements Vercel recommandes:
-  - `Production`: variables de production reelles
-  - `Preview`: variables de test isolatees
-  - `Development`: variables locales de dev
+## Deployment
+- Vercel root directory: `web`
+- Supabase: linked project
+- Recommended Vercel environments:
+  - `Production`: real production secrets
+  - `Preview`: isolated testing secrets
+  - `Development`: local developer secrets
 
-## Politique de branche (cible)
-- `main` protegee
-- merge uniquement via PR
-- checks CI (`lint + build`) obligatoires avant merge
+## Branch Policy (target)
+- Protected `main`
+- Merge via PR only
+- CI checks (`lint + build`) required before merge
 
-## Livrables docs
-- Rapport FR: `docs/rapport-projet-fr.md`
-- Resume FA: `docs/resume-projet-fa.md`
-- Checklist demo: `docs/checklist-demo.md`
-- Diagrammes: `docs/architecture.mmd`, `docs/mcd.mmd`, `docs/use-case.puml`
+## Documentation
+- Default language: English
+- Additional versions: French and Persian
+- French report: `docs/rapport-projet-fr.md`
+- Persian summary: `docs/resume-projet-fa.md`
+- Demo checklist: `docs/checklist-demo.md`
+- Diagrams: `docs/architecture.mmd`, `docs/mcd.mmd`, `docs/use-case.puml`

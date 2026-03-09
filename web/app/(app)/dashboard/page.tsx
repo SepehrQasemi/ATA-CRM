@@ -64,12 +64,12 @@ export default function DashboardPage() {
     <div className="stack">
       <section className="page-head">
         <h1>Dashboard</h1>
-        <p>KPIs commerciaux, funnel, pipeline et performance de l equipe.</p>
+        <p>Commercial KPIs, funnel, pipeline, and team performance.</p>
       </section>
 
       <section className="panel stack">
         <div className="inline-actions">
-          <strong>Periode KPI:</strong>
+          <strong>KPI period:</strong>
           <button
             className={`btn ${range === "7d" ? "btn-primary" : "btn-secondary"}`}
             type="button"
@@ -129,11 +129,11 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Pipeline par etape (count + value)</h2>
+        <h2>Pipeline by stage (count + value)</h2>
         <table>
           <thead>
             <tr>
-              <th>Etape</th>
+              <th>Stage</th>
               <th>Leads</th>
               <th>Value</th>
             </tr>
@@ -213,12 +213,12 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Leaderboard commerciaux (won leads value)</h2>
+        <h2>Sales leaderboard (won leads value)</h2>
         <table>
           <thead>
             <tr>
-              <th>Commercial</th>
-              <th>Montant</th>
+              <th>Sales Rep</th>
+              <th>Amount</th>
             </tr>
           </thead>
           <tbody>

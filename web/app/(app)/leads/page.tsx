@@ -242,13 +242,13 @@ export default function LeadsPage() {
     <div className="stack">
       <section className="page-head">
         <h1>Leads & Pipeline</h1>
-        <p>Suivi des prospects, du premier contact a la conversion.</p>
+        <p>Track prospects from first contact to conversion.</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <h2>Filtres leads</h2>
+        <h2>Lead filters</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
           <label className="col-3 stack">
             Search
@@ -347,7 +347,7 @@ export default function LeadsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>{editingId ? "Edit lead" : "Nouveau lead"}</h2>
+        <h2>{editingId ? "Edit lead" : "New lead"}</h2>
         <form className="stack" onSubmit={handleSaveLead}>
           <div className="row">
             <label className="col-3 stack">

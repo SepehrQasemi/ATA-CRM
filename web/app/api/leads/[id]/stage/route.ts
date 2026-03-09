@@ -39,9 +39,9 @@ export async function POST(
 
   const normalizedStageName = stage.name.toLowerCase();
   const status =
-    normalizedStageName.includes("gagne")
+    normalizedStageName.includes("won") || normalizedStageName.includes("gagne")
       ? "won"
-      : normalizedStageName.includes("perdu")
+      : normalizedStageName.includes("lost") || normalizedStageName.includes("perdu")
         ? "lost"
         : "open";
 

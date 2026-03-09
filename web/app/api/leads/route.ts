@@ -1,5 +1,6 @@
 import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
 import { fail, ok } from "@/lib/http";
+import { normalizeStageRows } from "@/lib/pipeline-stage-labels";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const ownershipFilter = (userId: string) => `owner_id.eq.${userId},assigned_to.eq.${userId}`;
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
 
   return ok({
     leads: leads ?? [],
-    stages: stages ?? [],
+    stages: stages ? normalizeStageRows(stages) : [],
     contacts: contacts ?? [],
     companies: companies ?? [],
   });

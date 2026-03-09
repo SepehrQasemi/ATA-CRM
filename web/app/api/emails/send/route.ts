@@ -128,7 +128,7 @@ export async function POST(request: Request) {
 
   const bodyText = body.body
     ? String(body.body)
-    : renderTemplate(template?.body ?? "Bonjour {{name}}", recipient.name);
+    : renderTemplate(template?.body ?? "Hello {{name}}", recipient.name);
 
   const subject = isTest ? `[TEST] ${subjectBase}` : subjectBase;
 

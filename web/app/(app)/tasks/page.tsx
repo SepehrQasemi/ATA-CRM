@@ -216,7 +216,7 @@ export default function TasksPage() {
     <div className="stack">
       <section className="page-head">
         <h1>Tasks & Calendar</h1>
-        <p>Planification des appels, rendez-vous et rappels commerciaux.</p>
+        <p>Plan calls, meetings, and sales follow-up reminders.</p>
       </section>
 
       <section className="card-grid">
@@ -233,7 +233,7 @@ export default function TasksPage() {
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <h2>Filtres tasks</h2>
+        <h2>Task filters</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
           <label className="col-3 stack">
             Search
@@ -315,7 +315,7 @@ export default function TasksPage() {
       </section>
 
       <section className="panel stack">
-        <h2>{editingId ? "Edit task" : "Nouvelle tache"}</h2>
+        <h2>{editingId ? "Edit task" : "New task"}</h2>
         <form className="stack" onSubmit={handleSubmit}>
           <div className="row">
             <label className="col-3 stack">
