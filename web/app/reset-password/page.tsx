@@ -24,6 +24,56 @@ export default function ResetPasswordPage() {
 
     async function resolveRecoverySession() {
       setError(null);
+      const currentUrl = new URL(window.location.href);
+      const code = currentUrl.searchParams.get("code");
+      const tokenHash = currentUrl.searchParams.get("token_hash");
+      const otpType = currentUrl.searchParams.get("type");
+      const hashParams = new URLSearchParams(currentUrl.hash.replace(/^#/, ""));
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+
+      // Support all Supabase recovery URL variants:
+      // 1) PKCE code in query
+      // 2) token_hash + type=recovery
+      // 3) implicit hash tokens
+      if (accessToken && refreshToken) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (sessionError) {
+          if (!mounted) return;
+          setHasRecoverySession(false);
+          setReady(true);
+          setError(sessionError.message);
+          return;
+        }
+        window.history.replaceState({}, "", "/reset-password");
+      } else if (code) {
+        const { error: codeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (codeError) {
+          if (!mounted) return;
+          setHasRecoverySession(false);
+          setReady(true);
+          setError(codeError.message);
+          return;
+        }
+        window.history.replaceState({}, "", "/reset-password");
+      } else if (tokenHash && otpType === "recovery") {
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+        if (otpError) {
+          if (!mounted) return;
+          setHasRecoverySession(false);
+          setReady(true);
+          setError(otpError.message);
+          return;
+        }
+        window.history.replaceState({}, "", "/reset-password");
+      }
+
       for (let attempt = 0; attempt < 4; attempt += 1) {
         const { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) {
