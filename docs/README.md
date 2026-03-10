@@ -4,7 +4,7 @@ This folder contains the delivery package for the stable baseline of the CRM pro
 
 ## Core Reports
 - `rapport-projet-fr.md`: full French project report for submission.
-- `resume-projet-fa.md`: Persian executive summary.
+- `resume-projet-fa.md`: Persian executive summary (archived, not active in current UI scope).
 - `final-compliance-checklist.md`: requirement-by-requirement completion matrix.
 - `comparaison-enonce-preuves-fr.md`: professor requirement comparison with concrete evidence.
 - `checklist-demo.md`: operational checklist for the oral demo.
@@ -25,4 +25,5 @@ This folder contains the delivery package for the stable baseline of the CRM pro
 
 ## Language Policy
 - Default language for technical docs: English.
-- Additional delivery docs: French and Persian.
+- Active delivery language: French.
+- Persian notes are archived documentation only for historical traceability.

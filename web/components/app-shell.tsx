@@ -60,7 +60,7 @@ export function AppShell({ children, user }: AppShellProps) {
     <div className="app-shell">
       <button
         type="button"
-        aria-label="Close navigation menu"
+        aria-label={tr("Close navigation menu")}
         className={clsx("sidebar-backdrop", { "is-open": isSidebarOpen })}
         onClick={() => setIsSidebarOpen(false)}
       />
@@ -96,7 +96,7 @@ export function AppShell({ children, user }: AppShellProps) {
             type="button"
             className="btn btn-secondary mobile-menu-btn"
             onClick={() => setIsSidebarOpen((prev) => !prev)}
-            aria-label="Toggle navigation menu"
+            aria-label={tr("Toggle navigation menu")}
           >
             {tr("Menu")}
           </button>

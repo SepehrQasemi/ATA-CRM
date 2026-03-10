@@ -104,7 +104,7 @@ export default function CompanyProfilePage() {
     const json = (await response.json()) as CompanyDetailResponse;
 
     if (!response.ok || !json.company) {
-      setError(json.error ?? "Failed to load company");
+      setError(json.error ?? tr("Failed to load company"));
       setLoading(false);
       return;
     }
@@ -149,14 +149,14 @@ export default function CompanyProfilePage() {
 
     const json = (await response.json()) as { company?: Company; error?: string };
     if (!response.ok || !json.company) {
-      setError(json.error ?? "Failed to update company");
+      setError(json.error ?? tr("Failed to update company"));
       setSaving(false);
       return;
     }
 
     setCompany(json.company);
     syncForm(json.company);
-    setSuccess("Company updated.");
+    setSuccess(tr("Company updated."));
     setSaving(false);
     setEditing(false);
   }
@@ -170,7 +170,7 @@ export default function CompanyProfilePage() {
     const response = await fetch(`/api/companies/${id}`, { method: "DELETE" });
     const json = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) {
-      setError(json.error ?? "Failed to delete company");
+      setError(json.error ?? tr("Failed to delete company"));
       setDeleting(false);
       return;
     }
@@ -253,7 +253,7 @@ export default function CompanyProfilePage() {
                     {agents.map((agent) => (
                       <tr key={agent.id}>
                         <td>{`${agent.first_name} ${agent.last_name}`}</td>
-                        <td>{agent.agent_rank ? `Agent ${agent.agent_rank}` : "-"}</td>
+                        <td>{agent.agent_rank ? tr("Agent {rank}", { rank: agent.agent_rank }) : "-"}</td>
                         <td>{agent.email ?? "-"}</td>
                         <td>{agent.phone ?? "-"}</td>
                         <td>{agent.job_title ?? "-"}</td>

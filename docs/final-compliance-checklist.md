@@ -4,7 +4,9 @@ Date: 2026-03-10
 
 ## Core Requirements
 - Auth module (signup/login/reset/logout): DONE
-- Role model (`admin`, `commercial`, `standard_user`): DONE
+- Reset password end-to-end flow (`email` -> callback -> `/reset-password` update): DONE
+- Reset email provider rate-limit UX handling (cooldown + clear message): DONE
+- Role model (`admin`, `manager`, `commercial`, `standard_user`): DONE
 - CRUD `contacts`: DONE
 - CRUD `companies`: DONE
 - CRUD `leads`: DONE
@@ -32,7 +34,7 @@ Date: 2026-03-10
 - Docker packaging (`Dockerfile`, `docker-compose.yml`): DONE
 - End-to-end Playwright tests: DONE
 - Direct login entry from `/` (no friction for demo): DONE
-- Full EN/FR/FA UI + FA RTL mode: DONE
+- Full EN/FR UI (FA archived in this delivery version): DONE
 - Help Center + FAQ + in-app tips: DONE
 - Global search + saved filters (Leads/Tasks): DONE
 
@@ -41,7 +43,7 @@ Date: 2026-03-10
 - E2E tests: `npm run test:e2e`
 - Demo seed: `npm run seed:demo`
 - FR report: `docs/rapport-projet-fr.md`
-- FA summary: `docs/resume-projet-fa.md`
+- FA summary (archived reference): `docs/resume-projet-fa.md`
 - Demo checklist: `docs/checklist-demo.md`
 - Oral script: `docs/presentation-oral-fr.md`
 - Test game: `docs/jeu-de-test-crm-fr.md`

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useLocale } from "@/components/locale-provider";
 import { AppNotification } from "@/lib/notifications";
 
 type NotificationBellProps = {
@@ -9,6 +10,7 @@ type NotificationBellProps = {
 };
 
 export function NotificationBell({ items }: NotificationBellProps) {
+  const { tr } = useLocale();
   const [open, setOpen] = useState(false);
   const unread = items.length;
 
@@ -18,7 +20,11 @@ export function NotificationBell({ items }: NotificationBellProps) {
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <Link href="/notifications" aria-label="Open notifications page" className="btn btn-secondary bell-trigger">
+      <Link
+        href="/notifications"
+        aria-label={tr("Open notifications page")}
+        className="btn btn-secondary bell-trigger"
+      >
         <span className="bell-glyph" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="18" height="18" focusable="false">
             <path
@@ -42,9 +48,13 @@ export function NotificationBell({ items }: NotificationBellProps) {
       </Link>
 
       {open ? (
-        <section className="notification-preview panel stack" role="dialog" aria-label="Notification preview">
-          <h3>Notifications</h3>
-          {items.length === 0 ? <p className="small">No recent notifications yet.</p> : null}
+        <section
+          className="notification-preview panel stack"
+          role="dialog"
+          aria-label={tr("Notification preview")}
+        >
+          <h3>{tr("Notifications")}</h3>
+          {items.length === 0 ? <p className="small">{tr("No recent notifications yet.")}</p> : null}
           {items.slice(0, 5).map((item) => (
             <article key={item.id} className={`notify-item notify-${item.level}`}>
               <strong>{item.title}</strong>
@@ -52,7 +62,7 @@ export function NotificationBell({ items }: NotificationBellProps) {
             </article>
           ))}
           <Link href="/notifications" className="btn btn-secondary">
-            View all notifications
+            {tr("View all notifications")}
           </Link>
         </section>
       ) : null}

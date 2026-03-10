@@ -94,7 +94,7 @@ export default function CompaniesPage() {
     const json = (await response.json()) as CompaniesResponse;
 
     if (!response.ok) {
-      setError(json.error ?? "Failed to load companies");
+      setError(json.error ?? tr("Failed to load companies"));
       return;
     }
 
@@ -173,7 +173,7 @@ export default function CompaniesPage() {
 
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to save company");
+      setError(json.error ?? tr("Failed to save company"));
       setSaving(false);
       return;
     }
@@ -208,7 +208,7 @@ export default function CompaniesPage() {
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <div className="subtabs" role="tablist" aria-label="Companies workspace tabs">
+        <div className="subtabs" role="tablist" aria-label={tr("Companies workspace tabs")}>
           <button
             className={`subtab ${activeTab === "list" ? "is-active" : ""}`}
             type="button"
@@ -249,7 +249,7 @@ export default function CompaniesPage() {
               <input
                 value={filters.sector}
                 onChange={(event) => setFilters((prev) => ({ ...prev, sector: event.target.value }))}
-                placeholder="Food Ingredients"
+                placeholder={tr("Food Ingredients")}
               />
             </label>
             <label className="col-2 stack">
@@ -388,8 +388,8 @@ export default function CompaniesPage() {
                         ) : (
                           <div className="stack">
                             {(agentsByCompany[company.id] ?? []).slice(0, 3).map((agent) => (
-                              <span key={agent.id} className="small">
-                                {`Agent ${agent.agent_rank ?? "-"}: ${agent.first_name} ${agent.last_name}`}
+                                <span key={agent.id} className="small">
+                                {`${tr("Agent")} ${agent.agent_rank ?? "-"}: ${agent.first_name} ${agent.last_name}`}
                               </span>
                             ))}
                           </div>
@@ -397,8 +397,8 @@ export default function CompaniesPage() {
                       </td>
                       <td>
                         <div className="stack">
-                          <span className="small">{`Traded: ${buckets.traded.length}`}</span>
-                          <span className="small">{`Potential: ${buckets.potential.length}`}</span>
+                          <span className="small">{`${tr("Traded")}: ${buckets.traded.length}`}</span>
+                          <span className="small">{`${tr("Potential")}: ${buckets.potential.length}`}</span>
                         </div>
                       </td>
                       <td>

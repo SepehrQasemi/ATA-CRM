@@ -62,7 +62,7 @@ export default function DashboardPage() {
     const json = (await response.json()) as DashboardResponse;
 
     if (!response.ok) {
-      setError(json.error ?? "Failed to load dashboard");
+      setError(json.error ?? tr("Failed to load dashboard"));
       setLoading(false);
       return;
     }
@@ -73,6 +73,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void loadDashboard(range);
+    // loadDashboard includes locale fallback messages; range remains the refresh trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
 
   async function handleExport(format: "csv" | "pdf") {
@@ -82,7 +84,7 @@ export default function DashboardPage() {
     const response = await fetch(`/api/exports/report?format=${format}&range=${range}`);
     if (!response.ok) {
       const json = (await response.json().catch(() => ({}))) as { error?: string };
-      setError(json.error ?? `Failed to export ${format.toUpperCase()}`);
+      setError(json.error ?? tr("Failed to export {format}", { format: format.toUpperCase() }));
       setExporting(null);
       return;
     }
@@ -204,10 +206,10 @@ export default function DashboardPage() {
         <table>
           <thead>
             <tr>
-              <th>Alert</th>
-              <th>Task</th>
-              <th>Priority</th>
-              <th>Due date</th>
+              <th>{tr("Alert")}</th>
+              <th>{tr("Task")}</th>
+              <th>{tr("Priority")}</th>
+              <th>{tr("Due date")}</th>
             </tr>
           </thead>
           <tbody>
@@ -220,7 +222,7 @@ export default function DashboardPage() {
                 <tr key={alert.taskId}>
                   <td>{alert.kind === "overdue" ? tr("Overdue") : tr("Due soon")}</td>
                   <td>{alert.title}</td>
-                  <td>{alert.priority}</td>
+                  <td>{tr(alert.priority === "low" ? "Low" : alert.priority === "high" ? "High" : alert.priority === "urgent" ? "Urgent" : "Normal")}</td>
                   <td>{new Date(alert.dueDate).toLocaleString()}</td>
                 </tr>
               ))
@@ -234,15 +236,15 @@ export default function DashboardPage() {
         <table>
           <thead>
             <tr>
-              <th>Stage</th>
-              <th>Leads</th>
-              <th>Value</th>
+              <th>{tr("Stage")}</th>
+              <th>{tr("Leads")}</th>
+              <th>{tr("Value")}</th>
             </tr>
           </thead>
           <tbody>
             {(data?.stageMetrics ?? []).map((stage) => (
               <tr key={stage.stageId}>
-                <td>{stage.stageName}</td>
+                <td>{tr(stage.stageName)}</td>
                 <td>{stage.count}</td>
                 <td>{stage.value.toLocaleString()} EUR</td>
               </tr>
@@ -256,15 +258,15 @@ export default function DashboardPage() {
         <table>
           <thead>
             <tr>
-              <th>Transition</th>
-              <th>Rate</th>
+              <th>{tr("Transition")}</th>
+              <th>{tr("Rate")}</th>
             </tr>
           </thead>
           <tbody>
             {(data?.funnel.conversionChain ?? []).map((entry) => (
               <tr key={`${entry.fromStageId}-${entry.toStageId}`}>
                 <td>
-                  {entry.fromStageName} -&gt; {entry.toStageName}
+                  {tr(entry.fromStageName)} -&gt; {tr(entry.toStageName)}
                 </td>
                 <td>{entry.rate}%</td>
               </tr>
@@ -278,8 +280,8 @@ export default function DashboardPage() {
         <table>
           <thead>
             <tr>
-              <th>Source</th>
-              <th>Leads</th>
+              <th>{tr("Source")}</th>
+              <th>{tr("Leads")}</th>
             </tr>
           </thead>
           <tbody>
@@ -298,14 +300,14 @@ export default function DashboardPage() {
         <table>
           <thead>
             <tr>
-              <th>Stage</th>
-              <th>Avg days</th>
+              <th>{tr("Stage")}</th>
+              <th>{tr("Avg days")}</th>
             </tr>
           </thead>
           <tbody>
             {(data?.stageAging ?? []).map((entry) => (
               <tr key={entry.stageId}>
-                <td>{entry.stageName}</td>
+                <td>{tr(entry.stageName)}</td>
                 <td>{entry.avgDays}</td>
               </tr>
             ))}
@@ -318,8 +320,8 @@ export default function DashboardPage() {
         <table>
           <thead>
             <tr>
-              <th>Sales Rep</th>
-              <th>Amount</th>
+              <th>{tr("Sales Rep")}</th>
+              <th>{tr("Amount")}</th>
             </tr>
           </thead>
           <tbody>

@@ -57,7 +57,7 @@ Le diagramme UML de domaine detaille est fourni dans `docs/uml-domain.puml`.
 ## 6. Modules implementes
 ### 6.1 Authentification et roles
 - Login / signup / reset password
-- Roles: `admin`, `commercial`, `standard_user`
+- Roles: `admin`, `manager`, `commercial`, `standard_user`
 - Premier compte inscrit auto-promu `admin`
 
 ### 6.2 CRUD metier complet
@@ -126,8 +126,8 @@ KPI complementaires:
 - entree directe vers login (`/` redirige vers `/login`) pour un acces operationnel rapide
 - logo ATA CRM (SVG) applique sur login/sidebar
 - design tokens harmonises (couleurs, rayons, ombres, typographie)
-- switch langue global `EN/FR/FA` avec persistance locale + cookie
-- RTL complet pour la version persane
+- switch langue global `EN/FR` avec persistance locale + cookie
+- version persane archivee pour cette soutenance (pas de mode RTL actif)
 - Help Center interne (`/help`) avec onboarding, FAQ et guide des roles
 - in-app tips dismissibles (persistes en localStorage)
 - global quick search (leads/companies/contacts)

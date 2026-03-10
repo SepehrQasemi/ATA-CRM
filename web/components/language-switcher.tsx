@@ -10,10 +10,14 @@ const options: Array<{ value: Extract<Locale, "en" | "fr">; label: string }> = [
 ];
 
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, tr } = useLocale();
 
   return (
-    <div className={clsx("lang-switch", compact && "compact")} role="group" aria-label="Language switcher">
+    <div
+      className={clsx("lang-switch", compact && "compact")}
+      role="group"
+      aria-label={tr("Language switcher")}
+    >
       {options.map((option) => (
         <button
           key={option.value}

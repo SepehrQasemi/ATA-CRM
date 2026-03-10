@@ -13,7 +13,7 @@ export function BrandLogo({
       <Image
         className="brand-icon"
         src="/ata-logo.svg"
-        alt="ATA CRM logo"
+        alt="ATA CRM"
         width={58}
         height={42}
         priority

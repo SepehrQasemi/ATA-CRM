@@ -10,8 +10,11 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 
 ## Main Features
 - Direct login entry (`/` redirects to `/login`) for faster operational access
-- Authentication (login, signup, reset) + roles (`admin`, `commercial`, `standard_user`)
-- Full i18n UI with language switch (`en`, `fr`, `fa`) and full RTL for Persian
+- Authentication (login, signup, reset) + roles (`admin`, `manager`, `commercial`, `standard_user`)
+- Dedicated password reset flow (`/auth/callback?next=/reset-password`) with in-app update form
+- Friendly auth errors for invalid credentials and reset email rate-limit cooldown
+- Full i18n UI with language switch (`en`, `fr`) for delivery scope
+- Persian locale is archived in this defense version (no active FA switch / RTL)
 - Help Center (`/help`) with onboarding steps, role guide, and FAQ
 - In-app tips (dismissible, persisted in local storage)
 - Global search in shell (leads/companies/contacts)
@@ -46,6 +49,8 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `PATCH/DELETE /api/contacts/:id`
 - `GET/POST /api/companies`
 - `PATCH/DELETE /api/companies/:id`
+- `GET /api/colleagues`
+- `GET /api/colleagues/:id`
 - `GET/POST /api/leads`
 - `PATCH/DELETE /api/leads/:id`
 - `POST /api/leads/:id/stage`
@@ -60,6 +65,8 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `GET /api/bi/kpis?range=7d|30d|90d` (requires `BI_API_KEY`)
 - `POST /api/emails/send`
 - `GET /api/emails/logs`
+- `GET/PATCH /api/profile/me`
+- `PATCH /api/settings/users`
 - `POST /api/jobs/followup?dry_run=true`
 - `POST /api/jobs/task-reminders?dry_run=true`
 - `POST /api/webhooks/brevo`
@@ -125,6 +132,14 @@ Optional:
 - `CRON_SECRET` (protect job endpoints for cron calls)
 - `BI_API_KEY` (protect `/api/bi/kpis`)
 - `NEXT_PUBLIC_APP_NAME`
+
+Password reset delivery notes:
+- Supabase Auth email sending has provider limits on free tiers (`email rate limit exceeded` may appear after repeated requests).
+- ATA CRM UI now throttles reset retries for 60s and shows a clear message instead of raw provider text.
+- For reliable production delivery, configure custom SMTP in Supabase Auth (Email settings).
+- Keep callback URL configured in Supabase for:
+  - `http://127.0.0.1:3000/auth/callback`
+  - your production callback domain path (`/auth/callback`)
 
 ## Quality Checks
 ```bash
@@ -205,9 +220,9 @@ Notes:
 
 ## Documentation
 - Default language: English
-- Additional versions: French and Persian
+- Additional delivery language: French
 - French report: `docs/rapport-projet-fr.md`
-- Persian summary: `docs/resume-projet-fa.md`
+- Persian summary (archived): `docs/resume-projet-fa.md`
 - Demo checklist: `docs/checklist-demo.md`
 - Oral presentation script (FR): `docs/presentation-oral-fr.md`
 - Formal test game (FR): `docs/jeu-de-test-crm-fr.md`

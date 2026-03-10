@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useEffect, useState } from "react";
 import { useLocale } from "@/components/locale-provider";
@@ -37,7 +37,7 @@ export default function ProfilePage() {
       const json = (await response.json()) as ProfileResponse;
 
       if (!response.ok || !json.profile) {
-        setError(json.error ?? "Failed to load profile");
+        setError(json.error ?? tr("Failed to load profile"));
         setLoading(false);
         return;
       }
@@ -47,7 +47,7 @@ export default function ProfilePage() {
     }
 
     void loadProfile();
-  }, []);
+  }, [tr]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,13 +73,13 @@ export default function ProfilePage() {
     const json = (await response.json()) as ProfileResponse;
 
     if (!response.ok || !json.profile) {
-      setError(json.error ?? "Failed to save profile");
+      setError(json.error ?? tr("Failed to save profile"));
       setSaving(false);
       return;
     }
 
     setProfile(json.profile);
-    setSuccess("Profile updated.");
+    setSuccess(tr("Profile updated."));
     setSaving(false);
   }
 
@@ -139,7 +139,7 @@ export default function ProfilePage() {
                       prev ? { ...prev, email: event.target.value } : prev,
                     )
                   }
-                  placeholder="name@company.com"
+                  placeholder={tr("Email address placeholder")}
                 />
               </label>
 

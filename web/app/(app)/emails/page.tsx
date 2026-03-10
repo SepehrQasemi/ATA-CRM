@@ -80,7 +80,7 @@ export default function EmailsPage() {
           leadJson.error ??
           logsJson.error ??
           contactsJson.error ??
-          "Failed to load email module",
+          tr("Failed to load email module"),
       );
       return;
     }
@@ -132,12 +132,12 @@ export default function EmailsPage() {
     const json = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      setError(json.error ?? "Failed to send email");
+      setError(json.error ?? tr("Failed to send email"));
       setSending(false);
       return;
     }
 
-    setSuccess(json.sent ? "Email sent successfully" : "Email logged as failed");
+    setSuccess(json.sent ? tr("Email sent successfully") : tr("Email logged as failed"));
     setSending(false);
     setForm({
       lead_id: "",
@@ -168,12 +168,12 @@ export default function EmailsPage() {
 
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to send test email");
+      setError(json.error ?? tr("Failed to send test email"));
       setSendingTest(false);
       return;
     }
 
-    setSuccess(json.sent ? "Test email sent successfully" : "Test email failed");
+    setSuccess(json.sent ? tr("Test email sent successfully") : tr("Test email failed"));
     setSendingTest(false);
     setTestForm((prev) => ({ ...prev, subject: "" }));
     void loadData();
@@ -190,18 +190,30 @@ export default function EmailsPage() {
     const json = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      setError(json.error ?? "Follow-up job failed");
+      setError(json.error ?? tr("Follow-up job failed"));
       setRunningFollowupJob(false);
       return;
     }
 
     if (dryRun) {
       setSuccess(
-        `Follow-up dry-run: processed ${json.processed}, eligible ${json.eligible}, duplicates ${json.skippedDuplicate}`,
+        tr("Follow-up dry-run: processed {processed}, eligible {eligible}, duplicates {duplicates}", {
+          processed: Number(json.processed ?? 0),
+          eligible: Number(json.eligible ?? 0),
+          duplicates: Number(json.skippedDuplicate ?? 0),
+        }),
       );
     } else {
       setSuccess(
-        `Follow-up run: processed ${json.processed}, sent ${json.sent}, failed ${json.failed}, duplicates ${json.skippedDuplicate}`,
+        tr(
+          "Follow-up run: processed {processed}, sent {sent}, failed {failed}, duplicates {duplicates}",
+          {
+            processed: Number(json.processed ?? 0),
+            sent: Number(json.sent ?? 0),
+            failed: Number(json.failed ?? 0),
+            duplicates: Number(json.skippedDuplicate ?? 0),
+          },
+        ),
       );
     }
 
@@ -220,18 +232,30 @@ export default function EmailsPage() {
     const json = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      setError(json.error ?? "Task reminder job failed");
+      setError(json.error ?? tr("Task reminder job failed"));
       setRunningTaskReminders(false);
       return;
     }
 
     if (dryRun) {
       setSuccess(
-        `Task reminder dry-run: processed ${json.processed}, eligible ${json.eligible}, duplicates ${json.skippedDuplicate}`,
+        tr("Task reminder dry-run: processed {processed}, eligible {eligible}, duplicates {duplicates}", {
+          processed: Number(json.processed ?? 0),
+          eligible: Number(json.eligible ?? 0),
+          duplicates: Number(json.skippedDuplicate ?? 0),
+        }),
       );
     } else {
       setSuccess(
-        `Task reminders: processed ${json.processed}, sent ${json.sent}, failed ${json.failed}, duplicates ${json.skippedDuplicate}`,
+        tr(
+          "Task reminders: processed {processed}, sent {sent}, failed {failed}, duplicates {duplicates}",
+          {
+            processed: Number(json.processed ?? 0),
+            sent: Number(json.sent ?? 0),
+            failed: Number(json.failed ?? 0),
+            duplicates: Number(json.skippedDuplicate ?? 0),
+          },
+        ),
       );
     }
 
@@ -394,7 +418,7 @@ export default function EmailsPage() {
                 <option value="">{tr("Select contact")}</option>
                 {contacts.map((contact) => (
                   <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name} ({contact.email ?? "no-email"})
+                    {contact.first_name} {contact.last_name} ({contact.email ?? tr("No email")})
                   </option>
                 ))}
               </select>
@@ -442,16 +466,16 @@ export default function EmailsPage() {
         <table>
           <thead>
             <tr>
-              <th>Recipient</th>
-              <th>Subject</th>
-              <th>Status</th>
-              <th>Provider ID</th>
-              <th>Opens</th>
-              <th>Clicks</th>
-              <th>Opened at</th>
-              <th>Clicked at</th>
-              <th>Created</th>
-              <th>Error</th>
+              <th>{tr("Recipient")}</th>
+              <th>{tr("Subject")}</th>
+              <th>{tr("Status")}</th>
+              <th>{tr("Provider ID")}</th>
+              <th>{tr("Opens")}</th>
+              <th>{tr("Clicks")}</th>
+              <th>{tr("Opened at")}</th>
+              <th>{tr("Clicked at")}</th>
+              <th>{tr("Created")}</th>
+              <th>{tr("Error")}</th>
             </tr>
           </thead>
           <tbody>
@@ -459,7 +483,7 @@ export default function EmailsPage() {
               <tr key={log.id}>
                 <td>{log.recipient_email}</td>
                 <td>{log.subject}</td>
-                <td>{log.status}</td>
+                <td>{tr(log.status)}</td>
                 <td>{log.provider_message_id ?? "-"}</td>
                 <td>{log.open_count ?? 0}</td>
                 <td>{log.click_count ?? 0}</td>

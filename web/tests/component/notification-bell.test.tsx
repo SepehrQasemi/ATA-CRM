@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { LocaleProvider } from "@/components/locale-provider";
 import { NotificationBell } from "@/components/notification-bell";
 
 describe("NotificationBell", () => {
@@ -10,12 +11,14 @@ describe("NotificationBell", () => {
     const user = userEvent.setup();
 
     render(
-      <NotificationBell
-        items={[
-          { id: "1", title: "Lead updated", detail: "Lead A moved stage", level: "success", at: new Date().toISOString() },
-          { id: "2", title: "Task completed", detail: "Task B completed", level: "info", at: new Date().toISOString() },
-        ]}
-      />,
+      <LocaleProvider initialLocale="en">
+        <NotificationBell
+          items={[
+            { id: "1", title: "Lead updated", detail: "Lead A moved stage", level: "success", at: new Date().toISOString() },
+            { id: "2", title: "Task completed", detail: "Task B completed", level: "info", at: new Date().toISOString() },
+          ]}
+        />
+      </LocaleProvider>,
     );
 
     await user.hover(screen.getByRole("link", { name: "Open notifications page" }));

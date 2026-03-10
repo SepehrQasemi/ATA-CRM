@@ -113,7 +113,7 @@ export default function ProductsPage() {
     const response = await fetch(`/api/products${params.toString() ? `?${params.toString()}` : ""}`);
     const json = (await response.json()) as ProductsResponse;
     if (!response.ok) {
-      setError(json.error ?? "Failed to load products");
+      setError(json.error ?? tr("Failed to load products"));
       return;
     }
 
@@ -187,13 +187,13 @@ export default function ProductsPage() {
     });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to save product");
+      setError(json.error ?? tr("Failed to save product"));
       setSaving(false);
       return;
     }
     setForm(initialForm);
     setSaving(false);
-    setSuccess("Product created");
+    setSuccess(tr("Product created"));
     setActiveTab("list");
     void loadData();
   }
@@ -203,7 +203,7 @@ export default function ProductsPage() {
     setSavingRelation(true);
     setError(null);
     if (!relationForm.product_id || !relationForm.company_id || !relationForm.product_model.trim()) {
-      setError("Product, company and model are required");
+      setError(tr("Product, company and model are required"));
       setSavingRelation(false);
       return;
     }
@@ -220,13 +220,13 @@ export default function ProductsPage() {
     });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to save relation");
+      setError(json.error ?? tr("Failed to save relation"));
       setSavingRelation(false);
       return;
     }
     setRelationForm((prev) => ({ ...prev, company_id: "", product_model: "", last_price: "", notes: "" }));
     setSavingRelation(false);
-    setSuccess("Product relation saved");
+    setSuccess(tr("Product relation saved"));
     void loadData();
   }
 
@@ -234,10 +234,10 @@ export default function ProductsPage() {
     const response = await fetch(`/api/products/${link.product_id}/links/${link.id}`, { method: "DELETE" });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to delete relation");
+      setError(json.error ?? tr("Failed to delete relation"));
       return;
     }
-    setSuccess("Relation deleted");
+    setSuccess(tr("Relation deleted"));
     void loadData();
   }
 
@@ -251,7 +251,7 @@ export default function ProductsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: `Product match - ${product.name} - ${company.name}`,
-        source: "Product match",
+        source: tr("Product match"),
         estimated_value: link.last_price ? Number(link.last_price) * 10 : 0,
         company_id: company.id,
         contact_id: topAgent?.id ?? null,
@@ -259,10 +259,10 @@ export default function ProductsPage() {
       }),
     });
     if (!response.ok) {
-      setError("Failed to create lead from product match");
+      setError(tr("Failed to create lead from product match"));
       return;
     }
-    setSuccess("Lead created from product match");
+    setSuccess(tr("Lead created from product match"));
   }
 
   const totalPages = Math.max(1, Math.ceil(visibleProducts.length / PER_PAGE));
@@ -289,7 +289,7 @@ export default function ProductsPage() {
       {success ? <p className="success">{success}</p> : null}
 
       <section className="panel stack">
-        <div className="subtabs" role="tablist" aria-label="Products workspace tabs">
+        <div className="subtabs" role="tablist" aria-label={tr("Products workspace tabs")}>
           <button className={`subtab ${activeTab === "list" ? "is-active" : ""}`} type="button" role="tab" aria-selected={activeTab === "list"} onClick={() => setActiveTab("list")}>{tr("Product list")}</button>
           <button className={`subtab ${activeTab === "create" ? "is-active" : ""}`} type="button" role="tab" aria-selected={activeTab === "create"} onClick={() => setActiveTab("create")}>{tr("New product")}</button>
           <button className={`subtab ${activeTab === "relations" ? "is-active" : ""}`} type="button" role="tab" aria-selected={activeTab === "relations"} onClick={() => setActiveTab("relations")}>{tr("Product relations")}</button>
@@ -315,9 +315,9 @@ export default function ProductsPage() {
           <form className="stack" onSubmit={saveProduct}>
             <div className="row">
               <label className="col-3 stack">{tr("Name")}<input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required /></label>
-              <label className="col-2 stack">SKU<input value={form.sku} onChange={(e) => setForm((p) => ({ ...p, sku: e.target.value }))} /></label>
+              <label className="col-2 stack">{tr("SKU")}<input value={form.sku} onChange={(e) => setForm((p) => ({ ...p, sku: e.target.value }))} /></label>
               <label className="col-2 stack">{tr("Category")}<input value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} /></label>
-              <label className="col-1 stack">Unit<input value={form.unit} onChange={(e) => setForm((p) => ({ ...p, unit: e.target.value }))} /></label>
+              <label className="col-1 stack">{tr("Unit")}<input value={form.unit} onChange={(e) => setForm((p) => ({ ...p, unit: e.target.value }))} /></label>
               <label className="col-2 stack">{tr("Purchase price")}<input type="number" value={form.default_purchase_price} onChange={(e) => setForm((p) => ({ ...p, default_purchase_price: e.target.value }))} /></label>
               <label className="col-2 stack">{tr("Sale price")}<input type="number" value={form.default_sale_price} onChange={(e) => setForm((p) => ({ ...p, default_sale_price: e.target.value }))} /></label>
               <label className="col-2 stack">{tr("Active")}<select value={form.is_active ? "true" : "false"} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.value === "true" }))}><option value="true">{tr("Yes")}</option><option value="false">{tr("No")}</option></select></label>
@@ -337,9 +337,9 @@ export default function ProductsPage() {
               <tbody>
                 {visibleProductsPage.map((product) => (
                   <tr key={product.id}>
-                    <td>{product.name}<div className="small">{`Unit: ${product.unit}`}</div></td>
+                    <td>{product.name}<div className="small">{`${tr("Unit")}: ${product.unit}`}</div></td>
                     <td>{product.category ?? "-"}</td>
-                    <td><div className="small">{`Buy: ${Number(product.default_purchase_price || 0).toLocaleString()} EUR`}</div><div className="small">{`Sell: ${Number(product.default_sale_price || 0).toLocaleString()} EUR`}</div></td>
+                    <td><div className="small">{`${tr("Buy")}: ${Number(product.default_purchase_price || 0).toLocaleString()} EUR`}</div><div className="small">{`${tr("Sell")}: ${Number(product.default_sale_price || 0).toLocaleString()} EUR`}</div></td>
                     <td><Link className="btn btn-secondary" href={`/products/${product.id}`}>{tr("View details")}</Link></td>
                   </tr>
                 ))}

@@ -137,7 +137,7 @@ export default function ProductProfilePage() {
     const companiesJson = (await companiesRes.json()) as CompaniesResponse;
 
     if (!productRes.ok || !productJson.product) {
-      setError(productJson.error ?? "Failed to load product");
+      setError(productJson.error ?? tr("Failed to load product"));
       setLoading(false);
       return;
     }
@@ -198,14 +198,14 @@ export default function ProductProfilePage() {
 
     const json = (await response.json()) as { product?: Product; error?: string };
     if (!response.ok || !json.product) {
-      setError(json.error ?? "Failed to update product");
+      setError(json.error ?? tr("Failed to update product"));
       setSaving(false);
       return;
     }
 
     setProduct(json.product);
     syncProductForm(json.product);
-    setSuccess("Product updated.");
+    setSuccess(tr("Product updated."));
     setSaving(false);
     setEditing(false);
   }
@@ -219,7 +219,7 @@ export default function ProductProfilePage() {
     const response = await fetch(`/api/products/${id}`, { method: "DELETE" });
     const json = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) {
-      setError(json.error ?? "Failed to delete product");
+      setError(json.error ?? tr("Failed to delete product"));
       setDeleting(false);
       return;
     }
@@ -247,12 +247,12 @@ export default function ProductProfilePage() {
 
     const json = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) {
-      setError(json.error ?? "Failed to save relation");
+      setError(json.error ?? tr("Failed to save relation"));
       setSavingRelation(false);
       return;
     }
 
-    setSuccess("Product relation saved");
+    setSuccess(tr("Product relation saved"));
     setSavingRelation(false);
     setRelationForm(initialRelationForm);
     void loadData();
@@ -268,11 +268,11 @@ export default function ProductProfilePage() {
     });
     const json = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) {
-      setError(json.error ?? "Failed to delete relation");
+      setError(json.error ?? tr("Failed to delete relation"));
       return;
     }
 
-    setSuccess("Relation deleted");
+    setSuccess(tr("Relation deleted"));
     void loadData();
   }
 
@@ -304,7 +304,7 @@ export default function ProductProfilePage() {
             <h2>{product.name}</h2>
             <div className="row">
               <div className="stack col-3">
-                <p className="small">SKU</p>
+                <p className="small">{tr("SKU")}</p>
                 <p>{product.sku ?? "-"}</p>
               </div>
               <div className="stack col-3">
@@ -312,7 +312,7 @@ export default function ProductProfilePage() {
                 <p>{product.category ?? "-"}</p>
               </div>
               <div className="stack col-2">
-                <p className="small">Unit</p>
+                <p className="small">{tr("Unit")}</p>
                 <p>{product.unit}</p>
               </div>
               <div className="stack col-2">
@@ -320,11 +320,11 @@ export default function ProductProfilePage() {
                 <p>{product.is_active ? tr("Yes") : tr("No")}</p>
               </div>
               <div className="stack col-6">
-                <p className="small">Purchase</p>
+                <p className="small">{tr("Purchase")}</p>
                 <p>{Number(product.default_purchase_price || 0).toLocaleString()}</p>
               </div>
               <div className="stack col-6">
-                <p className="small">Sale</p>
+                <p className="small">{tr("Sale")}</p>
                 <p>{Number(product.default_sale_price || 0).toLocaleString()}</p>
               </div>
               <div className="stack col-12">
@@ -398,7 +398,7 @@ export default function ProductProfilePage() {
                   />
                 </label>
                 <label className="col-2 stack">
-                  SKU
+                  {tr("SKU")}
                   <input
                     value={productForm.sku}
                     onChange={(event) =>
@@ -416,7 +416,7 @@ export default function ProductProfilePage() {
                   />
                 </label>
                 <label className="col-2 stack">
-                  Unit
+                  {tr("Unit")}
                   <input
                     value={productForm.unit}
                     onChange={(event) =>

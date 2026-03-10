@@ -130,12 +130,12 @@ export default function LeadsPage() {
     const metaJson = (await metaRes.json()) as MetaResponse;
 
     if (!leadRes.ok) {
-      setError(leadJson.error ?? "Failed to load leads");
+      setError(leadJson.error ?? tr("Failed to load leads"));
       return;
     }
 
     if (!metaRes.ok) {
-      setError(metaJson.error ?? "Failed to load metadata");
+      setError(metaJson.error ?? tr("Failed to load metadata"));
       return;
     }
 
@@ -197,7 +197,7 @@ export default function LeadsPage() {
 
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to save lead");
+      setError(json.error ?? tr("Failed to save lead"));
       setSaving(false);
       return;
     }
@@ -234,7 +234,7 @@ export default function LeadsPage() {
     });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to move lead");
+      setError(json.error ?? tr("Failed to move lead"));
       return;
     }
     void loadData();
@@ -251,7 +251,7 @@ export default function LeadsPage() {
     await moveLeadStage(
       lead.id,
       stages[targetIndex].id,
-      direction === "prev" ? "Quick move backward" : "Quick move forward",
+      direction === "prev" ? tr("Quick move backward") : tr("Quick move forward"),
     );
   }
 
@@ -259,7 +259,7 @@ export default function LeadsPage() {
     const response = await fetch(`/api/leads/${leadId}`, { method: "DELETE" });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to delete lead");
+      setError(json.error ?? tr("Failed to delete lead"));
       return;
     }
     void loadData();
@@ -272,7 +272,7 @@ export default function LeadsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title: `Follow-up: ${lead.title}`,
-        description: `Quick task created from lead ${lead.title}`,
+        description: tr("Quick task created from lead {lead}", { lead: lead.title }),
         due_date: due,
         priority: "normal",
         status: "todo",
@@ -284,7 +284,7 @@ export default function LeadsPage() {
     });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to create task");
+      setError(json.error ?? tr("Failed to create task"));
       return;
     }
     setError(null);
@@ -329,7 +329,7 @@ export default function LeadsPage() {
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <div className="subtabs" role="tablist" aria-label="Leads workspace tabs">
+        <div className="subtabs" role="tablist" aria-label={tr("Leads workspace tabs")}>
           <button
             className={`subtab ${activeTab === "pipeline" ? "is-active" : ""}`}
             type="button"
@@ -369,7 +369,7 @@ export default function LeadsPage() {
             <AutocompleteInput
               value={filters.q}
               onChange={(nextValue) => setFilters((prev) => ({ ...prev, q: nextValue }))}
-              placeholder="Lead title"
+              placeholder={tr("Lead title")}
               suggestions={leadSearchSuggestions}
               listId="lead-search-suggestions"
             />
@@ -385,7 +385,7 @@ export default function LeadsPage() {
               <option value="">{tr("All stages")}</option>
               {stages.map((stage) => (
                 <option key={stage.id} value={stage.id}>
-                  {stage.name}
+                  {tr(stage.name)}
                 </option>
               ))}
             </select>
@@ -425,7 +425,7 @@ export default function LeadsPage() {
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, source: event.target.value }))
               }
-              placeholder="LinkedIn"
+              placeholder={tr("LinkedIn")}
             />
           </label>
           <label className="col-2 stack">
@@ -490,7 +490,7 @@ export default function LeadsPage() {
               <input
                 value={form.source}
                 onChange={(e) => setForm((prev) => ({ ...prev, source: e.target.value }))}
-                placeholder="Salon, LinkedIn, Referral"
+                placeholder={tr("Salon, LinkedIn, Referral")}
               />
             </label>
             <label className="col-2 stack">
@@ -528,7 +528,7 @@ export default function LeadsPage() {
                 <option value="">{tr("Auto stage")}</option>
                 {stages.map((stage) => (
                   <option key={stage.id} value={stage.id}>
-                    {stage.name}
+                    {tr(stage.name)}
                   </option>
                 ))}
               </select>
@@ -610,7 +610,7 @@ export default function LeadsPage() {
 
             return (
               <article key={stage.id} className="stage">
-                <h3>{stage.name}</h3>
+                <h3>{tr(stage.name)}</h3>
                 <p className="small">{tr("Leads")}: {stageLeads.length}</p>
                 <p className="small">{tr("Total value")}: {stageValue.toLocaleString()} EUR</p>
 
@@ -676,12 +676,12 @@ export default function LeadsPage() {
         <table>
           <thead>
             <tr>
-              <th>Title</th>
-              <th>Stage</th>
-              <th>Status</th>
-              <th>Source</th>
-              <th>Value</th>
-              <th>Assigned to</th>
+              <th>{tr("Title")}</th>
+              <th>{tr("Stage")}</th>
+              <th>{tr("Status")}</th>
+              <th>{tr("Source")}</th>
+              <th>{tr("Value")}</th>
+              <th>{tr("Assigned to")}</th>
               <th />
             </tr>
           </thead>
@@ -689,8 +689,8 @@ export default function LeadsPage() {
             {leads.map((lead) => (
               <tr key={lead.id}>
                 <td>{lead.title}</td>
-                <td>{lead.current_stage_id ? stageById[lead.current_stage_id]?.name ?? "-" : "-"}</td>
-                <td>{lead.status}</td>
+                <td>{lead.current_stage_id ? tr(stageById[lead.current_stage_id]?.name ?? "-") : "-"}</td>
+                <td>{tr(lead.status === "open" ? "Open" : lead.status === "won" ? "Won" : "Lost")}</td>
                 <td>{lead.source ?? "-"}</td>
                 <td>{Number(lead.estimated_value || 0).toLocaleString()} EUR</td>
                 <td>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/components/locale-provider";
+import { roleLabel } from "@/lib/i18n";
 
 type FaqItem = { q: string; a: string };
 type MetaResponse = {
@@ -10,56 +11,31 @@ type MetaResponse = {
   templates: Array<{ id: string; name: string; event_type: string; subject: string; is_active: boolean }>;
 };
 
-function contentByLocale(locale: "en" | "fr" | "fa") {
+function contentByLocale(locale: "en" | "fr") {
   if (locale === "fr") {
     return {
       title: "Centre d'aide",
-      subtitle: "Onboarding rapide, FAQ et guide par rôle.",
-      onboardingTitle: "Onboarding rapide",
+      subtitle: "Démarrage rapide, FAQ et guide par rôle.",
+      onboardingTitle: "Démarrage rapide",
       steps: [
         "Créer une entreprise et un contact.",
-        "Créer un produit et lier traded/potential.",
-        "Créer un lead puis déplacer ses étapes.",
-        "Créer une tâche et vérifier le calendrier.",
-        "Envoyer un email test et vérifier les logs.",
-        "Lire les KPI du dashboard et exporter CSV/PDF.",
+        "Créer un produit puis lier les relations échangées et potentielles.",
+        "Créer une opportunité puis la faire avancer dans le pipeline.",
+        "Créer une tâche et vérifier son affichage dans le calendrier.",
+        "Envoyer un email test et vérifier les journaux d'envoi.",
+        "Lire les KPI du tableau de bord puis exporter en CSV/PDF.",
       ],
       roleTitle: "Guide des rôles",
       roles: [
-        "admin: accès complet, configuration et supervision.",
-        "commercial: gestion opérationnelle des leads, tâches et emails.",
-        "standard_user: accès standard aux données autorisées.",
+        "admin : accès complet, configuration et supervision.",
+        "manager : pilotage de l'équipe et validation des actions.",
+        "commercial : gestion opérationnelle des opportunités, tâches et emails.",
+        "standard_user : accès standard aux données autorisées.",
       ],
       faqTitle: "Questions fréquentes",
-      directionTitle: "Langue & direction",
+      directionTitle: "Langue et interface",
       directionBody:
-        "Utilisez le sélecteur EN/FR. Le mode persan est temporairement archivé.",
-    };
-  }
-
-  if (locale === "fa") {
-    return {
-      title: "مرکز راهنما",
-      subtitle: "شروع سریع، سوالات متداول و راهنمای نقش‌ها.",
-      onboardingTitle: "شروع سریع",
-      steps: [
-        "یک شرکت و یک مخاطب ایجاد کنید.",
-        "یک محصول بسازید و traded/potential را لینک کنید.",
-        "یک سرنخ ایجاد کرده و مرحله آن را تغییر دهید.",
-        "یک تسک بسازید و در تقویم بررسی کنید.",
-        "ایمیل تست بفرستید و لاگ‌ها را ببینید.",
-        "KPIهای داشبورد را مرور و CSV/PDF خروجی بگیرید.",
-      ],
-      roleTitle: "راهنمای نقش‌ها",
-      roles: [
-        "admin: دسترسی کامل، تنظیمات و نظارت.",
-        "commercial: مدیریت عملیاتی سرنخ‌ها، تسک‌ها و ایمیل‌ها.",
-        "standard_user: دسترسی استاندارد به داده‌های مجاز.",
-      ],
-      faqTitle: "سوالات متداول",
-      directionTitle: "زبان و جهت نمایش",
-      directionBody:
-        "از سوییچر EN/FR/FA استفاده کنید. در فارسی، چینش به صورت RTL فعال می‌شود.",
+        "Utilisez le sélecteur EN/FR dans l'en-tête. Le persan est temporairement archivé.",
     };
   }
 
@@ -78,69 +54,91 @@ function contentByLocale(locale: "en" | "fr" | "fa") {
     roleTitle: "Role guide",
     roles: [
       "admin: full access, setup, and monitoring.",
+      "manager: team supervision and approvals.",
       "commercial: daily operations for leads, tasks, and emails.",
       "standard_user: standard access to allowed data.",
     ],
     faqTitle: "Frequently Asked Questions",
     directionTitle: "Language & direction",
-    directionBody:
-      "Use the EN/FR switcher. Persian is temporarily archived.",
+    directionBody: "Use the EN/FR switcher. Persian is temporarily archived.",
   };
 }
 
-function faqsByLocale(locale: "en" | "fr" | "fa"): FaqItem[] {
+function faqsByLocale(locale: "en" | "fr"): FaqItem[] {
   if (locale === "fr") {
     return [
-      { q: "Comment créer un lead rapidement ?", a: "Allez dans Leads, remplissez le formulaire et cliquez sur créer." },
-      { q: "Comment changer une étape du pipeline ?", a: "Utilisez Select stage ou les boutons Prev/Next sur la carte lead." },
-      { q: "Comment enregistrer mes filtres ?", a: "Dans Leads et Tasks, utilisez le bouton Save filters." },
-      { q: "Comment envoyer un email test ?", a: "Dans Emails, section Send test email, choisissez template + contact." },
-      { q: "Comment lancer la relance 72h ?", a: "Emails -> Run follow-up 72h, d'abord dry-run puis exécution réelle." },
-      { q: "Comment voir les tâches urgentes ?", a: "Tasks affiche Overdue, Due in 24h et un tableau d'alertes." },
-      { q: "Comment exporter les KPI ?", a: "Dashboard propose Export CSV et Export PDF." },
-      { q: "Le persan est-il disponible ?", a: "Pas pour le moment. Utilisez EN ou FR." },
-      { q: "Où sont les logs d'emails ?", a: "Emails -> Email logs." },
-      { q: "Qui peut gérer les réglages ?", a: "Les admins gèrent setup et supervision." },
-      { q: "Comment relier un produit à une entreprise ?", a: "Products -> Product-company relations (traded/potential)." },
-      { q: "Comment relancer une démo propre ?", a: "Exécutez seed demo puis suivez checklist demo." },
+      {
+        q: "Comment créer une opportunité rapidement ?",
+        a: "Allez dans Opportunités, remplissez le formulaire puis cliquez sur créer.",
+      },
+      {
+        q: "Comment changer une étape du pipeline ?",
+        a: "Utilisez la sélection d'étape ou les boutons Précédent/Suivant sur chaque carte.",
+      },
+      {
+        q: "Comment enregistrer mes filtres ?",
+        a: "Dans Opportunités et Tâches, utilisez le bouton Enregistrer les filtres.",
+      },
+      {
+        q: "Comment envoyer un email test ?",
+        a: "Dans Emails, section Email test, choisissez un modèle et un contact.",
+      },
+      {
+        q: "Comment exécuter la relance 72h ?",
+        a: "Dans Emails, lancez d'abord la simulation puis l'envoi réel.",
+      },
+      {
+        q: "Comment voir les tâches urgentes ?",
+        a: "La page Tâches affiche les retards, les échéances proches et les alertes.",
+      },
+      {
+        q: "Comment exporter les KPI ?",
+        a: "Le tableau de bord propose les boutons Export CSV et Export PDF.",
+      },
+      {
+        q: "Où consulter les journaux d'emails ?",
+        a: "Dans Emails, section Journaux email.",
+      },
+      {
+        q: "Qui peut gérer les accès ?",
+        a: "L'administrateur gère tous les rôles ; le manager a des droits intermédiaires.",
+      },
+      {
+        q: "Comment lier un produit à une entreprise ?",
+        a: "Dans Produits, utilisez la section Relations produit-entreprise.",
+      },
+      {
+        q: "Comment repartir d'une démo propre ?",
+        a: "Exécutez le script de seed démo puis suivez la checklist de soutenance.",
+      },
+      {
+        q: "Puis-je utiliser l'interface en persan ?",
+        a: "Pas pour cette version de soutenance. Utilisez EN ou FR.",
+      },
     ];
   }
-  if (locale === "fa") {
-    return [
-      { q: "چطور سریع سرنخ بسازم؟", a: "به صفحه Leads برو، فرم را پر کن و Create lead را بزن." },
-      { q: "چطور مرحله پایپ‌لاین را تغییر بدهم؟", a: "از Select stage یا دکمه‌های Prev/Next روی کارت سرنخ استفاده کن." },
-      { q: "چطور فیلترها را ذخیره کنم؟", a: "در Leads و Tasks دکمه Save filters را بزن." },
-      { q: "چطور ایمیل تست بفرستم؟", a: "در صفحه Emails بخش Send test email قالب و مخاطب را انتخاب کن." },
-      { q: "چطور follow-up 72h اجرا می‌شود؟", a: "در Emails اول dry-run و بعد Run real send را اجرا کن." },
-      { q: "تسک‌های فوری کجا دیده می‌شوند؟", a: "در Tasks بخش Overdue و Due in 24h و جدول هشدارها نمایش داده می‌شود." },
-      { q: "خروجی KPI را چطور بگیرم؟", a: "در Dashboard روی Export CSV یا Export PDF بزن." },
-      { q: "RTL فارسی چطور فعال می‌شود؟", a: "از سوییچر زبان، FA را انتخاب کن." },
-      { q: "لاگ ایمیل‌ها کجاست؟", a: "در Emails بخش Email logs." },
-      { q: "چه کسی تنظیمات را مدیریت می‌کند؟", a: "ادمین دسترسی کامل برای تنظیمات و نظارت دارد." },
-      { q: "اتصال محصول به شرکت چطور است؟", a: "در Products بخش Product-company relations را استفاده کن." },
-      { q: "برای دمو تمیز چه کنم؟", a: "seed demo را اجرا کن و طبق checklist جلو برو." },
-    ];
-  }
+
   return [
     { q: "How can I create a lead quickly?", a: "Open Leads, fill the form, then click create lead." },
-    { q: "How do I move pipeline stages?", a: "Use Select stage or Prev/Next quick actions on lead cards." },
+    { q: "How do I move pipeline stages?", a: "Use stage selection or Prev/Next quick actions on lead cards." },
     { q: "How do saved filters work?", a: "Use Save filters in Leads and Tasks to persist your current filters." },
-    { q: "How do I send a test email?", a: "Go to Emails, choose template + contact in Send test email." },
-    { q: "How do I run 72h follow-up?", a: "Emails -> Run follow-up 72h, use dry-run first then real send." },
-    { q: "Where can I see urgent tasks?", a: "Tasks page shows Overdue, Due in 24h, and deadline notifications." },
+    { q: "How do I send a test email?", a: "Go to Emails, choose template + contact in the test email section." },
+    { q: "How do I run 72h follow-up?", a: "Emails -> run dry-run first, then run real send." },
+    { q: "Where can I see urgent tasks?", a: "Tasks shows overdue, due soon, and deadline alerts." },
     { q: "How do I export KPI reports?", a: "Dashboard offers Export CSV and Export PDF actions." },
-    { q: "Is Persian available right now?", a: "Not for now. Use EN or FR." },
     { q: "Where are email logs?", a: "Emails page -> Email logs section." },
-    { q: "Who can manage setup and roles?", a: "Admins handle setup and supervision." },
+    { q: "Who can manage access and roles?", a: "Admin manages all roles; manager has intermediate privileges." },
     { q: "How do I link products to companies?", a: "Products page -> Product-company relations form." },
-    { q: "How do I reset demo data quickly?", a: "Run the demo seed script and follow demo checklist." },
+    { q: "How do I reset demo data quickly?", a: "Run the demo seed script and follow the demo checklist." },
+    { q: "Is Persian available now?", a: "Not in this presentation version. Use EN or FR." },
   ];
 }
 
 export default function HelpPage() {
-  const { locale } = useLocale();
-  const content = useMemo(() => contentByLocale(locale), [locale]);
-  const faqs = useMemo(() => faqsByLocale(locale), [locale]);
+  const { locale, tr } = useLocale();
+  const activeLocale = locale === "fr" ? "fr" : "en";
+  const content = useMemo(() => contentByLocale(activeLocale), [activeLocale]);
+  const faqs = useMemo(() => faqsByLocale(activeLocale), [activeLocale]);
   const [meta, setMeta] = useState<MetaResponse | null>(null);
   const [metaError, setMetaError] = useState<string | null>(null);
 
@@ -149,13 +147,13 @@ export default function HelpPage() {
       const response = await fetch("/api/meta");
       const json = (await response.json()) as MetaResponse & { error?: string };
       if (!response.ok) {
-        setMetaError(json.error ?? "Failed to load CRM setup snapshot.");
+        setMetaError(json.error ?? tr("Failed to load CRM setup snapshot."));
         return;
       }
       setMeta(json);
     }
     void loadMeta();
-  }, []);
+  }, [tr]);
 
   const roleStats = useMemo(() => {
     const stats = new Map<string, number>();
@@ -191,29 +189,29 @@ export default function HelpPage() {
       </section>
 
       <section id="setup-archive" className="panel stack">
-        <h2>CRM setup snapshot (moved from Settings)</h2>
+        <h2>{tr("CRM setup snapshot (moved from Settings)")}</h2>
         <p className="muted">
-          Pipeline stages, email templates, and team role distribution are now documented here.
+          {tr("Pipeline stages, email templates, and team role distribution are now documented here.")}
         </p>
         {metaError ? <p className="error">{metaError}</p> : null}
-        {!meta && !metaError ? <p className="small">Loading setup snapshot...</p> : null}
+        {!meta && !metaError ? <p className="small">{tr("Loading setup snapshot...")}</p> : null}
         {meta ? (
           <>
             <div className="card-grid card-grid-wide">
               <article className="card stack">
-                <strong>Pipeline stages</strong>
+                <strong>{tr("Pipeline stages")}</strong>
                 <span className="kpi">{meta.stages.length}</span>
               </article>
               <article className="card stack">
-                <strong>Email templates</strong>
+                <strong>{tr("Email templates")}</strong>
                 <span className="kpi">{meta.templates.length}</span>
               </article>
               <article className="card stack">
-                <strong>Active templates</strong>
+                <strong>{tr("Active templates")}</strong>
                 <span className="kpi">{meta.templates.filter((item) => item.is_active).length}</span>
               </article>
               <article className="card stack">
-                <strong>Team members</strong>
+                <strong>{tr("Team members")}</strong>
                 <span className="kpi">{meta.profiles.length}</span>
               </article>
             </div>
@@ -222,17 +220,17 @@ export default function HelpPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>Stage order</th>
-                    <th>Stage name</th>
-                    <th>Closed stage</th>
+                    <th>{tr("Stage order")}</th>
+                    <th>{tr("Stage name")}</th>
+                    <th>{tr("Closed stage")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {meta.stages.map((stage) => (
                     <tr key={stage.id}>
                       <td>{stage.sort_order}</td>
-                      <td>{stage.name}</td>
-                      <td>{stage.is_closed ? "Yes" : "No"}</td>
+                      <td>{tr(stage.name)}</td>
+                      <td>{stage.is_closed ? tr("Yes") : tr("No")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -243,10 +241,10 @@ export default function HelpPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>Template name</th>
-                    <th>Event type</th>
-                    <th>Subject</th>
-                    <th>Status</th>
+                    <th>{tr("Template name")}</th>
+                    <th>{tr("Event type")}</th>
+                    <th>{tr("Subject")}</th>
+                    <th>{tr("Status")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -255,7 +253,7 @@ export default function HelpPage() {
                       <td>{template.name}</td>
                       <td>{template.event_type}</td>
                       <td>{template.subject}</td>
-                      <td>{template.is_active ? "Active" : "Inactive"}</td>
+                      <td>{template.is_active ? tr("Active") : tr("Inactive")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -266,14 +264,14 @@ export default function HelpPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>Role</th>
-                    <th>Users</th>
+                    <th>{tr("Role")}</th>
+                    <th>{tr("Users")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {roleStats.map(([role, count]) => (
                     <tr key={role}>
-                      <td>{role}</td>
+                      <td>{roleLabel(role, activeLocale)}</td>
                       <td>{count}</td>
                     </tr>
                   ))}

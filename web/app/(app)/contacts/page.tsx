@@ -72,12 +72,12 @@ export default function ContactsPage() {
     const companiesJson = (await companiesRes.json()) as CompaniesResponse;
 
     if (!contactsRes.ok) {
-      setError(contactsJson.error ?? "Failed to load contacts");
+      setError(contactsJson.error ?? tr("Failed to load contacts"));
       return;
     }
 
     if (!companiesRes.ok) {
-      setError(companiesJson.error ?? "Failed to load companies");
+      setError(companiesJson.error ?? tr("Failed to load companies"));
       return;
     }
 
@@ -124,7 +124,7 @@ export default function ContactsPage() {
 
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to create contact");
+      setError(json.error ?? tr("Failed to create contact"));
       setSaving(false);
       return;
     }
@@ -159,7 +159,7 @@ export default function ContactsPage() {
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <div className="subtabs" role="tablist" aria-label="Contacts workspace tabs">
+        <div className="subtabs" role="tablist" aria-label={tr("Contacts workspace tabs")}>
           <button
             className={`subtab ${activeTab === "list" ? "is-active" : ""}`}
             type="button"
@@ -313,9 +313,9 @@ export default function ContactsPage() {
                   onChange={(e) => setForm((prev) => ({ ...prev, agent_rank: e.target.value }))}
                   disabled={!form.is_company_agent}
                 >
-                  <option value="1">Agent 1</option>
-                  <option value="2">Agent 2</option>
-                  <option value="3">Agent 3</option>
+                  <option value="1">{tr("Agent {rank}", { rank: 1 })}</option>
+                  <option value="2">{tr("Agent {rank}", { rank: 2 })}</option>
+                  <option value="3">{tr("Agent {rank}", { rank: 3 })}</option>
                 </select>
               </label>
               <label className="col-12 stack">

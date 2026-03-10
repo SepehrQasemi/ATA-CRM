@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/brand-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -17,6 +17,40 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetCooldownUntil, setResetCooldownUntil] = useState(0);
+  const [tick, setTick] = useState(Date.now());
+
+  const resetCooldownSeconds = useMemo(
+    () => Math.max(0, Math.ceil((resetCooldownUntil - tick) / 1000)),
+    [resetCooldownUntil, tick],
+  );
+  const isResetCooldown = mode === "reset" && resetCooldownSeconds > 0;
+
+  useEffect(() => {
+    if (!isResetCooldown) return;
+    const timer = window.setInterval(() => setTick(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [isResetCooldown]);
+
+  function getFriendlyAuthMessage(rawMessage: string): string {
+    const msg = rawMessage.toLowerCase();
+    if (
+      msg.includes("email rate limit exceeded") ||
+      msg.includes("rate limit") ||
+      msg.includes("too many requests")
+    ) {
+      return tr(
+        "Password reset requests are temporarily limited. Please wait one minute and try again.",
+      );
+    }
+    if (msg.includes("invalid login credentials")) {
+      return tr("Invalid email or password.");
+    }
+    if (msg.includes("invalid email")) {
+      return tr("Invalid email address.");
+    }
+    return rawMessage;
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,20 +80,26 @@ export default function LoginPage() {
           },
         });
         if (signUpError) throw signUpError;
-        setSuccess("Signup done. Check your inbox for verification if required.");
+        setSuccess(tr("Signup done. Check your inbox for verification if required."));
       } else {
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-          email,
-          {
-            redirectTo: `${window.location.origin}/auth/callback`,
-          },
-        );
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+        });
         if (resetError) throw resetError;
-        setSuccess("Password reset email sent.");
+        setSuccess(tr("Reset link sent. Check inbox and spam."));
+        setResetCooldownUntil(Date.now() + 60_000);
       }
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Unexpected auth error";
-      setError(message);
+      const rawMessage = e instanceof Error ? e.message : tr("Unexpected auth error");
+      const friendly = getFriendlyAuthMessage(rawMessage);
+      setError(friendly);
+      if (
+        mode === "reset" &&
+        friendly ===
+          tr("Password reset requests are temporarily limited. Please wait one minute and try again.")
+      ) {
+        setResetCooldownUntil(Date.now() + 60_000);
+      }
     } finally {
       setLoading(false);
     }
@@ -110,7 +150,7 @@ export default function LoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               type="email"
-              placeholder="you@company.com"
+              placeholder={tr("Email address placeholder")}
               required
             />
           </label>
@@ -149,14 +189,16 @@ export default function LoginPage() {
           {error ? <p className="error">{error}</p> : null}
           {success ? <p className="success">{success}</p> : null}
 
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          <button className="btn btn-primary" type="submit" disabled={loading || isResetCooldown}>
             {loading
               ? tr("Processing...")
               : mode === "login"
                 ? tr("Login")
                 : mode === "signup"
                   ? tr("Create account")
-                  : tr("Send reset link")}
+                  : isResetCooldown
+                    ? tr("Retry in {seconds}s", { seconds: resetCooldownSeconds })
+                    : tr("Send reset link")}
           </button>
         </form>
       </div>
