@@ -1,4 +1,4 @@
-# CRM Food Trading (Web App)
+# ATA CRM (Web App)
 
 Frontend + API layer for the CRM project.
 
@@ -51,4 +51,14 @@ Open `http://localhost:3000`.
 ```bash
 npm run lint
 npm run build
+npm run test:unit
+npm run test:component
+npm run test:api
+npm run test:coverage
+```
+
+## End-to-end checks
+```bash
+npm run test:e2e:smoke
+npm run test:e2e:full
 ```

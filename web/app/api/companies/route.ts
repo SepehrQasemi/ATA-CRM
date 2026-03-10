@@ -33,11 +33,7 @@ export async function GET(request: Request) {
   }
 
   if (companyRole && COMPANY_ROLES.has(companyRole)) {
-    if (companyRole === "both") {
-      query.eq("company_role", "both");
-    } else {
-      query.in("company_role", [companyRole, "both"]);
-    }
+    query.eq("company_role", companyRole);
   }
 
   if (search) {

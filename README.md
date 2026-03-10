@@ -1,4 +1,4 @@
-# CRM Food Trading
+# ATA CRM
 
 SaaS CRM project for a B2B company trading raw food ingredients.
 
@@ -6,10 +6,10 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `supabase/`: SQL migrations and schema assets
 - `web/`: Next.js application (frontend + API routes)
 - `docs/`: reports, diagrams, and demo checklist
-- `.github/workflows/ci.yml`: lint + build pipeline
+- `.github/workflows/ci.yml`: quality + coverage + E2E gates
 
 ## Main Features
-- Public landing page (`/`) with branding, feature overview, and CTA
+- Direct login entry (`/` redirects to `/login`) for faster operational access
 - Authentication (login, signup, reset) + roles (`admin`, `commercial`, `standard_user`)
 - Full i18n UI with language switch (`en`, `fr`, `fa`) and full RTL for Persian
 - Help Center (`/help`) with onboarding steps, role guide, and FAQ
@@ -20,10 +20,16 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - Company-product links with specific model/grade tracking (per traded/potential relation)
 - Product-driven customer finder with traded/potential company suggestions + quick lead creation
 - Company contact agents (1-3 ranked agents per company for priority follow-up)
-- Product workspace tabs (Catalog / Relations / Customer Finder) for cleaner navigation
+- Product workspace tabs (List / New Product / Relations / Customer Finder) for cleaner navigation
+- Company workspace tabs (List / New Company) for cleaner navigation
+- Contact workspace tabs (List / New Contact) for cleaner navigation
+- Leads workspace tabs (Pipeline / List / New Lead) for cleaner navigation
+- Tasks workspace tabs (List / Calendar / New Task) for cleaner navigation
 - Company role model (`supplier`, `customer`, `both`)
 - Sales pipeline with stage change, quick move, and history
 - Multi-criteria filters on leads/tasks/contacts/companies
+- Prefix-based smart suggestions (top 5) on name search inputs
+- Company role filter is exact (`supplier` / `customer` / `both`)
 - Saved filters for leads and tasks
 - KPI dashboard (7/30/90 days) + funnel + leaderboard + stage aging
 - Task planning with monthly calendar + deadline alerts (overdue / due soon)
@@ -124,6 +130,8 @@ Optional:
 ```bash
 npm run lint
 npm run build
+npm run test
+npm --workspace web run test:coverage
 ```
 
 Full health (lint + build + e2e):
@@ -134,14 +142,22 @@ npm run health
 ## End-to-End Tests (Playwright)
 ```bash
 npm run test:e2e
+npm --workspace web run test:e2e:smoke
+npm --workspace web run test:e2e:full
 ```
 
 Notes:
-- E2E setup auto-creates/updates an admin test user and runs the demo seed.
-- Includes language switch persistence + help center + saved filters scenarios.
+- E2E setup auto-creates/updates role-based test users (`admin`, `manager`, `commercial`, `standard_user`) and runs the demo seed.
+- Includes language switch persistence, role-based access scenarios, and mobile smoke coverage.
 - Test credentials can be overridden with:
   - `E2E_USER_EMAIL`
   - `E2E_USER_PASSWORD`
+  - `E2E_MANAGER_EMAIL`
+  - `E2E_MANAGER_PASSWORD`
+  - `E2E_COMMERCIAL_EMAIL`
+  - `E2E_COMMERCIAL_PASSWORD`
+  - `E2E_STANDARD_EMAIL`
+  - `E2E_STANDARD_PASSWORD`
 
 ## Demo Seed (under 2 minutes)
 ```bash
@@ -193,6 +209,9 @@ Notes:
 - French report: `docs/rapport-projet-fr.md`
 - Persian summary: `docs/resume-projet-fa.md`
 - Demo checklist: `docs/checklist-demo.md`
+- Oral presentation script (FR): `docs/presentation-oral-fr.md`
+- Formal test game (FR): `docs/jeu-de-test-crm-fr.md`
+- Professor comparison with evidence (FR): `docs/comparaison-enonce-preuves-fr.md`
 - Final compliance matrix: `docs/final-compliance-checklist.md`
 - Safe baseline notes: `docs/release-baseline-v1.md`
 - Docs index: `docs/README.md`

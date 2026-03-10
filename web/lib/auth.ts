@@ -37,3 +37,11 @@ export async function getUserRole(userId: string): Promise<string> {
 
   return data?.role ?? "standard_user";
 }
+
+export function isAdminRole(role: string): boolean {
+  return role === "admin";
+}
+
+export function canManageUsers(role: string): boolean {
+  return role === "admin" || role === "manager";
+}

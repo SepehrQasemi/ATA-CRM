@@ -1,9 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { AutocompleteInput } from "@/components/autocomplete-input";
+import { PaginationControls } from "@/components/pagination-controls";
 import { PageTip } from "@/components/page-tip";
 import { useLocale } from "@/components/locale-provider";
 import { Product, ProductCompanyLink } from "@/lib/types";
+import { startsWithSuggestions } from "@/lib/search-suggestions";
 
 type CompanyOption = {
   id: string;
@@ -18,12 +22,8 @@ type CompanyAgent = {
   company_id: string | null;
   first_name: string;
   last_name: string;
-  email: string | null;
-  phone: string | null;
-  job_title: string | null;
   agent_rank: number | null;
 };
-
 type ProductsResponse = {
   products: Product[];
   companies: CompanyOption[];
@@ -32,20 +32,7 @@ type ProductsResponse = {
   error?: string;
 };
 
-type ProductFilters = {
-  q: string;
-  category: string;
-  is_active: string;
-  relation_type: string;
-};
-
-const initialFilters: ProductFilters = {
-  q: "",
-  category: "",
-  is_active: "",
-  relation_type: "",
-};
-
+type ProductFilters = { q: string; category: string; is_active: string; relation_type: string };
 type ProductForm = {
   name: string;
   sku: string;
@@ -56,7 +43,17 @@ type ProductForm = {
   is_active: boolean;
   notes: string;
 };
+type RelationForm = {
+  product_id: string;
+  company_id: string;
+  relation_type: "traded" | "potential";
+  product_model: string;
+  last_price: string;
+  notes: string;
+};
+type ProductWorkspaceTab = "list" | "create" | "relations" | "finder";
 
+const initialFilters: ProductFilters = { q: "", category: "", is_active: "", relation_type: "" };
 const initialForm: ProductForm = {
   name: "",
   sku: "",
@@ -67,18 +64,6 @@ const initialForm: ProductForm = {
   is_active: true,
   notes: "",
 };
-
-type RelationForm = {
-  product_id: string;
-  company_id: string;
-  relation_type: "traded" | "potential";
-  product_model: string;
-  last_price: string;
-  notes: string;
-};
-
-type ProductWorkspaceTab = "catalog" | "relations" | "finder";
-
 const initialRelationForm: RelationForm = {
   product_id: "",
   company_id: "",
@@ -87,18 +72,13 @@ const initialRelationForm: RelationForm = {
   last_price: "",
   notes: "",
 };
+const PER_PAGE = 20;
 
-function relationLabel(
-  value: "traded" | "potential",
-  tr: (key: string, vars?: Record<string, string | number>) => string,
-) {
+function relationLabel(value: "traded" | "potential", tr: (key: string) => string) {
   return value === "traded" ? tr("Traded") : tr("Potential");
 }
 
-function companyRoleLabel(
-  role: "supplier" | "customer" | "both",
-  tr: (key: string, vars?: Record<string, string | number>) => string,
-) {
+function companyRoleLabel(role: "supplier" | "customer" | "both", tr: (key: string) => string) {
   if (role === "supplier") return tr("Supplier");
   if (role === "customer") return tr("Customer");
   return tr("Supplier + Customer");
@@ -116,12 +96,12 @@ export default function ProductsPage() {
   const [finderProductId, setFinderProductId] = useState("");
   const [finderRelation, setFinderRelation] = useState<"" | "traded" | "potential">("");
   const [finderModel, setFinderModel] = useState("");
-  const [activeTab, setActiveTab] = useState<ProductWorkspaceTab>("catalog");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ProductWorkspaceTab>("list");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savingRelation, setSavingRelation] = useState(false);
+  const [page, setPage] = useState(1);
 
   async function loadData(activeFilters = filters) {
     const params = new URLSearchParams();
@@ -130,8 +110,7 @@ export default function ProductsPage() {
     if (activeFilters.is_active) params.set("is_active", activeFilters.is_active);
     if (activeFilters.relation_type) params.set("relation_type", activeFilters.relation_type);
 
-    const query = params.toString();
-    const response = await fetch(`/api/products${query ? `?${query}` : ""}`);
+    const response = await fetch(`/api/products${params.toString() ? `?${params.toString()}` : ""}`);
     const json = (await response.json()) as ProductsResponse;
     if (!response.ok) {
       setError(json.error ?? "Failed to load products");
@@ -142,12 +121,13 @@ export default function ProductsPage() {
     setCompanies(json.companies ?? []);
     setLinks(json.links ?? []);
     setAgents(json.agents ?? []);
+    setPage(1);
 
     if (!relationForm.product_id && (json.products?.length ?? 0) > 0) {
-      setRelationForm((prev) => ({ ...prev, product_id: json.products[0].id }));
+      setRelationForm((prev) => ({ ...prev, product_id: json.products![0].id }));
     }
     if (!finderProductId && (json.products?.length ?? 0) > 0) {
-      setFinderProductId(json.products[0].id);
+      setFinderProductId(json.products![0].id);
     }
   }
 
@@ -156,23 +136,7 @@ export default function ProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const companyById = useMemo(() => {
-    const map: Record<string, CompanyOption> = {};
-    companies.forEach((company) => {
-      map[company.id] = company;
-    });
-    return map;
-  }, [companies]);
-
-  const linksByProduct = useMemo(() => {
-    const map: Record<string, ProductCompanyLink[]> = {};
-    links.forEach((link) => {
-      if (!map[link.product_id]) map[link.product_id] = [];
-      map[link.product_id].push(link);
-    });
-    return map;
-  }, [links]);
-
+  const companyById = useMemo(() => Object.fromEntries(companies.map((item) => [item.id, item])), [companies]);
   const agentsByCompany = useMemo(() => {
     const map: Record<string, CompanyAgent[]> = {};
     agents.forEach((agent) => {
@@ -180,31 +144,24 @@ export default function ProductsPage() {
       if (!map[agent.company_id]) map[agent.company_id] = [];
       map[agent.company_id].push(agent);
     });
-    Object.values(map).forEach((items) => {
-      items.sort((a, b) => (a.agent_rank ?? 99) - (b.agent_rank ?? 99));
-    });
     return map;
   }, [agents]);
-
+  const productSearchSuggestions = useMemo(
+    () => startsWithSuggestions(products.map((product) => product.name), filters.q, 5),
+    [products, filters.q],
+  );
   const visibleProducts = useMemo(() => {
     if (!filters.relation_type) return products;
-    const matchingProductIds = new Set(
-      links
-        .filter((link) => link.relation_type === filters.relation_type)
-        .map((link) => link.product_id),
-    );
-    return products.filter((product) => matchingProductIds.has(product.id));
+    const ids = new Set(links.filter((l) => l.relation_type === filters.relation_type).map((l) => l.product_id));
+    return products.filter((p) => ids.has(p.id));
   }, [filters.relation_type, links, products]);
-
   const customerSuggestions = useMemo(() => {
     if (!finderProductId) return [];
-    const modelQuery = finderModel.trim().toLowerCase();
+    const model = finderModel.trim().toLowerCase();
     return links
-      .filter((link) => link.product_id === finderProductId)
-      .filter((link) => (finderRelation ? link.relation_type === finderRelation : true))
-      .filter((link) =>
-        modelQuery ? (link.product_model ?? "").toLowerCase().includes(modelQuery) : true,
-      )
+      .filter((l) => l.product_id === finderProductId)
+      .filter((l) => (finderRelation ? l.relation_type === finderRelation : true))
+      .filter((l) => (model ? (l.product_model ?? "").toLowerCase().includes(model) : true))
       .map((link) => ({
         link,
         company: companyById[link.company_id],
@@ -213,21 +170,12 @@ export default function ProductsPage() {
       .filter((item) => Boolean(item.company));
   }, [finderModel, finderProductId, finderRelation, links, companyById, agentsByCompany]);
 
-  function resetProductForm() {
-    setEditingId(null);
-    setForm(initialForm);
-  }
-
   async function saveProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setError(null);
-    setSuccess(null);
-
-    const endpoint = editingId ? `/api/products/${editingId}` : "/api/products";
-    const method = editingId ? "PATCH" : "POST";
-    const response = await fetch(endpoint, {
-      method,
+    const response = await fetch("/api/products", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
@@ -237,47 +185,16 @@ export default function ProductsPage() {
         default_sale_price: Number(form.default_sale_price || 0),
       }),
     });
-
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
       setError(json.error ?? "Failed to save product");
       setSaving(false);
       return;
     }
-
+    setForm(initialForm);
     setSaving(false);
-    setSuccess(editingId ? "Product updated" : "Product created");
-    resetProductForm();
-    void loadData();
-  }
-
-  function startEdit(product: Product) {
-    setEditingId(product.id);
-    setForm({
-      name: product.name,
-      sku: product.sku ?? "",
-      category: product.category ?? "",
-      unit: product.unit ?? "kg",
-      default_purchase_price: String(Number(product.default_purchase_price || 0)),
-      default_sale_price: String(Number(product.default_sale_price || 0)),
-      is_active: product.is_active,
-      notes: product.notes ?? "",
-    });
-  }
-
-  async function deleteProduct(productId: string) {
-    setError(null);
-    setSuccess(null);
-    const response = await fetch(`/api/products/${productId}`, { method: "DELETE" });
-    const json = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setError(json.error ?? "Failed to delete product");
-      return;
-    }
-    setSuccess("Product deleted");
-    if (relationForm.product_id === productId) {
-      setRelationForm((prev) => ({ ...prev, product_id: "" }));
-    }
+    setSuccess("Product created");
+    setActiveTab("list");
     void loadData();
   }
 
@@ -285,24 +202,11 @@ export default function ProductsPage() {
     event.preventDefault();
     setSavingRelation(true);
     setError(null);
-    setSuccess(null);
-
-    if (!relationForm.product_id) {
-      setError("Select a product first");
+    if (!relationForm.product_id || !relationForm.company_id || !relationForm.product_model.trim()) {
+      setError("Product, company and model are required");
       setSavingRelation(false);
       return;
     }
-    if (!relationForm.company_id) {
-      setError("Select a company first");
-      setSavingRelation(false);
-      return;
-    }
-    if (!relationForm.product_model.trim()) {
-      setError("Product model/grade is required");
-      setSavingRelation(false);
-      return;
-    }
-
     const response = await fetch(`/api/products/${relationForm.product_id}/links`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -310,36 +214,24 @@ export default function ProductsPage() {
         company_id: relationForm.company_id,
         relation_type: relationForm.relation_type,
         product_model: relationForm.product_model.trim(),
-        last_price: relationForm.last_price === "" ? null : Number(relationForm.last_price),
+        last_price: relationForm.last_price ? Number(relationForm.last_price) : null,
         notes: relationForm.notes || null,
       }),
     });
-
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to save product relation");
+      setError(json.error ?? "Failed to save relation");
       setSavingRelation(false);
       return;
     }
-
+    setRelationForm((prev) => ({ ...prev, company_id: "", product_model: "", last_price: "", notes: "" }));
     setSavingRelation(false);
     setSuccess("Product relation saved");
-    setRelationForm((prev) => ({
-      ...prev,
-      company_id: "",
-      product_model: "",
-      last_price: "",
-      notes: "",
-    }));
     void loadData();
   }
 
   async function deleteRelation(link: ProductCompanyLink) {
-    setError(null);
-    setSuccess(null);
-    const response = await fetch(`/api/products/${link.product_id}/links/${link.id}`, {
-      method: "DELETE",
-    });
+    const response = await fetch(`/api/products/${link.product_id}/links/${link.id}`, { method: "DELETE" });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
       setError(json.error ?? "Failed to delete relation");
@@ -353,7 +245,6 @@ export default function ProductsPage() {
     const product = products.find((item) => item.id === link.product_id);
     const company = companyById[link.company_id];
     if (!product || !company) return;
-
     const topAgent = (agentsByCompany[link.company_id] ?? [])[0];
     const response = await fetch("/api/leads", {
       method: "POST",
@@ -367,56 +258,31 @@ export default function ProductsPage() {
         notes: `Relation: ${link.relation_type}; model: ${link.product_model || "-"}`,
       }),
     });
-    const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to create lead from product match");
+      setError("Failed to create lead from product match");
       return;
     }
-    setError(null);
     setSuccess("Lead created from product match");
   }
 
-  function applyFilters(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setSuccess(null);
-    void loadData(filters);
-  }
-
-  const tradedCount = links.filter((link) => link.relation_type === "traded").length;
-  const potentialCount = links.filter((link) => link.relation_type === "potential").length;
+  const totalPages = Math.max(1, Math.ceil(visibleProducts.length / PER_PAGE));
+  const visibleProductsPage = visibleProducts.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const tradedCount = links.filter((l) => l.relation_type === "traded").length;
+  const potentialCount = links.filter((l) => l.relation_type === "potential").length;
 
   return (
     <div className="stack">
-      <PageTip
-        id="tip-products-buckets"
-        title={tr("Quick onboarding")}
-        detail={tr("For each company, keep both traded history and potential product links updated.")}
-      />
+      <PageTip id="tip-products-buckets" title={tr("Quick onboarding")} detail={tr("For each company, keep both traded history and potential product links updated.")} />
       <section className="page-head">
         <h1>{tr("Products")}</h1>
-        <p>
-          {tr("Manage your product catalog and classify each company relation as traded history or potential opportunity.")}
-        </p>
+        <p>{tr("Manage your product catalog and classify each company relation as traded history or potential opportunity.")}</p>
       </section>
 
       <section className="card-grid">
-        <article className="card">
-          <p className="muted">{tr("Products")}</p>
-          <p className="kpi">{visibleProducts.length}</p>
-        </article>
-        <article className="card">
-          <p className="muted">{tr("Traded links")}</p>
-          <p className="kpi">{tradedCount}</p>
-        </article>
-        <article className="card">
-          <p className="muted">{tr("Potential links")}</p>
-          <p className="kpi">{potentialCount}</p>
-        </article>
-        <article className="card">
-          <p className="muted">{tr("Active products")}</p>
-          <p className="kpi">{visibleProducts.filter((product) => product.is_active).length}</p>
-        </article>
+        <article className="card"><p className="muted">{tr("Products")}</p><p className="kpi">{visibleProducts.length}</p></article>
+        <article className="card"><p className="muted">{tr("Traded links")}</p><p className="kpi">{tradedCount}</p></article>
+        <article className="card"><p className="muted">{tr("Potential links")}</p><p className="kpi">{potentialCount}</p></article>
+        <article className="card"><p className="muted">{tr("Active products")}</p><p className="kpi">{visibleProducts.filter((p) => p.is_active).length}</p></article>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
@@ -424,491 +290,127 @@ export default function ProductsPage() {
 
       <section className="panel stack">
         <div className="subtabs" role="tablist" aria-label="Products workspace tabs">
-          <button
-            className={`subtab ${activeTab === "catalog" ? "is-active" : ""}`}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "catalog"}
-            onClick={() => setActiveTab("catalog")}
-          >
-            Product Catalog
-          </button>
-          <button
-            className={`subtab ${activeTab === "relations" ? "is-active" : ""}`}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "relations"}
-            onClick={() => setActiveTab("relations")}
-          >
-            Product Relations
-          </button>
-          <button
-            className={`subtab ${activeTab === "finder" ? "is-active" : ""}`}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "finder"}
-            onClick={() => setActiveTab("finder")}
-          >
-            Customer Finder
-          </button>
+          <button className={`subtab ${activeTab === "list" ? "is-active" : ""}`} type="button" role="tab" aria-selected={activeTab === "list"} onClick={() => setActiveTab("list")}>{tr("Product list")}</button>
+          <button className={`subtab ${activeTab === "create" ? "is-active" : ""}`} type="button" role="tab" aria-selected={activeTab === "create"} onClick={() => setActiveTab("create")}>{tr("New product")}</button>
+          <button className={`subtab ${activeTab === "relations" ? "is-active" : ""}`} type="button" role="tab" aria-selected={activeTab === "relations"} onClick={() => setActiveTab("relations")}>{tr("Product relations")}</button>
+          <button className={`subtab ${activeTab === "finder" ? "is-active" : ""}`} type="button" role="tab" aria-selected={activeTab === "finder"} onClick={() => setActiveTab("finder")}>{tr("Customer finder")}</button>
         </div>
       </section>
 
-      {activeTab === "catalog" ? (
-      <>
-      <section className="panel stack">
-        <h2>{tr("Product filters")}</h2>
-        <form className="row" onSubmit={applyFilters}>
-          <label className="col-4 stack">
-            {tr("Search")}
-            <input
-              value={filters.q}
-              onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
-              placeholder="Product name"
-            />
-          </label>
-          <label className="col-3 stack">
-            {tr("Category")}
-            <input
-              value={filters.category}
-              onChange={(event) =>
-                setFilters((prev) => ({ ...prev, category: event.target.value }))
-              }
-              placeholder="Cocoa, Dairy..."
-            />
-          </label>
-          <label className="col-2 stack">
-            {tr("Active")}
-            <select
-              value={filters.is_active}
-              onChange={(event) =>
-                setFilters((prev) => ({ ...prev, is_active: event.target.value }))
-              }
-            >
-              <option value="">{tr("All")}</option>
-              <option value="true">{tr("Active")}</option>
-              <option value="false">{tr("Inactive")}</option>
-            </select>
-          </label>
-          <label className="col-2 stack">
-            {tr("Product relation")}
-            <select
-              value={filters.relation_type}
-              onChange={(event) =>
-                setFilters((prev) => ({ ...prev, relation_type: event.target.value }))
-              }
-            >
-              <option value="">{tr("All")}</option>
-              <option value="traded">{tr("Traded")}</option>
-              <option value="potential">{tr("Potential")}</option>
-            </select>
-          </label>
-          <div className="col-1 stack action-end">
-            <button className="btn btn-secondary" type="submit">
-              {tr("Apply")}
-            </button>
-            <button
-              className="btn"
-              type="button"
-              onClick={() => {
-                setFilters(initialFilters);
-                void loadData(initialFilters);
-              }}
-            >
-              {tr("Clear")}
-            </button>
-          </div>
-        </form>
-      </section>
-      </>
+      {activeTab === "list" ? (
+        <section className="panel stack">
+          <h2>{tr("Product filters")}</h2>
+          <form className="row" onSubmit={(e) => { e.preventDefault(); setError(null); setSuccess(null); void loadData(filters); }}>
+            <label className="col-5 stack">{tr("Search")}<AutocompleteInput value={filters.q} onChange={(v) => setFilters((p) => ({ ...p, q: v }))} placeholder={tr("Product name")} suggestions={productSearchSuggestions} listId="product-search-suggestions" /></label>
+            <label className="col-4 stack">{tr("Category")}<input value={filters.category} onChange={(e) => setFilters((p) => ({ ...p, category: e.target.value }))} /></label>
+            <label className="col-3 stack">{tr("Active")}<select value={filters.is_active} onChange={(e) => setFilters((p) => ({ ...p, is_active: e.target.value }))}><option value="">{tr("All")}</option><option value="true">{tr("Active")}</option><option value="false">{tr("Inactive")}</option></select></label>
+            <div className="col-12 inline-actions action-end"><button className="btn btn-secondary" type="submit">{tr("Apply")}</button><button className="btn" type="button" onClick={() => { setFilters(initialFilters); void loadData(initialFilters); }}>{tr("Clear")}</button></div>
+          </form>
+        </section>
       ) : null}
 
-      {activeTab === "finder" ? (
-      <section className="panel stack">
-        <h2>Customer finder by product</h2>
-        <p className="small">
-          Find companies that already traded this product or have potential demand, with their top 1-3 agents.
-        </p>
-        <form className="row" onSubmit={(event) => event.preventDefault()}>
-          <label className="col-4 stack">
-            Product for customer search
-            <select
-              value={finderProductId}
-              onChange={(event) => setFinderProductId(event.target.value)}
-            >
-              <option value="">{tr("Select product")}</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="col-3 stack">
-            Relation focus
-            <select
-              value={finderRelation}
-              onChange={(event) =>
-                setFinderRelation(event.target.value as "" | "traded" | "potential")
-              }
-            >
-              <option value="">{tr("All")}</option>
-              <option value="traded">{tr("Traded")}</option>
-              <option value="potential">{tr("Potential")}</option>
-            </select>
-          </label>
-          <label className="col-5 stack">
-            Model contains
-            <input
-              value={finderModel}
-              onChange={(event) => setFinderModel(event.target.value)}
-              placeholder="E1422, kappa, instant..."
-            />
-          </label>
-        </form>
-
-        <h3>Suggested customer companies</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Company</th>
-              <th>Relation</th>
-              <th>Model / Grade</th>
-              <th>Sector</th>
-              <th>Location</th>
-              <th>Top agents</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {customerSuggestions.map(({ link, company, agents: topAgents }) => (
-              <tr key={`suggestion-${link.id}`}>
-                <td>{company?.name ?? "-"}</td>
-                <td>{relationLabel(link.relation_type, tr)}</td>
-                <td>{link.product_model || "-"}</td>
-                <td>{company?.sector ?? "-"}</td>
-                <td>{[company?.city, company?.country].filter(Boolean).join(", ") || "-"}</td>
-                <td>
-                  {topAgents.length === 0 ? (
-                    <span className="small">-</span>
-                  ) : (
-                    <div className="stack">
-                      {topAgents.map((agent) => (
-                        <span key={agent.id} className="small">
-                          {`#${agent.agent_rank ?? "-"} ${agent.first_name} ${agent.last_name}`}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </td>
-                <td>
-                  <button
-                    className="btn btn-secondary"
-                    type="button"
-                    onClick={() => void createLeadFromProductMatch(link)}
-                  >
-                    Create lead
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {customerSuggestions.length === 0 ? (
-              <tr>
-                <td colSpan={7}>
-                  <span className="small">No matching companies yet.</span>
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </section>
+      {activeTab === "create" ? (
+        <section className="panel stack">
+          <h2>{tr("New product")}</h2>
+          <form className="stack" onSubmit={saveProduct}>
+            <div className="row">
+              <label className="col-3 stack">{tr("Name")}<input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required /></label>
+              <label className="col-2 stack">SKU<input value={form.sku} onChange={(e) => setForm((p) => ({ ...p, sku: e.target.value }))} /></label>
+              <label className="col-2 stack">{tr("Category")}<input value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} /></label>
+              <label className="col-1 stack">Unit<input value={form.unit} onChange={(e) => setForm((p) => ({ ...p, unit: e.target.value }))} /></label>
+              <label className="col-2 stack">{tr("Purchase price")}<input type="number" value={form.default_purchase_price} onChange={(e) => setForm((p) => ({ ...p, default_purchase_price: e.target.value }))} /></label>
+              <label className="col-2 stack">{tr("Sale price")}<input type="number" value={form.default_sale_price} onChange={(e) => setForm((p) => ({ ...p, default_sale_price: e.target.value }))} /></label>
+              <label className="col-2 stack">{tr("Active")}<select value={form.is_active ? "true" : "false"} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.value === "true" }))}><option value="true">{tr("Yes")}</option><option value="false">{tr("No")}</option></select></label>
+              <label className="col-10 stack">{tr("Notes")}<textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} /></label>
+            </div>
+            <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? tr("Saving...") : tr("Create product")}</button>
+          </form>
+        </section>
       ) : null}
 
-      {activeTab === "catalog" ? (
-      <>
-      <section className="panel stack">
-        <h2>{editingId ? tr("Edit product") : tr("New product")}</h2>
-        <form className="stack" onSubmit={saveProduct}>
-          <div className="row">
-            <label className="col-3 stack">
-              {tr("Name")}
-              <input
-                value={form.name}
-                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                required
-              />
-            </label>
-            <label className="col-2 stack">
-              SKU
-              <input
-                value={form.sku}
-                onChange={(event) => setForm((prev) => ({ ...prev, sku: event.target.value }))}
-              />
-            </label>
-            <label className="col-2 stack">
-              {tr("Category")}
-              <input
-                value={form.category}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, category: event.target.value }))
-                }
-              />
-            </label>
-            <label className="col-1 stack">
-              Unit
-              <input
-                value={form.unit}
-                onChange={(event) => setForm((prev) => ({ ...prev, unit: event.target.value }))}
-              />
-            </label>
-            <label className="col-2 stack">
-              Purchase price
-              <input
-                type="number"
-                value={form.default_purchase_price}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, default_purchase_price: event.target.value }))
-                }
-              />
-            </label>
-            <label className="col-2 stack">
-              Sale price
-              <input
-                type="number"
-                value={form.default_sale_price}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, default_sale_price: event.target.value }))
-                }
-              />
-            </label>
-            <label className="col-2 stack">
-              {tr("Active")}
-              <select
-                value={form.is_active ? "true" : "false"}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, is_active: event.target.value === "true" }))
-                }
-              >
-                <option value="true">{tr("Yes")}</option>
-                <option value="false">{tr("No")}</option>
-              </select>
-            </label>
-            <label className="col-10 stack">
-              {tr("Notes")}
-              <input
-                value={form.notes}
-                onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-              />
-            </label>
+      {activeTab === "list" ? (
+        <section className="panel stack">
+          <h2>{tr("Product list")}</h2>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>{tr("Name")}</th><th>{tr("Category")}</th><th>{tr("Prices")}</th><th>{tr("Actions")}</th></tr></thead>
+              <tbody>
+                {visibleProductsPage.map((product) => (
+                  <tr key={product.id}>
+                    <td>{product.name}<div className="small">{`Unit: ${product.unit}`}</div></td>
+                    <td>{product.category ?? "-"}</td>
+                    <td><div className="small">{`Buy: ${Number(product.default_purchase_price || 0).toLocaleString()} EUR`}</div><div className="small">{`Sell: ${Number(product.default_sale_price || 0).toLocaleString()} EUR`}</div></td>
+                    <td><Link className="btn btn-secondary" href={`/products/${product.id}`}>{tr("View details")}</Link></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="inline-actions">
-            <button className="btn btn-primary" type="submit" disabled={saving}>
-              {saving ? tr("Saving...") : editingId ? tr("Update product") : tr("Create product")}
-            </button>
-            {editingId ? (
-              <button className="btn btn-secondary" type="button" onClick={resetProductForm}>
-                {tr("Cancel edit")}
-              </button>
-            ) : null}
-          </div>
-        </form>
-      </section>
-
-      <section className="panel stack">
-        <h2>{tr("Product list")}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>SKU</th>
-              <th>Category</th>
-              <th>Prices</th>
-              <th>Relations</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {visibleProducts.map((product) => {
-              const related = linksByProduct[product.id] ?? [];
-              return (
-                <tr key={product.id}>
-                  <td>
-                    {product.name}
-                    <div className="small">Unit: {product.unit}</div>
-                  </td>
-                  <td>{product.sku ?? "-"}</td>
-                  <td>{product.category ?? "-"}</td>
-                  <td>
-                    <div className="small">
-                      Buy: {Number(product.default_purchase_price || 0).toLocaleString()} EUR
-                    </div>
-                    <div className="small">
-                      Sell: {Number(product.default_sale_price || 0).toLocaleString()} EUR
-                    </div>
-                  </td>
-                  <td>
-                    {related.length === 0 ? (
-                      <span className="small">No links</span>
-                    ) : (
-                      <div className="tag-list">
-                        {related.map((link) => (
-                          <span key={link.id} className={`tag tag-${link.relation_type}`}>
-                            {relationLabel(link.relation_type, tr)}:{" "}
-                            {companyById[link.company_id]?.name ?? "Company"}
-                            {link.product_model ? ` (${link.product_model})` : ""}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <div className="inline-actions">
-                      <button
-                        className="btn btn-secondary"
-                        type="button"
-                        onClick={() => startEdit(product)}
-                      >
-                      {tr("Edit")}
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        type="button"
-                        onClick={() => void deleteProduct(product.id)}
-                      >
-                        {tr("Delete")}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
-      </>
+          <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
+        </section>
       ) : null}
 
       {activeTab === "relations" ? (
-      <section className="panel stack">
-        <h2>{tr("Product-company relations")}</h2>
-        <form className="stack" onSubmit={saveRelation}>
-          <div className="row">
-            <label className="col-3 stack">
-              {tr("Product")}
-              <select
-                value={relationForm.product_id}
-                onChange={(event) =>
-                  setRelationForm((prev) => ({ ...prev, product_id: event.target.value }))
-                }
-                required
-              >
-                <option value="">{tr("Select product")}</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                  </option>
+        <section className="panel stack">
+          <h2>{tr("Product-company relations")}</h2>
+          <form className="stack" onSubmit={saveRelation}>
+            <div className="row">
+              <label className="col-3 stack">{tr("Product")}<select value={relationForm.product_id} onChange={(e) => setRelationForm((p) => ({ ...p, product_id: e.target.value }))} required><option value="">{tr("Select product")}</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+              <label className="col-3 stack">{tr("Company")}<select value={relationForm.company_id} onChange={(e) => setRelationForm((p) => ({ ...p, company_id: e.target.value }))} required><option value="">{tr("Select company")}</option>{companies.map((c) => <option key={c.id} value={c.id}>{`${c.name} (${companyRoleLabel(c.company_role, tr)})`}</option>)}</select></label>
+              <label className="col-2 stack">{tr("Category")}<select value={relationForm.relation_type} onChange={(e) => setRelationForm((p) => ({ ...p, relation_type: e.target.value as "traded" | "potential" }))}><option value="traded">{tr("Traded")}</option><option value="potential">{tr("Potential")}</option></select></label>
+              <label className="col-2 stack">{tr("Model / Grade")}<input value={relationForm.product_model} onChange={(e) => setRelationForm((p) => ({ ...p, product_model: e.target.value }))} required /></label>
+              <label className="col-2 stack">{tr("Last price")}<input type="number" value={relationForm.last_price} onChange={(e) => setRelationForm((p) => ({ ...p, last_price: e.target.value }))} /></label>
+            </div>
+            <label className="stack">{tr("Notes")}<textarea value={relationForm.notes} onChange={(e) => setRelationForm((p) => ({ ...p, notes: e.target.value }))} /></label>
+            <button className="btn btn-primary" type="submit" disabled={savingRelation}>{savingRelation ? tr("Saving...") : tr("Save relation")}</button>
+          </form>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>{tr("Product")}</th><th>{tr("Company")}</th><th>{tr("Category")}</th><th>{tr("Model / Grade")}</th><th>{tr("Last price")}</th><th>{tr("Top agents")}</th><th>{tr("Actions")}</th></tr></thead>
+              <tbody>
+                {links.map((link) => (
+                  <tr key={link.id}>
+                    <td>{products.find((p) => p.id === link.product_id)?.name ?? "-"}</td>
+                    <td>{companyById[link.company_id]?.name ?? "-"}</td>
+                    <td>{relationLabel(link.relation_type, tr)}</td>
+                    <td>{link.product_model || "-"}</td>
+                    <td>{link.last_price == null ? "-" : `${Number(link.last_price).toLocaleString()} EUR`}</td>
+                    <td>{(agentsByCompany[link.company_id] ?? []).slice(0, 3).map((agent) => `${agent.first_name} ${agent.last_name}`).join(", ") || "-"}</td>
+                    <td><button className="btn btn-danger" type="button" onClick={() => void deleteRelation(link)}>{tr("Delete")}</button></td>
+                  </tr>
                 ))}
-              </select>
-            </label>
-            <label className="col-3 stack">
-              {tr("Company")}
-              <select
-                value={relationForm.company_id}
-                onChange={(event) =>
-                  setRelationForm((prev) => ({ ...prev, company_id: event.target.value }))
-                }
-                required
-              >
-                <option value="">{tr("Select company")}</option>
-                {companies.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name} ({companyRoleLabel(company.company_role, tr)})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="col-2 stack">
-              {tr("Category")}
-              <select
-                value={relationForm.relation_type}
-                onChange={(event) =>
-                  setRelationForm((prev) => ({
-                    ...prev,
-                    relation_type: event.target.value as "traded" | "potential",
-                  }))
-                }
-              >
-                <option value="traded">{tr("Traded")}</option>
-                <option value="potential">{tr("Potential")}</option>
-              </select>
-            </label>
-            <label className="col-2 stack">
-              Model / Grade
-              <input
-                value={relationForm.product_model}
-                onChange={(event) =>
-                  setRelationForm((prev) => ({ ...prev, product_model: event.target.value }))
-                }
-                placeholder="E1422, Kappa, 80 mesh..."
-                required
-              />
-            </label>
-            <label className="col-2 stack">
-              Last price
-              <input
-                type="number"
-                value={relationForm.last_price}
-                onChange={(event) =>
-                  setRelationForm((prev) => ({ ...prev, last_price: event.target.value }))
-                }
-              />
-            </label>
+              </tbody>
+            </table>
           </div>
-          <label className="stack">
-              {tr("Notes")}
-              <input
-                value={relationForm.notes}
-                onChange={(event) =>
-                  setRelationForm((prev) => ({ ...prev, notes: event.target.value }))
-                }
-              />
-          </label>
-          <button className="btn btn-primary" type="submit" disabled={savingRelation}>
-            {savingRelation ? tr("Saving...") : tr("Save relation")}
-          </button>
-        </form>
+        </section>
+      ) : null}
 
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Company</th>
-              <th>Category</th>
-              <th>Model / Grade</th>
-              <th>Last price</th>
-              <th>Notes</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {links.map((link) => (
-              <tr key={link.id}>
-                <td>{products.find((product) => product.id === link.product_id)?.name ?? "-"}</td>
-                <td>{companyById[link.company_id]?.name ?? "-"}</td>
-                <td>{relationLabel(link.relation_type, tr)}</td>
-                <td>{link.product_model || "-"}</td>
-                <td>{link.last_price == null ? "-" : `${Number(link.last_price).toLocaleString()} EUR`}</td>
-                <td>{link.notes ?? "-"}</td>
-                <td>
-                  <button className="btn btn-danger" type="button" onClick={() => void deleteRelation(link)}>
-                    {tr("Delete")}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      {activeTab === "finder" ? (
+        <section className="panel stack">
+          <h2>{tr("Customer finder by product")}</h2>
+          <form className="row" onSubmit={(e) => e.preventDefault()}>
+            <label className="col-4 stack">{tr("Product for customer search")}<select value={finderProductId} onChange={(e) => setFinderProductId(e.target.value)}><option value="">{tr("Select product")}</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+            <label className="col-3 stack">{tr("Relation focus")}<select value={finderRelation} onChange={(e) => setFinderRelation(e.target.value as "" | "traded" | "potential")}><option value="">{tr("All")}</option><option value="traded">{tr("Traded")}</option><option value="potential">{tr("Potential")}</option></select></label>
+            <label className="col-5 stack">{tr("Model contains")}<input value={finderModel} onChange={(e) => setFinderModel(e.target.value)} /></label>
+          </form>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>{tr("Company")}</th><th>{tr("Relation")}</th><th>{tr("Model / Grade")}</th><th>{tr("Location")}</th><th>{tr("Top agents")}</th><th>{tr("Actions")}</th></tr></thead>
+              <tbody>
+                {customerSuggestions.map(({ link, company, agents: topAgents }) => (
+                  <tr key={`finder-${link.id}`}>
+                    <td>{company?.name ?? "-"}</td>
+                    <td>{relationLabel(link.relation_type, tr)}</td>
+                    <td>{link.product_model || "-"}</td>
+                    <td>{[company?.city, company?.country].filter(Boolean).join(", ") || "-"}</td>
+                    <td>{topAgents.map((agent) => `${agent.first_name} ${agent.last_name}`).join(", ") || "-"}</td>
+                    <td><button className="btn btn-secondary" type="button" onClick={() => void createLeadFromProductMatch(link)}>{tr("Create lead")}</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       ) : null}
     </div>
   );

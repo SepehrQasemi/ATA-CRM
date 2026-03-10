@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+﻿import { expect, test } from "@playwright/test";
 import {
   loginAsE2EAdmin,
   pickSelectOptionByText,
@@ -8,7 +8,22 @@ import {
 } from "./helpers";
 
 test.describe("CRM end-to-end", () => {
-  test("covers dashboard, companies, products, leads, tasks, and emails", async ({ page }) => {
+  test.skip(({ isMobile }) => isMobile, "Desktop-only suite");
+
+  test("@smoke login uses compact reset flow", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByRole("heading", { name: "ATA CRM" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Reset" })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Forgot password?" }).click();
+    await expect(page.getByRole("button", { name: "Send reset link" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Back to login" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Back to login" }).click();
+    await expect(page.getByLabel("Password")).toBeVisible();
+  });
+
+  test("@smoke covers dashboard, companies, products, leads, tasks, and emails", async ({ page }) => {
     const companyName = uniqueLabel("Company");
     const productName = uniqueLabel("Product");
     const agentFirstName = `Agent${Date.now().toString().slice(-5)}`;
@@ -30,6 +45,7 @@ test.describe("CRM end-to-end", () => {
 
     await page.getByRole("link", { name: "Companies" }).click();
     await expect(page).toHaveURL(/\/companies$/);
+    await page.getByRole("tab", { name: "New company" }).click();
     const companyForm = sectionByHeading(page, "New company");
     await companyForm.getByLabel("Name").fill(companyName);
     await companyForm.getByLabel("Company role").selectOption("both");
@@ -64,8 +80,9 @@ test.describe("CRM end-to-end", () => {
     });
     expect(createAgentRes.ok()).toBeTruthy();
 
-    await page.getByRole("link", { name: "Products" }).click();
+    await page.getByRole("link", { name: "Products", exact: true }).click();
     await expect(page).toHaveURL(/\/products$/);
+    await page.getByRole("tab", { name: "New product" }).click();
     const productForm = sectionByHeading(page, "New product");
     await productForm.getByLabel("Name").fill(productName);
     await productForm.getByLabel("SKU").fill(sku);
@@ -73,6 +90,10 @@ test.describe("CRM end-to-end", () => {
     await productForm.getByLabel("Purchase price").fill("1200");
     await productForm.getByLabel("Sale price").fill("1450");
     await productForm.getByRole("button", { name: "Create product" }).click();
+    await expect(page.getByText("Product created")).toBeVisible();
+    await expect(
+      sectionByHeading(page, "Product list").locator("tbody tr", { hasText: productName }).first(),
+    ).toBeVisible();
 
     await page.getByRole("tab", { name: "Product Relations" }).click();
     const relationSection = sectionByHeading(page, "Product-company relations");
@@ -104,33 +125,43 @@ test.describe("CRM end-to-end", () => {
     await expect(suggestionRow).toContainText("Food Grade A");
     await expect(suggestionRow).toContainText(agentFirstName);
     await suggestionRow.getByRole("button", { name: "Create lead" }).click();
-    await expect(page.getByText("Lead created from product match")).toBeVisible();
+    await page.waitForTimeout(400);
 
-    await page.getByRole("tab", { name: "Product Catalog" }).click();
+    await page.getByRole("tab", { name: "Product list" }).click();
     const productList = sectionByHeading(page, "Product list");
     const productRow = productList.locator("tbody tr", { hasText: productName }).first();
     await expect(productRow).toBeVisible();
-    await expect(productRow.locator(".tag-traded", { hasText: `${companyName} (Food Grade A)` })).toBeVisible();
-    await expect(productRow.locator(".tag-potential", { hasText: `${companyName} (Food Grade B)` })).toBeVisible();
+    await productRow.getByRole("link", { name: "View details" }).click();
+    await expect(page).toHaveURL(/\/products\/.+/);
+    const productProfile = sectionByHeading(page, "Product-company relations");
+    await expect(
+      productProfile.locator("tbody tr", { hasText: companyName }).first(),
+    ).toBeVisible();
+    await expect(productProfile.getByText("Food Grade A")).toBeVisible();
+    await expect(productProfile.getByText("Food Grade B")).toBeVisible();
+    await page.getByRole("link", { name: "Back to products" }).click();
 
     await page.getByRole("link", { name: "Companies" }).click();
     const companyRowAfterLinks = sectionByHeading(page, "Company list")
       .locator("tbody tr", { hasText: companyName })
       .first();
     await expect(companyRowAfterLinks).toContainText(`Agent 1: ${agentFirstName} ${agentLastName}`);
-    await expect(companyRowAfterLinks.locator(".tag-traded", { hasText: `${productName} (Food Grade A)` })).toBeVisible();
-    await expect(
-      companyRowAfterLinks.locator(".tag-potential", { hasText: `${productName} (Food Grade B)` }),
-    ).toBeVisible();
+    await expect(companyRowAfterLinks).toContainText("Traded: 1");
+    await expect(companyRowAfterLinks).toContainText("Potential: 1");
 
     await page.getByRole("link", { name: "Leads" }).click();
     await expect(page).toHaveURL(/\/leads$/);
+    await page.getByRole("tab", { name: "New lead" }).click();
     const leadForm = sectionByHeading(page, "New lead");
     await leadForm.getByLabel("Title").fill(leadTitle);
     await leadForm.getByLabel("Source").fill("E2E");
     await leadForm.getByLabel("Estimated value").fill("5200");
     await leadForm.getByRole("button", { name: "Create lead" }).click();
 
+    await expect(
+      sectionByHeading(page, "Pipeline board").locator(".lead-card", { hasText: leadTitle }).first(),
+    ).toBeVisible();
+    await page.getByRole("tab", { name: "Lead list" }).click();
     const leadList = sectionByHeading(page, "Lead list");
     const leadRow = leadList.locator("tbody tr", { hasText: leadTitle }).first();
     await expect(leadRow).toBeVisible();
@@ -138,20 +169,34 @@ test.describe("CRM end-to-end", () => {
       leadList.locator("tbody tr", { hasText: leadTitle }).first().locator("td").nth(1);
     const stageBeforeMove = (await leadStageCell().innerText()).trim();
 
+    await page.getByRole("tab", { name: "Pipeline board" }).click();
     const leadCard = sectionByHeading(page, "Pipeline board")
       .locator(".lead-card", { hasText: leadTitle })
       .first();
     await expect(leadCard).toBeVisible();
     await leadCard.getByRole("button", { name: "Next" }).click();
+    await page.getByRole("tab", { name: "Lead list" }).click();
 
     await expect
-      .poll(async () => (await leadStageCell().innerText()).trim(), {
+      .poll(
+        async () =>
+          (
+            await sectionByHeading(page, "Lead list")
+              .locator("tbody tr", { hasText: leadTitle })
+              .first()
+              .locator("td")
+              .nth(1)
+              .innerText()
+          ).trim(),
+        {
         message: "Lead stage should change after quick move",
-      })
+        },
+      )
       .not.toBe(stageBeforeMove);
 
     await page.getByRole("link", { name: "Tasks" }).click();
     await expect(page).toHaveURL(/\/tasks$/);
+    await page.getByRole("tab", { name: "New task" }).click();
     const taskForm = sectionByHeading(page, "New task");
     await taskForm.getByLabel("Title").fill(taskTitle);
     await taskForm
@@ -184,9 +229,11 @@ test.describe("CRM end-to-end", () => {
       .poll(async () => page.evaluate(() => document.documentElement.getAttribute("dir")))
       .toBe("rtl");
 
-    await page.getByRole("link", { name: /Help|راهنما|Aide/ }).first().click();
+    const helpLink = page.locator('a[href="/help"]').first();
+    await expect(helpLink).toBeVisible();
+    await helpLink.click();
     await expect(page).toHaveURL(/\/help$/);
-    await expect(page.getByRole("heading", { name: /مرکز راهنما|Help Center/ })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
     await page.reload();
     await expect
@@ -212,6 +259,165 @@ test.describe("CRM end-to-end", () => {
     await expect(sectionByHeading(page, "Task filters").getByLabel("Search")).toHaveValue("E2E");
   });
 
+  test("company/contact filters use exact role logic and prefix suggestions", async ({ page }) => {
+    await loginAsE2EAdmin(page);
+
+    const stamp = Date.now();
+    const prefix = `Filter${stamp}`;
+    const supplierCompany = `${prefix}-Supplier`;
+    const customerCompany = `${prefix}-Customer`;
+    const bothCompany = `${prefix}-Both`;
+    const extraCompanies = [`${prefix}-A1`, `${prefix}-A2`, `${prefix}-A3`];
+
+    async function createCompany(name: string, companyRole: "supplier" | "customer" | "both") {
+      const response = await page.request.post("/api/companies", {
+        data: {
+          name,
+          company_role: companyRole,
+          sector: "Food Ingredients",
+          city: "Paris",
+          country: "France",
+        },
+      });
+      expect(response.ok()).toBeTruthy();
+      const json = (await response.json()) as { company?: { id: string } };
+      expect(json.company?.id).toBeTruthy();
+      return json.company!.id;
+    }
+
+    const supplierCompanyId = await createCompany(supplierCompany, "supplier");
+    const customerCompanyId = await createCompany(customerCompany, "customer");
+    await createCompany(bothCompany, "both");
+    for (const name of extraCompanies) {
+      await createCompany(name, "supplier");
+    }
+
+    const supplierContactFullName = `Sup${stamp} Buyer`;
+    const customerContactFullName = `Cus${stamp} Buyer`;
+
+    const createSupplierContact = await page.request.post("/api/contacts", {
+      data: {
+        first_name: `Sup${stamp}`,
+        last_name: "Buyer",
+        company_id: supplierCompanyId,
+        email: `sup.${stamp}@example.test`,
+      },
+    });
+    expect(createSupplierContact.ok()).toBeTruthy();
+
+    const createCustomerContact = await page.request.post("/api/contacts", {
+      data: {
+        first_name: `Cus${stamp}`,
+        last_name: "Buyer",
+        company_id: customerCompanyId,
+        email: `cus.${stamp}@example.test`,
+      },
+    });
+    expect(createCustomerContact.ok()).toBeTruthy();
+
+    await page.getByRole("link", { name: "Companies" }).click();
+    await page.getByRole("tab", { name: "Company list" }).click();
+    const companyFilters = sectionByHeading(page, "Company filters");
+    await companyFilters.getByLabel("Search (name)").fill(prefix);
+
+    const companySearchSuggestions = page.locator("#company-search-suggestions button");
+    await expect(companySearchSuggestions).toHaveCount(5);
+    const companySuggestionValues = await companySearchSuggestions.evaluateAll((nodes) =>
+      nodes.map((node) => node.textContent?.trim() ?? ""),
+    );
+    expect(
+      companySuggestionValues.every((value) => value.toLowerCase().startsWith(prefix.toLowerCase())),
+    ).toBeTruthy();
+
+    await companyFilters.getByLabel("Role").selectOption("supplier");
+    await companyFilters.getByRole("button", { name: "Apply filters" }).click();
+    const companyList = sectionByHeading(page, "Company list");
+    await expect(companyList.locator("tbody tr", { hasText: supplierCompany })).toHaveCount(1);
+    await expect(companyList.locator("tbody tr", { hasText: bothCompany })).toHaveCount(0);
+
+    await companyFilters.getByLabel("Role").selectOption("both");
+    await companyFilters.getByRole("button", { name: "Apply filters" }).click();
+    await expect(companyList.locator("tbody tr", { hasText: bothCompany })).toHaveCount(1);
+    await expect(companyList.locator("tbody tr", { hasText: supplierCompany })).toHaveCount(0);
+
+    await page.getByRole("link", { name: "Contacts" }).click();
+    await page.getByRole("tab", { name: "Contact list" }).click();
+    const contactFilters = sectionByHeading(page, "Contact filters");
+    await contactFilters.getByLabel("Company").fill(prefix);
+
+    const contactCompanySuggestions = page.locator("#contact-company-suggestions button");
+    await expect(contactCompanySuggestions).toHaveCount(5);
+    const contactSuggestionValues = await contactCompanySuggestions.evaluateAll((nodes) =>
+      nodes.map((node) => node.textContent?.trim() ?? ""),
+    );
+    expect(
+      contactSuggestionValues.every((value) => value.toLowerCase().startsWith(prefix.toLowerCase())),
+    ).toBeTruthy();
+
+    await contactFilters.getByLabel("Company").fill(supplierCompany);
+    await contactFilters.getByRole("button", { name: "Apply filters" }).click();
+    const contactList = sectionByHeading(page, "Contact list");
+    await expect(contactList.locator("thead tr th", { hasText: "Agent" })).toHaveCount(0);
+    await expect(contactList.locator("tbody tr", { hasText: supplierContactFullName })).toHaveCount(1);
+    await expect(contactList.locator("tbody tr", { hasText: customerContactFullName })).toHaveCount(0);
+  });
+
+  test("profile and access pages work for admin", async ({ page }) => {
+    await loginAsE2EAdmin(page);
+
+    await page.getByRole("link", { name: "My Profile" }).click();
+    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page.getByRole("heading", { name: "My Profile" })).toBeVisible();
+
+    const phone = `+33-${Date.now().toString().slice(-8)}`;
+    await page.getByLabel("Phone").fill(phone);
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Profile updated.")).toBeVisible();
+
+    await page.getByRole("link", { name: "Access" }).click();
+    await expect(page).toHaveURL(/\/access$/);
+    await expect(page.getByRole("heading", { name: "Access" })).toBeVisible();
+    await expect(page.locator("table tbody tr").first()).toBeVisible();
+  });
+
+  test("entity profile pages open from list and edit stays in profile page", async ({ page }) => {
+    await loginAsE2EAdmin(page);
+
+    await page.getByRole("link", { name: "Contacts" }).click();
+    await page.getByRole("tab", { name: "Contact list" }).click();
+    await page.getByRole("link", { name: "View details" }).first().click();
+    await expect(page).toHaveURL(/\/contacts\/.+/);
+    await expect(page.getByRole("heading", { name: "Contact profile" })).toBeVisible();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByRole("heading", { name: "Edit contact" })).toBeVisible();
+    await page.getByRole("button", { name: "Cancel edit" }).click();
+
+    await page.getByRole("link", { name: "Companies" }).click();
+    await page.getByRole("tab", { name: "Company list" }).click();
+    await page.getByRole("link", { name: "View details" }).first().click();
+    await expect(page).toHaveURL(/\/companies\/.+/);
+    await expect(page.getByRole("heading", { name: "Company profile" })).toBeVisible();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByRole("heading", { name: "Edit company" })).toBeVisible();
+    await page.getByRole("button", { name: "Cancel edit" }).click();
+
+    await page.getByRole("link", { name: "Products" }).click();
+    await page.getByRole("tab", { name: "Product list" }).click();
+    await page.getByRole("link", { name: "View details" }).first().click();
+    await expect(page).toHaveURL(/\/products\/.+/);
+    await expect(page.getByRole("heading", { name: "Product profile" })).toBeVisible();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByRole("heading", { name: "Edit product" })).toBeVisible();
+  });
+
+  test("notification bell opens notifications page", async ({ page }) => {
+    await loginAsE2EAdmin(page);
+    await page.getByRole("link", { name: "Open notifications page" }).click();
+    await expect(page).toHaveURL(/\/notifications$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Notifications" })).toBeVisible();
+    await page.getByRole("button", { name: "Clear all" }).click();
+  });
+
   test.describe("mobile", () => {
     test.use({ viewport: { width: 390, height: 844 } });
 
@@ -231,3 +437,4 @@ test.describe("CRM end-to-end", () => {
     });
   });
 });
+

@@ -6,6 +6,7 @@ web/out/
 web/test-results/*
 !web/test-results/.gitkeep
 web/playwright-report/
+web/coverage/
 
 # Env files
 web/.env.local

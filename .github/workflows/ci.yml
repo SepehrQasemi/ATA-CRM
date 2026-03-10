@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - release/**
   pull_request:
     branches:
       - main
@@ -17,6 +18,7 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
       BREVO_API_KEY: ci-brevo-key
       CRON_SECRET: ci-cron-secret
+      BI_API_KEY: ci-bi-key
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,3 +44,208 @@ jobs:
 
       - name: Run build
         run: npm run build
+
+      - name: Run unit/component/api tests
+        run: npm run test
+
+      - name: Run coverage thresholds
+        run: npm --workspace web run test:coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: web/coverage
+          if-no-files-found: ignore
+
+  e2e-smoke:
+    if: ${{ github.event_name == 'pull_request' }}
+    needs: lint-build
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.E2E_NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.E2E_NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+      BREVO_API_KEY: ${{ secrets.E2E_BREVO_API_KEY }}
+      CRON_SECRET: ${{ secrets.E2E_CRON_SECRET }}
+      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+      E2E_MANAGER_EMAIL: ${{ secrets.E2E_MANAGER_EMAIL }}
+      E2E_MANAGER_PASSWORD: ${{ secrets.E2E_MANAGER_PASSWORD }}
+      E2E_COMMERCIAL_EMAIL: ${{ secrets.E2E_COMMERCIAL_EMAIL }}
+      E2E_COMMERCIAL_PASSWORD: ${{ secrets.E2E_COMMERCIAL_PASSWORD }}
+      E2E_STANDARD_EMAIL: ${{ secrets.E2E_STANDARD_EMAIL }}
+      E2E_STANDARD_PASSWORD: ${{ secrets.E2E_STANDARD_PASSWORD }}
+    steps:
+      - name: Decide whether to run E2E smoke
+        id: smoke_gate
+        shell: bash
+        run: |
+          required_vars=(
+            NEXT_PUBLIC_SUPABASE_URL
+            NEXT_PUBLIC_SUPABASE_ANON_KEY
+            SUPABASE_SERVICE_ROLE_KEY
+            E2E_USER_EMAIL
+            E2E_USER_PASSWORD
+            E2E_MANAGER_EMAIL
+            E2E_MANAGER_PASSWORD
+            E2E_COMMERCIAL_EMAIL
+            E2E_COMMERCIAL_PASSWORD
+            E2E_STANDARD_EMAIL
+            E2E_STANDARD_PASSWORD
+          )
+
+          missing=0
+          for name in "${required_vars[@]}"; do
+            if [ -z "${!name}" ]; then
+              echo "Missing secret/env: $name"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping E2E smoke because required secrets are missing."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: ${{ steps.smoke_gate.outputs.enabled == 'true' }}
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        if: ${{ steps.smoke_gate.outputs.enabled == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: ${{ steps.smoke_gate.outputs.enabled == 'true' }}
+        run: npm ci
+
+      - name: Install Playwright browser
+        if: ${{ steps.smoke_gate.outputs.enabled == 'true' }}
+        run: npm --workspace web run test:e2e:install
+
+      - name: Create .env.local
+        if: ${{ steps.smoke_gate.outputs.enabled == 'true' }}
+        run: |
+          cat <<EOF > web/.env.local
+          NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+          SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+          BREVO_API_KEY=${BREVO_API_KEY}
+          CRON_SECRET=${CRON_SECRET}
+          EOF
+
+      - name: Run E2E smoke
+        if: ${{ steps.smoke_gate.outputs.enabled == 'true' }}
+        run: npm --workspace web run test:e2e:smoke
+
+      - name: Upload Playwright report
+        if: ${{ always() && steps.smoke_gate.outputs.enabled == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-smoke-report
+          path: |
+            web/playwright-report
+            web/test-results
+          if-no-files-found: ignore
+
+  release-gate:
+    if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) }}
+    needs: lint-build
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.E2E_NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.E2E_NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+      BREVO_API_KEY: ${{ secrets.E2E_BREVO_API_KEY }}
+      CRON_SECRET: ${{ secrets.E2E_CRON_SECRET }}
+      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+      E2E_MANAGER_EMAIL: ${{ secrets.E2E_MANAGER_EMAIL }}
+      E2E_MANAGER_PASSWORD: ${{ secrets.E2E_MANAGER_PASSWORD }}
+      E2E_COMMERCIAL_EMAIL: ${{ secrets.E2E_COMMERCIAL_EMAIL }}
+      E2E_COMMERCIAL_PASSWORD: ${{ secrets.E2E_COMMERCIAL_PASSWORD }}
+      E2E_STANDARD_EMAIL: ${{ secrets.E2E_STANDARD_EMAIL }}
+      E2E_STANDARD_PASSWORD: ${{ secrets.E2E_STANDARD_PASSWORD }}
+    steps:
+      - name: Decide whether to run release gate
+        id: release_gate_check
+        shell: bash
+        run: |
+          required_vars=(
+            NEXT_PUBLIC_SUPABASE_URL
+            NEXT_PUBLIC_SUPABASE_ANON_KEY
+            SUPABASE_SERVICE_ROLE_KEY
+            E2E_USER_EMAIL
+            E2E_USER_PASSWORD
+            E2E_MANAGER_EMAIL
+            E2E_MANAGER_PASSWORD
+            E2E_COMMERCIAL_EMAIL
+            E2E_COMMERCIAL_PASSWORD
+            E2E_STANDARD_EMAIL
+            E2E_STANDARD_PASSWORD
+          )
+
+          missing=0
+          for name in "${required_vars[@]}"; do
+            if [ -z "${!name}" ]; then
+              echo "Missing secret/env: $name"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping release gate because required secrets are missing."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: ${{ steps.release_gate_check.outputs.enabled == 'true' }}
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        if: ${{ steps.release_gate_check.outputs.enabled == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: ${{ steps.release_gate_check.outputs.enabled == 'true' }}
+        run: npm ci
+
+      - name: Install Playwright browser
+        if: ${{ steps.release_gate_check.outputs.enabled == 'true' }}
+        run: npm --workspace web run test:e2e:install
+
+      - name: Create .env.local
+        if: ${{ steps.release_gate_check.outputs.enabled == 'true' }}
+        run: |
+          cat <<EOF > web/.env.local
+          NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+          SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+          BREVO_API_KEY=${BREVO_API_KEY}
+          CRON_SECRET=${CRON_SECRET}
+          EOF
+
+      - name: Run release gate
+        if: ${{ steps.release_gate_check.outputs.enabled == 'true' }}
+        run: npm run test:release
+
+      - name: Upload Playwright report
+        if: ${{ always() && steps.release_gate_check.outputs.enabled == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-full-report
+          path: |
+            web/playwright-report
+            web/test-results
+          if-no-files-found: ignore

@@ -13,9 +13,11 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
+import { AutocompleteInput } from "@/components/autocomplete-input";
 import { Company, Contact, Lead, Task } from "@/lib/types";
 import { PageTip } from "@/components/page-tip";
 import { useLocale } from "@/components/locale-provider";
+import { startsWithSuggestions } from "@/lib/search-suggestions";
 
 type TasksResponse = { tasks: Task[]; error?: string };
 type LeadsResponse = { leads: Lead[]; error?: string };
@@ -74,6 +76,7 @@ type DeadlineAlert = {
   task: Task;
   kind: "overdue" | "due_soon";
 };
+type TaskWorkspaceTab = "list" | "calendar" | "manage";
 
 function getTaskDueDate(task: Task): Date | null {
   if (!task.due_date) return null;
@@ -95,6 +98,7 @@ export default function TasksPage() {
   const [filters, setFilters] = useState<TaskFilters>(initialFilters);
   const [form, setForm] = useState<TaskForm>(initialForm);
   const [calendarMonth, setCalendarMonth] = useState<Date>(startOfMonth(new Date()));
+  const [activeTab, setActiveTab] = useState<TaskWorkspaceTab>("list");
 
   async function loadData(activeFilters = filters) {
     const params = new URLSearchParams();
@@ -195,11 +199,13 @@ export default function TasksPage() {
 
     setSaving(false);
     resetForm();
+    setActiveTab("list");
     void loadData();
   }
 
   function startEdit(task: Task) {
     setEditingId(task.id);
+    setActiveTab("manage");
     setForm({
       title: task.title,
       description: task.description ?? "",
@@ -310,6 +316,11 @@ export default function TasksPage() {
     return map;
   }, [tasks]);
 
+  const taskSearchSuggestions = useMemo(
+    () => startsWithSuggestions(tasks.map((task) => task.title), filters.q, 5),
+    [tasks, filters.q],
+  );
+
   return (
     <div className="stack">
       <PageTip
@@ -340,7 +351,41 @@ export default function TasksPage() {
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
+        <div className="subtabs" role="tablist" aria-label="Tasks workspace tabs">
+          <button
+            className={`subtab ${activeTab === "list" ? "is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "list"}
+            onClick={() => setActiveTab("list")}
+          >
+            {tr("Task list")}
+          </button>
+          <button
+            className={`subtab ${activeTab === "calendar" ? "is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "calendar"}
+            onClick={() => setActiveTab("calendar")}
+          >
+            {tr("Calendar view")}
+          </button>
+          <button
+            className={`subtab ${activeTab === "manage" ? "is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "manage"}
+            onClick={() => setActiveTab("manage")}
+          >
+            {tr("New task")}
+          </button>
+        </div>
+      </section>
+
+      {activeTab === "list" ? (
+      <section className="panel stack">
         <h2>{tr("Deadline notifications")}</h2>
+        <div className="table-wrap">
         <table>
           <thead>
             <tr>
@@ -367,17 +412,22 @@ export default function TasksPage() {
             )}
           </tbody>
         </table>
+        </div>
       </section>
+      ) : null}
 
+      {activeTab === "list" ? (
       <section className="panel stack">
         <h2>{tr("Task filters")}</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
           <label className="col-3 stack">
             {tr("Search")}
-            <input
+            <AutocompleteInput
               value={filters.q}
-              onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
+              onChange={(nextValue) => setFilters((prev) => ({ ...prev, q: nextValue }))}
               placeholder="Task title"
+              suggestions={taskSearchSuggestions}
+              listId="task-search-suggestions"
             />
           </label>
           <label className="col-2 stack">
@@ -459,7 +509,9 @@ export default function TasksPage() {
           </div>
         </form>
       </section>
+      ) : null}
 
+      {activeTab === "manage" ? (
       <section className="panel stack">
         <h2>{editingId ? tr("Edit task") : tr("New task")}</h2>
         <form className="stack" onSubmit={handleSubmit}>
@@ -589,7 +641,9 @@ export default function TasksPage() {
           </div>
         </form>
       </section>
+      ) : null}
 
+      {activeTab === "calendar" ? (
       <section className="panel stack">
         <div className="inline-actions">
           <h2>{tr("Calendar view")}</h2>
@@ -651,9 +705,12 @@ export default function TasksPage() {
           })}
         </div>
       </section>
+      ) : null}
 
+      {activeTab === "list" ? (
       <section className="panel stack">
         <h2>{tr("Task list")}</h2>
+        <div className="table-wrap">
         <table>
           <thead>
             <tr>
@@ -711,7 +768,9 @@ export default function TasksPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </section>
+      ) : null}
     </div>
   );
 }

@@ -16,6 +16,78 @@ async function ensureAccess(companyId: string, userId: string, isAdmin: boolean)
   return !data.owner_id || data.owner_id === userId;
 }
 
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const auth = await requireAuthenticatedUser();
+  if (auth.response) return auth.response;
+  const user = auth.user!;
+
+  const role = await getUserRole(user.id);
+  const isAdmin = role === "admin";
+  const { id } = await params;
+
+  const allowed = await ensureAccess(id, user.id, isAdmin);
+  if (!allowed) return fail("Forbidden", 403);
+
+  const { data: company, error: companyError } = await supabaseAdmin
+    .from("companies")
+    .select("id,name,company_role,sector,city,country,website,notes,created_at")
+    .eq("id", id)
+    .single();
+
+  if (companyError || !company) return fail("Company not found", 404);
+
+  const linksQuery = supabaseAdmin
+    .from("product_company_links")
+    .select("id,product_id,company_id,relation_type,product_model,last_price,notes,owner_id,created_at")
+    .eq("company_id", id)
+    .order("created_at", { ascending: false });
+
+  if (!isAdmin) {
+    linksQuery.eq("owner_id", user.id);
+  }
+
+  const agentsQuery = supabaseAdmin
+    .from("contacts")
+    .select("id,first_name,last_name,email,phone,job_title,is_company_agent,agent_rank,created_at")
+    .eq("company_id", id)
+    .eq("is_company_agent", true)
+    .order("agent_rank", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true });
+
+  if (!isAdmin) {
+    agentsQuery.eq("owner_id", user.id);
+  }
+
+  const [{ data: links, error: linksError }, { data: agents, error: agentsError }] =
+    await Promise.all([linksQuery, agentsQuery]);
+
+  if (linksError) return fail("Failed to load company links", 500, linksError.message);
+  if (agentsError) return fail("Failed to load company agents", 500, agentsError.message);
+
+  const productIds = [...new Set((links ?? []).map((link) => link.product_id))];
+  let products: Array<{ id: string; name: string }> = [];
+
+  if (productIds.length > 0) {
+    const productsQuery = supabaseAdmin.from("products").select("id,name").in("id", productIds);
+    if (!isAdmin) {
+      productsQuery.eq("owner_id", user.id);
+    }
+    const { data: productRows, error: productsError } = await productsQuery;
+    if (productsError) return fail("Failed to load products", 500, productsError.message);
+    products = productRows ?? [];
+  }
+
+  return ok({
+    company,
+    links: links ?? [],
+    products,
+    agents: agents ?? [],
+  });
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },

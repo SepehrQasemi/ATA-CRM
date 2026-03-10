@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLocale } from "@/components/locale-provider";
@@ -73,33 +72,22 @@ export default function LoginPage() {
           <BrandLogo compact />
           <LanguageSwitcher />
         </div>
-        <h1>{tr("CRM Food Trading")}</h1>
+        <h1>{tr("ATA CRM")}</h1>
         <p>{tr("Sign in to manage your leads, contacts, and email campaigns.")}</p>
-        <p className="small">
-          <Link href="/">{tr("Explore Features")}</Link>
-        </p>
-
         <div className="row">
           <button
             type="button"
-            className={`btn col-4 ${mode === "login" ? "btn-primary" : "btn-secondary"}`}
+            className={`btn col-6 ${mode === "login" ? "btn-primary" : "btn-secondary"}`}
             onClick={() => setMode("login")}
           >
             {tr("Login")}
           </button>
           <button
             type="button"
-            className={`btn col-4 ${mode === "signup" ? "btn-primary" : "btn-secondary"}`}
+            className={`btn col-6 ${mode === "signup" ? "btn-primary" : "btn-secondary"}`}
             onClick={() => setMode("signup")}
           >
             {tr("Signup")}
-          </button>
-          <button
-            type="button"
-            className={`btn col-4 ${mode === "reset" ? "btn-primary" : "btn-secondary"}`}
-            onClick={() => setMode("reset")}
-          >
-            {tr("Reset")}
           </button>
         </div>
 
@@ -138,6 +126,24 @@ export default function LoginPage() {
                 required
               />
             </label>
+          )}
+
+          {mode !== "reset" ? (
+            <button
+              type="button"
+              className="btn-link"
+              onClick={() => setMode("reset")}
+            >
+              {tr("Forgot password?")}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn-link"
+              onClick={() => setMode("login")}
+            >
+              {tr("Back to login")}
+            </button>
           )}
 
           {error ? <p className="error">{error}</p> : null}

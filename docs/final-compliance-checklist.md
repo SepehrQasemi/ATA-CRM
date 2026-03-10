@@ -18,7 +18,7 @@ Date: 2026-03-10
 - Responsive UI (desktop/mobile): DONE
 - Deployment (Vercel + Supabase): DONE
 - Technical documentation (README + FR report + diagrams): DONE
-- Presentation support (demo checklist + portfolio pages): DONE
+- Presentation support (demo checklist + oral script + test game): DONE
 
 ## Expected Integrations
 - Supabase (Auth, Postgres, RLS): DONE
@@ -31,7 +31,7 @@ Date: 2026-03-10
 - BI-ready secured endpoint (`/api/bi/kpis`): DONE
 - Docker packaging (`Dockerfile`, `docker-compose.yml`): DONE
 - End-to-end Playwright tests: DONE
-- Public landing page with branding: DONE
+- Direct login entry from `/` (no friction for demo): DONE
 - Full EN/FR/FA UI + FA RTL mode: DONE
 - Help Center + FAQ + in-app tips: DONE
 - Global search + saved filters (Leads/Tasks): DONE
@@ -43,6 +43,10 @@ Date: 2026-03-10
 - FR report: `docs/rapport-projet-fr.md`
 - FA summary: `docs/resume-projet-fa.md`
 - Demo checklist: `docs/checklist-demo.md`
+- Oral script: `docs/presentation-oral-fr.md`
+- Test game: `docs/jeu-de-test-crm-fr.md`
+- Professor requirement mapping: `docs/comparaison-enonce-preuves-fr.md`
+- QA proof log: `docs/qa-proof-2026-03-10.md`
 - Baseline freeze notes: `docs/release-baseline-v1.md`
 - Workflow and UML package: `docs/workflow-commercial.mmd`, `docs/workflow-onboarding-help.mmd`, `docs/sequence-followup.mmd`, `docs/uml-domain.puml`, `docs/uml-application-view.puml`
 

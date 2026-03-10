@@ -128,7 +128,7 @@ function buildPdfBufferFromLines(lines: string[]) {
 
 export function buildDashboardPdfReport(payload: DashboardExportPayload) {
   const lines: string[] = [
-    "CRM Food Trading - Dashboard Report",
+    "ATA CRM - Dashboard Report",
     `Generated at: ${new Date().toISOString()}`,
     `Range: ${payload.range}`,
     "",

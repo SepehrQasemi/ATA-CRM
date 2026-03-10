@@ -15,6 +15,48 @@ async function ensureAccess(contactId: string, userId: string, isAdmin: boolean)
   return data.owner_id === userId;
 }
 
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const auth = await requireAuthenticatedUser();
+  if (auth.response) return auth.response;
+  const user = auth.user!;
+  const role = await getUserRole(user.id);
+  const isAdmin = role === "admin";
+
+  const { id } = await params;
+  const allowed = await ensureAccess(id, user.id, isAdmin);
+  if (!allowed) return fail("Forbidden", 403);
+
+  const { data: contact, error } = await supabaseAdmin
+    .from("contacts")
+    .select(
+      "id,first_name,last_name,email,phone,job_title,notes,company_id,is_company_agent,agent_rank,created_at",
+    )
+    .eq("id", id)
+    .single();
+
+  if (error || !contact) return fail("Contact not found", 404);
+
+  let company: {
+    id: string;
+    name: string;
+    company_role: "supplier" | "customer" | "both";
+  } | null = null;
+
+  if (contact.company_id) {
+    const { data: companyRow } = await supabaseAdmin
+      .from("companies")
+      .select("id,name,company_role")
+      .eq("id", contact.company_id)
+      .single();
+    if (companyRow) company = companyRow;
+  }
+
+  return ok({ contact, company });
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },

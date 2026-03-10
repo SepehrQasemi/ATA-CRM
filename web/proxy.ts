@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback"];
+const PUBLIC_PATHS = new Set(["/login", "/auth/callback"]);
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isApiPath = pathname.startsWith("/api/");
-  const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+  const isPublic = PUBLIC_PATHS.has(pathname);
 
   if (!user && !isPublic && !isApiPath) {
     const url = request.nextUrl.clone();

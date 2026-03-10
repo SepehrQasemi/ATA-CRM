@@ -1,9 +1,11 @@
 ﻿"use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { AutocompleteInput } from "@/components/autocomplete-input";
 import { PageTip } from "@/components/page-tip";
 import { useLocale } from "@/components/locale-provider";
 import { Lead, PipelineStage } from "@/lib/types";
+import { startsWithSuggestions } from "@/lib/search-suggestions";
 
 type LeadResponse = {
   leads: Lead[];
@@ -63,6 +65,7 @@ const initialFilters: LeadFilters = {
 };
 
 const LEAD_FILTERS_STORAGE_KEY = "crm_saved_filters_leads";
+type LeadWorkspaceTab = "pipeline" | "list" | "manage";
 
 export default function LeadsPage() {
   const { tr } = useLocale();
@@ -76,6 +79,7 @@ export default function LeadsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filters, setFilters] = useState<LeadFilters>(initialFilters);
   const [form, setForm] = useState<LeadForm>(initialForm);
+  const [activeTab, setActiveTab] = useState<LeadWorkspaceTab>("pipeline");
 
   const stageById = useMemo(() => {
     const map: Record<string, PipelineStage> = {};
@@ -84,6 +88,30 @@ export default function LeadsPage() {
     });
     return map;
   }, [stages]);
+
+  const companyById = useMemo(() => {
+    const map: Record<string, string> = {};
+    companies.forEach((company) => {
+      map[company.id] = company.name;
+    });
+    return map;
+  }, [companies]);
+
+  const contactById = useMemo(() => {
+    const map: Record<string, string> = {};
+    contacts.forEach((contact) => {
+      map[contact.id] = `${contact.first_name} ${contact.last_name}`.trim();
+    });
+    return map;
+  }, [contacts]);
+
+  const profileNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    profiles.forEach((profile) => {
+      map[profile.id] = profile.full_name ?? profile.id.slice(0, 8);
+    });
+    return map;
+  }, [profiles]);
 
   async function loadData(activeFilters = filters) {
     const params = new URLSearchParams();
@@ -176,11 +204,13 @@ export default function LeadsPage() {
 
     setSaving(false);
     resetForm();
+    setActiveTab("pipeline");
     void loadData();
   }
 
   function startEdit(lead: Lead) {
     setEditingId(lead.id);
+    setActiveTab("manage");
     setForm({
       title: lead.title,
       source: lead.source ?? "",
@@ -279,6 +309,11 @@ export default function LeadsPage() {
     return map;
   }, [leads, stages]);
 
+  const leadSearchSuggestions = useMemo(
+    () => startsWithSuggestions(leads.map((lead) => lead.title), filters.q, 5),
+    [leads, filters.q],
+  );
+
   return (
     <div className="stack">
       <PageTip
@@ -294,14 +329,49 @@ export default function LeadsPage() {
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
+        <div className="subtabs" role="tablist" aria-label="Leads workspace tabs">
+          <button
+            className={`subtab ${activeTab === "pipeline" ? "is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "pipeline"}
+            onClick={() => setActiveTab("pipeline")}
+          >
+            {tr("Pipeline board")}
+          </button>
+          <button
+            className={`subtab ${activeTab === "list" ? "is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "list"}
+            onClick={() => setActiveTab("list")}
+          >
+            {tr("Lead list")}
+          </button>
+          <button
+            className={`subtab ${activeTab === "manage" ? "is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "manage"}
+            onClick={() => setActiveTab("manage")}
+          >
+            {tr("New lead")}
+          </button>
+        </div>
+      </section>
+
+      {activeTab !== "manage" ? (
+      <section className="panel stack">
         <h2>{tr("Lead filters")}</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
           <label className="col-3 stack">
             {tr("Search")}
-            <input
+            <AutocompleteInput
               value={filters.q}
-              onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
+              onChange={(nextValue) => setFilters((prev) => ({ ...prev, q: nextValue }))}
               placeholder="Lead title"
+              suggestions={leadSearchSuggestions}
+              listId="lead-search-suggestions"
             />
           </label>
           <label className="col-3 stack">
@@ -400,7 +470,9 @@ export default function LeadsPage() {
           </div>
         </form>
       </section>
+      ) : null}
 
+      {activeTab === "manage" ? (
       <section className="panel stack">
         <h2>{editingId ? tr("Edit lead") : tr("New lead")}</h2>
         <form className="stack" onSubmit={handleSaveLead}>
@@ -523,7 +595,9 @@ export default function LeadsPage() {
           </div>
         </form>
       </section>
+      ) : null}
 
+      {activeTab === "pipeline" ? (
       <section className="panel stack">
         <h2>{tr("Pipeline board")}</h2>
         <div className="board board-wide">
@@ -544,28 +618,27 @@ export default function LeadsPage() {
                   const currentIndex = stages.findIndex((item) => item.id === lead.current_stage_id);
                   const canMovePrev = currentIndex > 0;
                   const canMoveNext = currentIndex >= 0 && currentIndex < stages.length - 1;
+                  const assignedLabel =
+                    profileNameById[lead.assigned_to ?? ""] ??
+                    profileNameById[lead.owner_id ?? ""] ??
+                    "-";
 
                   return (
                     <div key={lead.id} className="lead-card stack">
-                      <strong>{lead.title}</strong>
-                      <span className="small">{Number(lead.estimated_value || 0).toLocaleString()} EUR</span>
-                      <span className="small">
-                        Assigned: {profiles.find((profile) => profile.id === lead.assigned_to)?.full_name ?? "-"}
+                      <strong className="lead-card-title">{lead.title}</strong>
+                      <span className="small lead-card-line">
+                        {tr("Company")}: {companyById[lead.company_id ?? ""] ?? "-"}
                       </span>
-                      <span className="small">{tr("Status")}: {lead.status}</span>
-
-                      <select
-                        value={lead.current_stage_id ?? ""}
-                        onChange={(e) => void moveLeadStage(lead.id, e.target.value, "Select stage")}
-                      >
-                        {stages.map((targetStage) => (
-                          <option key={targetStage.id} value={targetStage.id}>
-                            {targetStage.name}
-                          </option>
-                        ))}
-                      </select>
-
-                      <div className="inline-actions">
+                      <span className="small lead-card-line">
+                        {tr("Agent")}: {contactById[lead.contact_id ?? ""] ?? "-"}
+                      </span>
+                      <span className="small lead-card-line">
+                        {tr("Assigned to")}: {assignedLabel}
+                      </span>
+                      <div className="inline-actions lead-card-actions">
+                        <button className="btn btn-secondary" type="button" onClick={() => startEdit(lead)}>
+                          {tr("Edit")}
+                        </button>
                         <button
                           className="btn"
                           type="button"
@@ -586,19 +659,6 @@ export default function LeadsPage() {
                           {tr("Create task")}
                         </button>
                       </div>
-
-                      <div className="inline-actions">
-                        <button className="btn btn-secondary" type="button" onClick={() => startEdit(lead)}>
-                          {tr("Edit")}
-                        </button>
-                        <button
-                          className="btn btn-danger"
-                          type="button"
-                          onClick={() => void deleteLead(lead.id)}
-                        >
-                          {tr("Delete")}
-                        </button>
-                      </div>
                     </div>
                   );
                 })}
@@ -607,9 +667,12 @@ export default function LeadsPage() {
           })}
         </div>
       </section>
+      ) : null}
 
+      {activeTab === "list" ? (
       <section className="panel stack">
         <h2>{tr("Lead list")}</h2>
+        <div className="table-wrap">
         <table>
           <thead>
             <tr>
@@ -647,7 +710,9 @@ export default function LeadsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </section>
+      ) : null}
     </div>
   );
 }

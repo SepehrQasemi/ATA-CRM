@@ -5,8 +5,8 @@ import { Locale, isRtlLocale, normalizeLocale } from "@/lib/i18n";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CRM Food Trading",
-  description: "Full SaaS CRM for food ingredients trading",
+  title: "ATA CRM",
+  description: "CRM platform for food products and additives sales teams",
 };
 
 export default async function RootLayout({

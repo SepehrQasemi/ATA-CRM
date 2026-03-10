@@ -9,8 +9,10 @@ import { GlobalSearch } from "@/components/global-search";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLocale } from "@/components/locale-provider";
 import { SignOutButton } from "@/components/sign-out-button";
+import { NotificationBell } from "@/components/notification-bell";
 import { RealtimeNotifications } from "@/components/realtime-notifications";
 import { roleLabel } from "@/lib/i18n";
+import { AppNotification, readNotifications, subscribeNotifications } from "@/lib/notifications";
 
 type AppShellProps = {
   children: ReactNode;
@@ -21,14 +23,16 @@ type AppShellProps = {
   };
 };
 
-const navItems = [
+const baseNavItems = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/colleagues", label: "Colleagues" },
   { href: "/contacts", label: "Contacts" },
   { href: "/companies", label: "Companies" },
   { href: "/products", label: "Products" },
   { href: "/leads", label: "Leads" },
   { href: "/tasks", label: "Tasks" },
   { href: "/emails", label: "Emails" },
+  { href: "/profile", label: "My Profile" },
   { href: "/help", label: "Help" },
   { href: "/settings", label: "Settings" },
 ];
@@ -37,10 +41,21 @@ export function AppShell({ children, user }: AppShellProps) {
   const pathname = usePathname();
   const { tr, locale } = useLocale();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const canSeeAccess = user.role === "admin" || user.role === "manager";
+  const navItems = canSeeAccess
+    ? [...baseNavItems.slice(0, 8), { href: "/access", label: "Access" }, ...baseNavItems.slice(8)]
+    : baseNavItems;
 
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const sync = () => setNotifications(readNotifications());
+    sync();
+    return subscribeNotifications(sync);
+  }, []);
 
   return (
     <div className="app-shell">
@@ -95,9 +110,12 @@ export function AppShell({ children, user }: AppShellProps) {
         </div>
         <div className="app-toolbar">
           <GlobalSearch />
-          <Link href="/help" className="btn btn-secondary">
-            {tr("Open Help Center")}
-          </Link>
+          <div className="inline-actions">
+            <Link href="/help" className="btn btn-secondary">
+              {tr("Open Help Center")}
+            </Link>
+            <NotificationBell items={notifications} />
+          </div>
         </div>
         <RealtimeNotifications />
         {children}

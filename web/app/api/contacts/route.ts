@@ -13,6 +13,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const search = url.searchParams.get("q") ?? url.searchParams.get("search");
   const companyId = url.searchParams.get("company_id");
+  const companyQuery = url.searchParams.get("company_q")?.trim() ?? "";
 
   const query = supabaseAdmin
     .from("contacts")
@@ -25,6 +26,28 @@ export async function GET(request: Request) {
 
   if (companyId) {
     query.eq("company_id", companyId);
+  } else if (companyQuery) {
+    const companyLookup = supabaseAdmin
+      .from("companies")
+      .select("id")
+      .ilike("name", `${companyQuery}%`)
+      .limit(50);
+
+    if (!isAdmin) {
+      companyLookup.or(`owner_id.eq.${user.id},owner_id.is.null`);
+    }
+
+    const { data: matchingCompanies, error: companiesError } = await companyLookup;
+    if (companiesError) {
+      return fail("Failed to load companies for contact filter", 500, companiesError.message);
+    }
+
+    const companyIds = (matchingCompanies ?? []).map((company) => company.id);
+    if (companyIds.length === 0) {
+      return ok({ contacts: [] });
+    }
+
+    query.in("company_id", companyIds);
   }
 
   if (search) {

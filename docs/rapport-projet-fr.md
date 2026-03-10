@@ -123,8 +123,8 @@ KPI complementaires:
 - containerisation Docker (`Dockerfile`, `docker-compose.yml`)
 
 ### 6.8 Evolution UI/UX (impact rapide)
-- landing page publique avec branding et CTA (`/`)
-- logo simple (SVG + wordmark) sur landing/login/sidebar
+- entree directe vers login (`/` redirige vers `/login`) pour un acces operationnel rapide
+- logo ATA CRM (SVG) applique sur login/sidebar
 - design tokens harmonises (couleurs, rayons, ombres, typographie)
 - switch langue global `EN/FR/FA` avec persistance locale + cookie
 - RTL complet pour la version persane

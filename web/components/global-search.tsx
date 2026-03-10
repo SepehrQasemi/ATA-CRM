@@ -99,14 +99,13 @@ export function GlobalSearch() {
           }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 140)}
-          placeholder={tr("Type at least 2 characters...")}
+          placeholder={tr("Search")}
         />
       </label>
 
       {open ? (
         <div className="search-results">
           {loading ? <p className="small">{tr("Loading data...")}</p> : null}
-          {!loading && q.trim().length < 2 ? <p className="small">{tr("Type at least 2 characters...")}</p> : null}
           {!loading && q.trim().length >= 2 && !hasResults ? (
             <p className="small">{tr("No results yet.")}</p>
           ) : null}
