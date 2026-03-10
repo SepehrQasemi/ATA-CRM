@@ -11,6 +11,8 @@ test.describe("CRM end-to-end", () => {
   test("covers dashboard, companies, products, leads, tasks, and emails", async ({ page }) => {
     const companyName = uniqueLabel("Company");
     const productName = uniqueLabel("Product");
+    const agentFirstName = `Agent${Date.now().toString().slice(-5)}`;
+    const agentLastName = "Buyer";
     const leadTitle = uniqueLabel("Lead");
     const taskTitle = uniqueLabel("Task");
     const sku = `SKU-${Date.now()}`;
@@ -40,6 +42,27 @@ test.describe("CRM end-to-end", () => {
     const companyRow = companyList.locator("tbody tr", { hasText: companyName }).first();
     await expect(companyRow).toBeVisible();
     await expect(companyRow).toContainText("Supplier + Customer");
+    const companyLookup = await page.request.get(
+      `/api/companies?q=${encodeURIComponent(companyName)}`,
+    );
+    expect(companyLookup.ok()).toBeTruthy();
+    const companyLookupJson = (await companyLookup.json()) as {
+      companies?: Array<{ id: string; name: string }>;
+    };
+    const companyId = companyLookupJson.companies?.find((item) => item.name === companyName)?.id;
+    expect(companyId).toBeTruthy();
+
+    const createAgentRes = await page.request.post("/api/contacts", {
+      data: {
+        first_name: agentFirstName,
+        last_name: agentLastName,
+        email: `agent.${Date.now()}@example.test`,
+        company_id: companyId,
+        is_company_agent: true,
+        agent_rank: 1,
+      },
+    });
+    expect(createAgentRes.ok()).toBeTruthy();
 
     await page.getByRole("link", { name: "Products" }).click();
     await expect(page).toHaveURL(/\/products$/);
@@ -71,6 +94,16 @@ test.describe("CRM end-to-end", () => {
     await saveRelationButton.click();
     await expect(page.getByText("Product relation saved")).toBeVisible();
 
+    const finderSection = sectionByHeading(page, "Customer finder by product");
+    await pickSelectOptionByText(finderSection.getByLabel("Product for customer search"), productName);
+    await finderSection.getByLabel("Relation focus").selectOption("traded");
+    const suggestionRow = finderSection.locator("tbody tr", { hasText: companyName }).first();
+    await expect(suggestionRow).toBeVisible();
+    await expect(suggestionRow).toContainText("Food Grade A");
+    await expect(suggestionRow).toContainText(agentFirstName);
+    await suggestionRow.getByRole("button", { name: "Create lead" }).click();
+    await expect(page.getByText("Lead created from product match")).toBeVisible();
+
     const productList = sectionByHeading(page, "Product list");
     const productRow = productList.locator("tbody tr", { hasText: productName }).first();
     await expect(productRow).toBeVisible();
@@ -81,6 +114,7 @@ test.describe("CRM end-to-end", () => {
     const companyRowAfterLinks = sectionByHeading(page, "Company list")
       .locator("tbody tr", { hasText: companyName })
       .first();
+    await expect(companyRowAfterLinks).toContainText(`Agent 1: ${agentFirstName} ${agentLastName}`);
     await expect(companyRowAfterLinks.locator(".tag-traded", { hasText: `${productName} (Food Grade A)` })).toBeVisible();
     await expect(
       companyRowAfterLinks.locator(".tag-potential", { hasText: `${productName} (Food Grade B)` }),
@@ -92,7 +126,6 @@ test.describe("CRM end-to-end", () => {
     await leadForm.getByLabel("Title").fill(leadTitle);
     await leadForm.getByLabel("Source").fill("E2E");
     await leadForm.getByLabel("Estimated value").fill("5200");
-    await pickSelectOptionByText(leadForm.getByLabel("Company"), companyName);
     await leadForm.getByRole("button", { name: "Create lead" }).click();
 
     const leadList = sectionByHeading(page, "Lead list");
@@ -123,7 +156,6 @@ test.describe("CRM end-to-end", () => {
       .fill(toDateTimeLocalInputValue(new Date(Date.now() + 48 * 60 * 60 * 1000)));
     await taskForm.getByLabel("Priority").selectOption("high");
     await taskForm.getByLabel("Status").selectOption("todo");
-    await pickSelectOptionByText(taskForm.getByLabel("Company"), companyName);
     await taskForm.getByLabel("Description").fill("E2E follow-up task");
     await taskForm.getByRole("button", { name: "Create task" }).click();
 

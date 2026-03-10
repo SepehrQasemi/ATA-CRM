@@ -20,6 +20,8 @@ class Contact {
   +full_name: text
   +email: text
   +phone: text
+  +is_company_agent: bool
+  +agent_rank: int(1..3)
 }
 
 class Product {

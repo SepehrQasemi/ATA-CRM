@@ -45,7 +45,7 @@ export async function GET(request: Request) {
 
   const companyQuery = supabaseAdmin
     .from("companies")
-    .select("id,name,company_role,sector,owner_id")
+    .select("id,name,company_role,sector,city,country,owner_id")
     .order("name", { ascending: true });
 
   if (!isAdmin) {
@@ -65,17 +65,34 @@ export async function GET(request: Request) {
     linksQuery.eq("relation_type", relationType);
   }
 
-  const [{ data: products, error: productsError }, { data: companies, error: companiesError }, { data: links, error: linksError }] =
-    await Promise.all([productsQuery, companyQuery, linksQuery]);
+  const agentsQuery = supabaseAdmin
+    .from("contacts")
+    .select("id,company_id,first_name,last_name,email,phone,job_title,is_company_agent,agent_rank,owner_id")
+    .eq("is_company_agent", true)
+    .order("agent_rank", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true });
+
+  if (!isAdmin) {
+    agentsQuery.eq("owner_id", user.id);
+  }
+
+  const [
+    { data: products, error: productsError },
+    { data: companies, error: companiesError },
+    { data: links, error: linksError },
+    { data: agents, error: agentsError },
+  ] = await Promise.all([productsQuery, companyQuery, linksQuery, agentsQuery]);
 
   if (productsError) return fail("Failed to load products", 500, productsError.message);
   if (companiesError) return fail("Failed to load companies", 500, companiesError.message);
   if (linksError) return fail("Failed to load product links", 500, linksError.message);
+  if (agentsError) return fail("Failed to load company agents", 500, agentsError.message);
 
   return ok({
     products: products ?? [],
     companies: companies ?? [],
     links: links ?? [],
+    agents: agents ?? [],
   });
 }
 

@@ -21,6 +21,8 @@ export type Contact = {
   company_id: string | null;
   job_title: string | null;
   notes: string | null;
+  is_company_agent: boolean;
+  agent_rank: number | null;
   created_at: string;
 };
 

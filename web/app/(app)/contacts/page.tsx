@@ -15,6 +15,8 @@ type ContactForm = {
   phone: string;
   job_title: string;
   company_id: string;
+  is_company_agent: boolean;
+  agent_rank: string;
   notes: string;
 };
 
@@ -25,6 +27,8 @@ const initialForm: ContactForm = {
   phone: "",
   job_title: "",
   company_id: "",
+  is_company_agent: false,
+  agent_rank: "1",
   notes: "",
 };
 
@@ -89,6 +93,8 @@ export default function ContactsPage() {
       body: JSON.stringify({
         ...form,
         company_id: form.company_id || null,
+        is_company_agent: form.is_company_agent,
+        agent_rank: form.is_company_agent ? Number(form.agent_rank || 1) : null,
       }),
     });
 
@@ -113,6 +119,8 @@ export default function ContactsPage() {
       phone: contact.phone ?? "",
       job_title: contact.job_title ?? "",
       company_id: contact.company_id ?? "",
+      is_company_agent: contact.is_company_agent ?? false,
+      agent_rank: String(contact.agent_rank ?? 1),
       notes: contact.notes ?? "",
     });
   }
@@ -250,6 +258,33 @@ export default function ContactsPage() {
               </select>
             </label>
             <label className="col-4 stack">
+              Company agent
+              <select
+                value={form.is_company_agent ? "true" : "false"}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    is_company_agent: e.target.value === "true",
+                  }))
+                }
+              >
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+              </select>
+            </label>
+            <label className="col-4 stack">
+              Agent rank
+              <select
+                value={form.agent_rank}
+                onChange={(e) => setForm((prev) => ({ ...prev, agent_rank: e.target.value }))}
+                disabled={!form.is_company_agent}
+              >
+                <option value="1">Agent 1</option>
+                <option value="2">Agent 2</option>
+                <option value="3">Agent 3</option>
+              </select>
+            </label>
+            <label className="col-12 stack">
               {tr("Notes")}
               <input
                 value={form.notes}
@@ -280,6 +315,7 @@ export default function ContactsPage() {
               <th>Phone</th>
               <th>Company</th>
               <th>Job title</th>
+              <th>Agent</th>
               <th />
             </tr>
           </thead>
@@ -295,6 +331,7 @@ export default function ContactsPage() {
                   {companies.find((company) => company.id === contact.company_id)?.name ?? "-"}
                 </td>
                 <td>{contact.job_title ?? "-"}</td>
+                <td>{contact.is_company_agent ? `Agent ${contact.agent_rank ?? "-"}` : "-"}</td>
                 <td>
                   <div className="inline-actions">
                     <button

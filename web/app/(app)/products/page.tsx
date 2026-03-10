@@ -10,12 +10,25 @@ type CompanyOption = {
   name: string;
   company_role: "supplier" | "customer" | "both";
   sector: string | null;
+  city?: string | null;
+  country?: string | null;
+};
+type CompanyAgent = {
+  id: string;
+  company_id: string | null;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  job_title: string | null;
+  agent_rank: number | null;
 };
 
 type ProductsResponse = {
   products: Product[];
   companies: CompanyOption[];
   links: ProductCompanyLink[];
+  agents: CompanyAgent[];
   error?: string;
 };
 
@@ -94,9 +107,13 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [links, setLinks] = useState<ProductCompanyLink[]>([]);
+  const [agents, setAgents] = useState<CompanyAgent[]>([]);
   const [filters, setFilters] = useState<ProductFilters>(initialFilters);
   const [form, setForm] = useState<ProductForm>(initialForm);
   const [relationForm, setRelationForm] = useState<RelationForm>(initialRelationForm);
+  const [finderProductId, setFinderProductId] = useState("");
+  const [finderRelation, setFinderRelation] = useState<"" | "traded" | "potential">("");
+  const [finderModel, setFinderModel] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -121,9 +138,13 @@ export default function ProductsPage() {
     setProducts(json.products ?? []);
     setCompanies(json.companies ?? []);
     setLinks(json.links ?? []);
+    setAgents(json.agents ?? []);
 
     if (!relationForm.product_id && (json.products?.length ?? 0) > 0) {
       setRelationForm((prev) => ({ ...prev, product_id: json.products[0].id }));
+    }
+    if (!finderProductId && (json.products?.length ?? 0) > 0) {
+      setFinderProductId(json.products[0].id);
     }
   }
 
@@ -149,6 +170,19 @@ export default function ProductsPage() {
     return map;
   }, [links]);
 
+  const agentsByCompany = useMemo(() => {
+    const map: Record<string, CompanyAgent[]> = {};
+    agents.forEach((agent) => {
+      if (!agent.company_id) return;
+      if (!map[agent.company_id]) map[agent.company_id] = [];
+      map[agent.company_id].push(agent);
+    });
+    Object.values(map).forEach((items) => {
+      items.sort((a, b) => (a.agent_rank ?? 99) - (b.agent_rank ?? 99));
+    });
+    return map;
+  }, [agents]);
+
   const visibleProducts = useMemo(() => {
     if (!filters.relation_type) return products;
     const matchingProductIds = new Set(
@@ -158,6 +192,23 @@ export default function ProductsPage() {
     );
     return products.filter((product) => matchingProductIds.has(product.id));
   }, [filters.relation_type, links, products]);
+
+  const customerSuggestions = useMemo(() => {
+    if (!finderProductId) return [];
+    const modelQuery = finderModel.trim().toLowerCase();
+    return links
+      .filter((link) => link.product_id === finderProductId)
+      .filter((link) => (finderRelation ? link.relation_type === finderRelation : true))
+      .filter((link) =>
+        modelQuery ? (link.product_model ?? "").toLowerCase().includes(modelQuery) : true,
+      )
+      .map((link) => ({
+        link,
+        company: companyById[link.company_id],
+        agents: (agentsByCompany[link.company_id] ?? []).slice(0, 3),
+      }))
+      .filter((item) => Boolean(item.company));
+  }, [finderModel, finderProductId, finderRelation, links, companyById, agentsByCompany]);
 
   function resetProductForm() {
     setEditingId(null);
@@ -295,6 +346,33 @@ export default function ProductsPage() {
     void loadData();
   }
 
+  async function createLeadFromProductMatch(link: ProductCompanyLink) {
+    const product = products.find((item) => item.id === link.product_id);
+    const company = companyById[link.company_id];
+    if (!product || !company) return;
+
+    const topAgent = (agentsByCompany[link.company_id] ?? [])[0];
+    const response = await fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: `Product match - ${product.name} - ${company.name}`,
+        source: "Product match",
+        estimated_value: link.last_price ? Number(link.last_price) * 10 : 0,
+        company_id: company.id,
+        contact_id: topAgent?.id ?? null,
+        notes: `Relation: ${link.relation_type}; model: ${link.product_model || "-"}`,
+      }),
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setError(json.error ?? "Failed to create lead from product match");
+      return;
+    }
+    setError(null);
+    setSuccess("Lead created from product match");
+  }
+
   function applyFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -404,6 +482,105 @@ export default function ProductsPage() {
             </button>
           </div>
         </form>
+      </section>
+
+      <section className="panel stack">
+        <h2>Customer finder by product</h2>
+        <p className="small">
+          Find companies that already traded this product or have potential demand, with their top 1-3 agents.
+        </p>
+        <form className="row" onSubmit={(event) => event.preventDefault()}>
+          <label className="col-4 stack">
+            Product for customer search
+            <select
+              value={finderProductId}
+              onChange={(event) => setFinderProductId(event.target.value)}
+            >
+              <option value="">{tr("Select product")}</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="col-3 stack">
+            Relation focus
+            <select
+              value={finderRelation}
+              onChange={(event) =>
+                setFinderRelation(event.target.value as "" | "traded" | "potential")
+              }
+            >
+              <option value="">{tr("All")}</option>
+              <option value="traded">{tr("Traded")}</option>
+              <option value="potential">{tr("Potential")}</option>
+            </select>
+          </label>
+          <label className="col-5 stack">
+            Model contains
+            <input
+              value={finderModel}
+              onChange={(event) => setFinderModel(event.target.value)}
+              placeholder="E1422, kappa, instant..."
+            />
+          </label>
+        </form>
+
+        <h3>Suggested customer companies</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Relation</th>
+              <th>Model / Grade</th>
+              <th>Sector</th>
+              <th>Location</th>
+              <th>Top agents</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {customerSuggestions.map(({ link, company, agents: topAgents }) => (
+              <tr key={`suggestion-${link.id}`}>
+                <td>{company?.name ?? "-"}</td>
+                <td>{relationLabel(link.relation_type, tr)}</td>
+                <td>{link.product_model || "-"}</td>
+                <td>{company?.sector ?? "-"}</td>
+                <td>{[company?.city, company?.country].filter(Boolean).join(", ") || "-"}</td>
+                <td>
+                  {topAgents.length === 0 ? (
+                    <span className="small">-</span>
+                  ) : (
+                    <div className="stack">
+                      {topAgents.map((agent) => (
+                        <span key={agent.id} className="small">
+                          {`#${agent.agent_rank ?? "-"} ${agent.first_name} ${agent.last_name}`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </td>
+                <td>
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+                    onClick={() => void createLeadFromProductMatch(link)}
+                  >
+                    Create lead
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {customerSuggestions.length === 0 ? (
+              <tr>
+                <td colSpan={7}>
+                  <span className="small">No matching companies yet.</span>
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </section>
 
       <section className="panel stack">

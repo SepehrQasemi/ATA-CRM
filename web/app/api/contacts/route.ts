@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   const query = supabaseAdmin
     .from("contacts")
-    .select("id,first_name,last_name,email,phone,job_title,notes,company_id,created_at,owner_id")
+    .select("id,first_name,last_name,email,phone,job_title,notes,company_id,is_company_agent,agent_rank,created_at,owner_id")
     .order("created_at", { ascending: false });
 
   if (!isAdmin) {
@@ -48,6 +48,22 @@ export async function POST(request: Request) {
     return fail("first_name and last_name are required", 400);
   }
 
+  const isCompanyAgent = body.is_company_agent === true || body.is_company_agent === "true";
+  let agentRank: number | null = null;
+  if (body.agent_rank !== undefined && body.agent_rank !== null && String(body.agent_rank) !== "") {
+    const rank = Number(body.agent_rank);
+    if (!Number.isInteger(rank) || rank < 1 || rank > 3) {
+      return fail("agent_rank must be 1, 2, or 3", 400);
+    }
+    agentRank = rank;
+  }
+  if (isCompanyAgent && agentRank === null) {
+    agentRank = 1;
+  }
+  if (!isCompanyAgent) {
+    agentRank = null;
+  }
+
   const payload = {
     first_name: String(body.first_name),
     last_name: String(body.last_name),
@@ -56,13 +72,15 @@ export async function POST(request: Request) {
     job_title: body.job_title ? String(body.job_title) : null,
     notes: body.notes ? String(body.notes) : null,
     company_id: body.company_id ? String(body.company_id) : null,
+    is_company_agent: isCompanyAgent,
+    agent_rank: agentRank,
     owner_id: user.id,
   };
 
   const { data, error } = await supabaseAdmin
     .from("contacts")
     .insert(payload)
-    .select("id,first_name,last_name,email,phone,job_title,notes,company_id,created_at")
+    .select("id,first_name,last_name,email,phone,job_title,notes,company_id,is_company_agent,agent_rank,created_at")
     .single();
 
   if (error) return fail("Failed to create contact", 500, error.message);

@@ -13,11 +13,22 @@ type CompanyProductLink = {
   relation_type: "traded" | "potential";
   product_model: string;
 };
+type CompanyAgent = {
+  id: string;
+  company_id: string | null;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  job_title: string | null;
+  agent_rank: number | null;
+};
 
 type CompaniesResponse = {
   companies: Company[];
   products: ProductOption[];
   links: CompanyProductLink[];
+  agents: CompanyAgent[];
   error?: string;
 };
 
@@ -58,6 +69,7 @@ export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [links, setLinks] = useState<CompanyProductLink[]>([]);
+  const [agents, setAgents] = useState<CompanyAgent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -83,6 +95,7 @@ export default function CompaniesPage() {
     setCompanies(json.companies ?? []);
     setProducts(json.products ?? []);
     setLinks(json.links ?? []);
+    setAgents(json.agents ?? []);
   }
 
   useEffect(() => {
@@ -119,6 +132,25 @@ export default function CompaniesPage() {
     });
     return map;
   }, [links, productById]);
+
+  const agentsByCompany = useMemo(() => {
+    const map: Record<string, CompanyAgent[]> = {};
+    agents.forEach((agent) => {
+      if (!agent.company_id) return;
+      if (!map[agent.company_id]) {
+        map[agent.company_id] = [];
+      }
+      map[agent.company_id].push(agent);
+    });
+    Object.values(map).forEach((items) => {
+      items.sort((a, b) => {
+        const ra = a.agent_rank ?? 99;
+        const rb = b.agent_rank ?? 99;
+        return ra - rb;
+      });
+    });
+    return map;
+  }, [agents]);
 
   function resetForm() {
     setForm(initialForm);
@@ -334,6 +366,7 @@ export default function CompaniesPage() {
               <th>Sector</th>
               <th>City</th>
               <th>Country</th>
+              <th>Agents</th>
               <th>Traded products (model)</th>
               <th>Potential products (model)</th>
               <th />
@@ -349,6 +382,19 @@ export default function CompaniesPage() {
                   <td>{company.sector ?? "-"}</td>
                   <td>{company.city ?? "-"}</td>
                   <td>{company.country ?? "-"}</td>
+                  <td>
+                    {(agentsByCompany[company.id] ?? []).slice(0, 3).length === 0 ? (
+                      <span className="small">-</span>
+                    ) : (
+                      <div className="stack">
+                        {(agentsByCompany[company.id] ?? []).slice(0, 3).map((agent) => (
+                          <span key={agent.id} className="small">
+                            {`Agent ${agent.agent_rank ?? "-"}: ${agent.first_name} ${agent.last_name}`}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
                   <td>
                     {buckets.traded.length === 0 ? (
                       <span className="small">-</span>

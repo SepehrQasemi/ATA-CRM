@@ -62,19 +62,32 @@ export async function GET(request: Request) {
     productsQuery.eq("owner_id", user.id);
   }
 
+  const agentsQuery = supabaseAdmin
+    .from("contacts")
+    .select("id,company_id,first_name,last_name,email,phone,job_title,is_company_agent,agent_rank,owner_id")
+    .eq("is_company_agent", true)
+    .order("agent_rank", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true });
+
+  if (!isAdmin) {
+    agentsQuery.eq("owner_id", user.id);
+  }
+
   const [
     { data: companies, error: companiesError },
     { data: linksRaw, error: linksError },
     { data: products, error: productsError },
-  ] = await Promise.all([query, linksQuery, productsQuery]);
+    { data: agents, error: agentsError },
+  ] = await Promise.all([query, linksQuery, productsQuery, agentsQuery]);
 
   if (companiesError) return fail("Failed to load companies", 500, companiesError.message);
   if (linksError) return fail("Failed to load company product links", 500, linksError.message);
   if (productsError) return fail("Failed to load products", 500, productsError.message);
+  if (agentsError) return fail("Failed to load company agents", 500, agentsError.message);
 
   const links = (linksRaw ?? []).filter((link) => PRODUCT_LINK_TYPES.has(link.relation_type));
 
-  return ok({ companies: companies ?? [], links, products: products ?? [] });
+  return ok({ companies: companies ?? [], links, products: products ?? [], agents: agents ?? [] });
 }
 
 export async function POST(request: Request) {

@@ -18,6 +18,8 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - Full CRUD with edit support for `contacts`, `companies`, `leads`, `tasks`
 - Full CRUD for `products` with traded/potential relationship buckets
 - Company-product links with specific model/grade tracking (per traded/potential relation)
+- Product-driven customer finder with traded/potential company suggestions + quick lead creation
+- Company contact agents (1-3 ranked agents per company for priority follow-up)
 - Company role model (`supplier`, `customer`, `both`)
 - Sales pipeline with stage change, quick move, and history
 - Multi-criteria filters on leads/tasks/contacts/companies

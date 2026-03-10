@@ -30,6 +30,28 @@ export async function PATCH(
   if (!allowed) return fail("Forbidden", 403);
 
   const body = await request.json();
+  let agentRank: number | null | undefined = undefined;
+  if (body.agent_rank !== undefined) {
+    if (body.agent_rank === null || String(body.agent_rank) === "") {
+      agentRank = null;
+    } else {
+      const parsed = Number(body.agent_rank);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3) {
+        return fail("agent_rank must be 1, 2, or 3", 400);
+      }
+      agentRank = parsed;
+    }
+  }
+
+  const isCompanyAgent =
+    body.is_company_agent === undefined
+      ? undefined
+      : body.is_company_agent === true || body.is_company_agent === "true";
+
+  if (isCompanyAgent === false && agentRank === undefined) {
+    agentRank = null;
+  }
+
   const payload = {
     first_name: body.first_name ? String(body.first_name) : undefined,
     last_name: body.last_name ? String(body.last_name) : undefined,
@@ -40,13 +62,15 @@ export async function PATCH(
     notes: body.notes === null ? null : body.notes ? String(body.notes) : undefined,
     company_id:
       body.company_id === null ? null : body.company_id ? String(body.company_id) : undefined,
+    is_company_agent: isCompanyAgent,
+    agent_rank: agentRank,
   };
 
   const { data, error } = await supabaseAdmin
     .from("contacts")
     .update(payload)
     .eq("id", id)
-    .select("id,first_name,last_name,email,phone,job_title,notes,company_id,created_at")
+    .select("id,first_name,last_name,email,phone,job_title,notes,company_id,is_company_agent,agent_rank,created_at")
     .single();
 
   if (error) return fail("Failed to update contact", 500, error.message);
