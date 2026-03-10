@@ -1,6 +1,8 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/locale-provider";
+import { PageTip } from "@/components/page-tip";
 
 type RangeKey = "7d" | "30d" | "90d";
 
@@ -45,6 +47,7 @@ type DashboardResponse = {
 };
 
 export default function DashboardPage() {
+  const { tr } = useLocale();
   const [range, setRange] = useState<RangeKey>("30d");
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,21 +100,26 @@ export default function DashboardPage() {
 
   return (
     <div className="stack">
+      <PageTip
+        id="tip-dashboard-overview"
+        title={tr("Quick onboarding")}
+        detail={tr("Use 30 days KPI, then review funnel and export CSV/PDF for your demo story.")}
+      />
       <section className="page-head">
-        <h1>Dashboard</h1>
-        <p>Commercial KPIs, funnel, pipeline, and team performance.</p>
+        <h1>{tr("Dashboard")}</h1>
+        <p>{tr("Commercial KPIs, funnel, pipeline, and team performance.")}</p>
       </section>
 
       <section className="panel stack">
         <div className="inline-actions">
-          <strong>KPI period:</strong>
+          <strong>{tr("KPI period:")}</strong>
           <button
             className={`btn ${range === "7d" ? "btn-primary" : "btn-secondary"}`}
             type="button"
             onClick={() => setRange("7d")}
             disabled={loading}
           >
-            7 days
+            {tr("7 days")}
           </button>
           <button
             className={`btn ${range === "30d" ? "btn-primary" : "btn-secondary"}`}
@@ -119,7 +127,7 @@ export default function DashboardPage() {
             onClick={() => setRange("30d")}
             disabled={loading}
           >
-            30 days
+            {tr("30 days")}
           </button>
           <button
             className={`btn ${range === "90d" ? "btn-primary" : "btn-secondary"}`}
@@ -127,7 +135,7 @@ export default function DashboardPage() {
             onClick={() => setRange("90d")}
             disabled={loading}
           >
-            90 days
+            {tr("90 days")}
           </button>
           <button
             className="btn btn-secondary"
@@ -135,7 +143,7 @@ export default function DashboardPage() {
             onClick={() => void handleExport("csv")}
             disabled={loading || exporting !== null}
           >
-            {exporting === "csv" ? "Exporting CSV..." : "Export CSV"}
+            {exporting === "csv" ? tr("Exporting CSV...") : tr("Export CSV")}
           </button>
           <button
             className="btn btn-secondary"
@@ -143,7 +151,7 @@ export default function DashboardPage() {
             onClick={() => void handleExport("pdf")}
             disabled={loading || exporting !== null}
           >
-            {exporting === "pdf" ? "Exporting PDF..." : "Export PDF"}
+            {exporting === "pdf" ? tr("Exporting PDF...") : tr("Export PDF")}
           </button>
         </div>
       </section>
@@ -152,47 +160,47 @@ export default function DashboardPage() {
 
       <section className="card-grid card-grid-wide">
         <article className="card">
-          <p className="muted">Total leads</p>
+          <p className="muted">{tr("Total leads")}</p>
           <p className="kpi">{data?.kpis.totalLeads ?? 0}</p>
         </article>
         <article className="card">
-          <p className="muted">Won / Lost</p>
+          <p className="muted">{tr("Won / Lost")}</p>
           <p className="kpi">
             {data?.kpis.wonLeads ?? 0} / {data?.kpis.lostLeads ?? 0}
           </p>
         </article>
         <article className="card">
-          <p className="muted">Conversion</p>
+          <p className="muted">{tr("Conversion")}</p>
           <p className="kpi">{data?.kpis.conversionRate ?? 0}%</p>
         </article>
         <article className="card">
-          <p className="muted">Pipeline value</p>
+          <p className="muted">{tr("Pipeline value")}</p>
           <p className="kpi">{(data?.kpis.pipelineValue ?? 0).toLocaleString()} EUR</p>
         </article>
         <article className="card">
-          <p className="muted">Overdue tasks</p>
+          <p className="muted">{tr("Overdue tasks")}</p>
           <p className="kpi">{data?.kpis.overdueTasks ?? 0}</p>
         </article>
         <article className="card">
-          <p className="muted">Due in 24h</p>
+          <p className="muted">{tr("Due in 24h")}</p>
           <p className="kpi">{data?.kpis.dueSoonTasks ?? 0}</p>
         </article>
         <article className="card">
-          <p className="muted">Sent emails</p>
+          <p className="muted">{tr("Sent emails")}</p>
           <p className="kpi">{data?.kpis.emailsSent ?? 0}</p>
         </article>
         <article className="card">
-          <p className="muted">Email open rate</p>
+          <p className="muted">{tr("Email open rate")}</p>
           <p className="kpi">{data?.kpis.emailOpenRate ?? 0}%</p>
         </article>
         <article className="card">
-          <p className="muted">Email click rate</p>
+          <p className="muted">{tr("Email click rate")}</p>
           <p className="kpi">{data?.kpis.emailClickRate ?? 0}%</p>
         </article>
       </section>
 
       <section className="panel stack">
-        <h2>Deadline notifications</h2>
+        <h2>{tr("Deadline notifications")}</h2>
         <table>
           <thead>
             <tr>
@@ -205,12 +213,12 @@ export default function DashboardPage() {
           <tbody>
             {(data?.deadlineAlerts ?? []).length === 0 ? (
               <tr>
-                <td colSpan={4}>No urgent deadline alerts</td>
+                <td colSpan={4}>{tr("No urgent deadline alerts")}</td>
               </tr>
             ) : (
               (data?.deadlineAlerts ?? []).map((alert) => (
                 <tr key={alert.taskId}>
-                  <td>{alert.kind === "overdue" ? "Overdue" : "Due soon"}</td>
+                  <td>{alert.kind === "overdue" ? tr("Overdue") : tr("Due soon")}</td>
                   <td>{alert.title}</td>
                   <td>{alert.priority}</td>
                   <td>{new Date(alert.dueDate).toLocaleString()}</td>
@@ -222,7 +230,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Pipeline by stage (count + value)</h2>
+        <h2>{tr("Pipeline by stage (count + value)")}</h2>
         <table>
           <thead>
             <tr>
@@ -244,7 +252,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Funnel conversion chain</h2>
+        <h2>{tr("Funnel conversion chain")}</h2>
         <table>
           <thead>
             <tr>
@@ -266,7 +274,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Leads by source</h2>
+        <h2>{tr("Leads by source")}</h2>
         <table>
           <thead>
             <tr>
@@ -286,7 +294,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Stage aging (average days)</h2>
+        <h2>{tr("Stage aging (average days)")}</h2>
         <table>
           <thead>
             <tr>
@@ -306,7 +314,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Sales leaderboard (won leads value)</h2>
+        <h2>{tr("Sales leaderboard (won leads value)")}</h2>
         <table>
           <thead>
             <tr>

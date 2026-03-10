@@ -139,6 +139,42 @@ test.describe("CRM end-to-end", () => {
     await expect(sectionByHeading(page, "Email logs")).toBeVisible();
   });
 
+  test("language switch persists and help center is reachable", async ({ page }) => {
+    await loginAsE2EAdmin(page);
+
+    await page.getByRole("button", { name: "FA" }).click();
+    await expect
+      .poll(async () => page.evaluate(() => document.documentElement.getAttribute("dir")))
+      .toBe("rtl");
+
+    await page.getByRole("link", { name: /Help|راهنما|Aide/ }).first().click();
+    await expect(page).toHaveURL(/\/help$/);
+    await expect(page.getByRole("heading", { name: /مرکز راهنما|Help Center/ })).toBeVisible();
+
+    await page.reload();
+    await expect
+      .poll(async () => page.evaluate(() => document.documentElement.getAttribute("data-locale")))
+      .toBe("fa");
+  });
+
+  test("saved filters persist on leads and tasks", async ({ page }) => {
+    await loginAsE2EAdmin(page);
+
+    await page.getByRole("link", { name: "Leads" }).click();
+    const leadFilters = sectionByHeading(page, "Lead filters");
+    await leadFilters.getByLabel("Search").fill("E2E");
+    await leadFilters.getByRole("button", { name: "Save filters" }).click();
+    await page.reload();
+    await expect(sectionByHeading(page, "Lead filters").getByLabel("Search")).toHaveValue("E2E");
+
+    await page.getByRole("link", { name: "Tasks" }).click();
+    const taskFilters = sectionByHeading(page, "Task filters");
+    await taskFilters.getByLabel("Search").fill("E2E");
+    await taskFilters.getByRole("button", { name: "Save filters" }).click();
+    await page.reload();
+    await expect(sectionByHeading(page, "Task filters").getByLabel("Search")).toHaveValue("E2E");
+  });
+
   test.describe("mobile", () => {
     test.use({ viewport: { width: 390, height: 844 } });
 

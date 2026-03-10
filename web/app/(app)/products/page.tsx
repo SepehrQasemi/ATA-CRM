@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { PageTip } from "@/components/page-tip";
+import { useLocale } from "@/components/locale-provider";
 import { Product, ProductCompanyLink } from "@/lib/types";
 
 type CompanyOption = {
@@ -69,17 +71,24 @@ const initialRelationForm: RelationForm = {
   notes: "",
 };
 
-function relationLabel(value: "traded" | "potential") {
-  return value === "traded" ? "Traded" : "Potential";
+function relationLabel(
+  value: "traded" | "potential",
+  tr: (key: string, vars?: Record<string, string | number>) => string,
+) {
+  return value === "traded" ? tr("Traded") : tr("Potential");
 }
 
-function companyRoleLabel(role: "supplier" | "customer" | "both") {
-  if (role === "supplier") return "Supplier";
-  if (role === "customer") return "Customer";
-  return "Supplier + Customer";
+function companyRoleLabel(
+  role: "supplier" | "customer" | "both",
+  tr: (key: string, vars?: Record<string, string | number>) => string,
+) {
+  if (role === "supplier") return tr("Supplier");
+  if (role === "customer") return tr("Customer");
+  return tr("Supplier + Customer");
 }
 
 export default function ProductsPage() {
+  const { tr } = useLocale();
   const [products, setProducts] = useState<Product[]>([]);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [links, setLinks] = useState<ProductCompanyLink[]>([]);
@@ -284,29 +293,33 @@ export default function ProductsPage() {
 
   return (
     <div className="stack">
+      <PageTip
+        id="tip-products-buckets"
+        title={tr("Quick onboarding")}
+        detail={tr("For each company, keep both traded history and potential product links updated.")}
+      />
       <section className="page-head">
-        <h1>Products</h1>
+        <h1>{tr("Products")}</h1>
         <p>
-          Manage your product catalog and classify each company relation as traded history or
-          potential opportunity.
+          {tr("Manage your product catalog and classify each company relation as traded history or potential opportunity.")}
         </p>
       </section>
 
       <section className="card-grid">
         <article className="card">
-          <p className="muted">Products</p>
+          <p className="muted">{tr("Products")}</p>
           <p className="kpi">{visibleProducts.length}</p>
         </article>
         <article className="card">
-          <p className="muted">Traded links</p>
+          <p className="muted">{tr("Traded links")}</p>
           <p className="kpi">{tradedCount}</p>
         </article>
         <article className="card">
-          <p className="muted">Potential links</p>
+          <p className="muted">{tr("Potential links")}</p>
           <p className="kpi">{potentialCount}</p>
         </article>
         <article className="card">
-          <p className="muted">Active products</p>
+          <p className="muted">{tr("Active products")}</p>
           <p className="kpi">{visibleProducts.filter((product) => product.is_active).length}</p>
         </article>
       </section>
@@ -315,10 +328,10 @@ export default function ProductsPage() {
       {success ? <p className="success">{success}</p> : null}
 
       <section className="panel stack">
-        <h2>Product filters</h2>
+        <h2>{tr("Product filters")}</h2>
         <form className="row" onSubmit={applyFilters}>
           <label className="col-4 stack">
-            Search
+            {tr("Search")}
             <input
               value={filters.q}
               onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
@@ -326,7 +339,7 @@ export default function ProductsPage() {
             />
           </label>
           <label className="col-3 stack">
-            Category
+            {tr("Category")}
             <input
               value={filters.category}
               onChange={(event) =>
@@ -336,34 +349,34 @@ export default function ProductsPage() {
             />
           </label>
           <label className="col-2 stack">
-            Active
+            {tr("Active")}
             <select
               value={filters.is_active}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, is_active: event.target.value }))
               }
             >
-              <option value="">All</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
+              <option value="">{tr("All")}</option>
+              <option value="true">{tr("Active")}</option>
+              <option value="false">{tr("Inactive")}</option>
             </select>
           </label>
           <label className="col-2 stack">
-            Product relation
+            {tr("Product relation")}
             <select
               value={filters.relation_type}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, relation_type: event.target.value }))
               }
             >
-              <option value="">All</option>
-              <option value="traded">Traded</option>
-              <option value="potential">Potential</option>
+              <option value="">{tr("All")}</option>
+              <option value="traded">{tr("Traded")}</option>
+              <option value="potential">{tr("Potential")}</option>
             </select>
           </label>
           <div className="col-1 stack action-end">
             <button className="btn btn-secondary" type="submit">
-              Apply
+              {tr("Apply")}
             </button>
             <button
               className="btn"
@@ -373,18 +386,18 @@ export default function ProductsPage() {
                 void loadData(initialFilters);
               }}
             >
-              Clear
+              {tr("Clear")}
             </button>
           </div>
         </form>
       </section>
 
       <section className="panel stack">
-        <h2>{editingId ? "Edit product" : "New product"}</h2>
+        <h2>{editingId ? tr("Edit product") : tr("New product")}</h2>
         <form className="stack" onSubmit={saveProduct}>
           <div className="row">
             <label className="col-3 stack">
-              Name
+              {tr("Name")}
               <input
                 value={form.name}
                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
@@ -399,7 +412,7 @@ export default function ProductsPage() {
               />
             </label>
             <label className="col-2 stack">
-              Category
+              {tr("Category")}
               <input
                 value={form.category}
                 onChange={(event) =>
@@ -435,19 +448,19 @@ export default function ProductsPage() {
               />
             </label>
             <label className="col-2 stack">
-              Active
+              {tr("Active")}
               <select
                 value={form.is_active ? "true" : "false"}
                 onChange={(event) =>
                   setForm((prev) => ({ ...prev, is_active: event.target.value === "true" }))
                 }
               >
-                <option value="true">Yes</option>
-                <option value="false">No</option>
+                <option value="true">{tr("Yes")}</option>
+                <option value="false">{tr("No")}</option>
               </select>
             </label>
             <label className="col-10 stack">
-              Notes
+              {tr("Notes")}
               <input
                 value={form.notes}
                 onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
@@ -456,11 +469,11 @@ export default function ProductsPage() {
           </div>
           <div className="inline-actions">
             <button className="btn btn-primary" type="submit" disabled={saving}>
-              {saving ? "Saving..." : editingId ? "Update product" : "Create product"}
+              {saving ? tr("Saving...") : editingId ? tr("Update product") : tr("Create product")}
             </button>
             {editingId ? (
               <button className="btn btn-secondary" type="button" onClick={resetProductForm}>
-                Cancel edit
+                {tr("Cancel edit")}
               </button>
             ) : null}
           </div>
@@ -468,7 +481,7 @@ export default function ProductsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Product list</h2>
+        <h2>{tr("Product list")}</h2>
         <table>
           <thead>
             <tr>
@@ -506,7 +519,7 @@ export default function ProductsPage() {
                       <div className="tag-list">
                         {related.map((link) => (
                           <span key={link.id} className={`tag tag-${link.relation_type}`}>
-                            {relationLabel(link.relation_type)}:{" "}
+                            {relationLabel(link.relation_type, tr)}:{" "}
                             {companyById[link.company_id]?.name ?? "Company"}
                           </span>
                         ))}
@@ -520,14 +533,14 @@ export default function ProductsPage() {
                         type="button"
                         onClick={() => startEdit(product)}
                       >
-                        Edit
+                      {tr("Edit")}
                       </button>
                       <button
                         className="btn btn-danger"
                         type="button"
                         onClick={() => void deleteProduct(product.id)}
                       >
-                        Delete
+                        {tr("Delete")}
                       </button>
                     </div>
                   </td>
@@ -539,11 +552,11 @@ export default function ProductsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Product-company relations</h2>
+        <h2>{tr("Product-company relations")}</h2>
         <form className="stack" onSubmit={saveRelation}>
           <div className="row">
             <label className="col-3 stack">
-              Product
+              {tr("Product")}
               <select
                 value={relationForm.product_id}
                 onChange={(event) =>
@@ -551,7 +564,7 @@ export default function ProductsPage() {
                 }
                 required
               >
-                <option value="">Select product</option>
+                <option value="">{tr("Select product")}</option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>
                     {product.name}
@@ -560,7 +573,7 @@ export default function ProductsPage() {
               </select>
             </label>
             <label className="col-3 stack">
-              Company
+              {tr("Company")}
               <select
                 value={relationForm.company_id}
                 onChange={(event) =>
@@ -568,16 +581,16 @@ export default function ProductsPage() {
                 }
                 required
               >
-                <option value="">Select company</option>
+                <option value="">{tr("Select company")}</option>
                 {companies.map((company) => (
                   <option key={company.id} value={company.id}>
-                    {company.name} ({companyRoleLabel(company.company_role)})
+                    {company.name} ({companyRoleLabel(company.company_role, tr)})
                   </option>
                 ))}
               </select>
             </label>
             <label className="col-2 stack">
-              Category
+              {tr("Category")}
               <select
                 value={relationForm.relation_type}
                 onChange={(event) =>
@@ -587,8 +600,8 @@ export default function ProductsPage() {
                   }))
                 }
               >
-                <option value="traded">Traded</option>
-                <option value="potential">Potential</option>
+                <option value="traded">{tr("Traded")}</option>
+                <option value="potential">{tr("Potential")}</option>
               </select>
             </label>
             <label className="col-2 stack">
@@ -602,7 +615,7 @@ export default function ProductsPage() {
               />
             </label>
             <label className="col-2 stack">
-              Notes
+              {tr("Notes")}
               <input
                 value={relationForm.notes}
                 onChange={(event) =>
@@ -612,7 +625,7 @@ export default function ProductsPage() {
             </label>
           </div>
           <button className="btn btn-primary" type="submit" disabled={savingRelation}>
-            {savingRelation ? "Saving..." : "Save relation"}
+            {savingRelation ? tr("Saving...") : tr("Save relation")}
           </button>
         </form>
 
@@ -632,12 +645,12 @@ export default function ProductsPage() {
               <tr key={link.id}>
                 <td>{products.find((product) => product.id === link.product_id)?.name ?? "-"}</td>
                 <td>{companyById[link.company_id]?.name ?? "-"}</td>
-                <td>{relationLabel(link.relation_type)}</td>
+                <td>{relationLabel(link.relation_type, tr)}</td>
                 <td>{link.last_price == null ? "-" : `${Number(link.last_price).toLocaleString()} EUR`}</td>
                 <td>{link.notes ?? "-"}</td>
                 <td>
                   <button className="btn btn-danger" type="button" onClick={() => void deleteRelation(link)}>
-                    Delete
+                    {tr("Delete")}
                   </button>
                 </td>
               </tr>

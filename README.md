@@ -9,12 +9,18 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `.github/workflows/ci.yml`: lint + build pipeline
 
 ## Main Features
+- Public landing page (`/`) with branding, feature overview, and CTA
 - Authentication (login, signup, reset) + roles (`admin`, `commercial`, `standard_user`)
+- Full i18n UI with language switch (`en`, `fr`, `fa`) and full RTL for Persian
+- Help Center (`/help`) with onboarding steps, role guide, and FAQ
+- In-app tips (dismissible, persisted in local storage)
+- Global search in shell (leads/companies/contacts)
 - Full CRUD with edit support for `contacts`, `companies`, `leads`, `tasks`
 - Full CRUD for `products` with traded/potential relationship buckets
 - Company role model (`supplier`, `customer`, `both`)
 - Sales pipeline with stage change, quick move, and history
 - Multi-criteria filters on leads/tasks/contacts/companies
+- Saved filters for leads and tasks
 - KPI dashboard (7/30/90 days) + funnel + leaderboard + stage aging
 - Task planning with monthly calendar + deadline alerts (overdue / due soon)
 - Manual email + test email + logs + 72h follow-up
@@ -98,6 +104,7 @@ npm run test:e2e
 
 Notes:
 - E2E setup auto-creates/updates an admin test user and runs the demo seed.
+- Includes language switch persistence + help center + saved filters scenarios.
 - Test credentials can be overridden with:
   - `E2E_USER_EMAIL`
   - `E2E_USER_PASSWORD`
@@ -155,4 +162,4 @@ Notes:
 - Final compliance matrix: `docs/final-compliance-checklist.md`
 - Safe baseline notes: `docs/release-baseline-v1.md`
 - Docs index: `docs/README.md`
-- Diagrams: `docs/architecture.mmd`, `docs/workflow-commercial.mmd`, `docs/sequence-followup.mmd`, `docs/mcd.mmd`, `docs/use-case.puml`, `docs/uml-domain.puml`
+- Diagrams: `docs/architecture.mmd`, `docs/workflow-commercial.mmd`, `docs/workflow-onboarding-help.mmd`, `docs/sequence-followup.mmd`, `docs/mcd.mmd`, `docs/use-case.puml`, `docs/uml-domain.puml`, `docs/uml-application-view.puml`

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { useLocale } from "@/components/locale-provider";
 
 type LiveNotification = {
   id: string;
@@ -16,6 +17,7 @@ function makeId() {
 }
 
 export function RealtimeNotifications() {
+  const { tr } = useLocale();
   const [items, setItems] = useState<LiveNotification[]>([]);
   const [status, setStatus] = useState<"connecting" | "connected" | "fallback">("connecting");
 
@@ -38,7 +40,7 @@ export function RealtimeNotifications() {
       .channel(`live-leads-${Date.now()}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "leads" }, (payload) => {
         const row = payload.new as { title?: string };
-        pushNotification("New lead created", row.title ?? "A new lead was added", "success");
+        pushNotification(tr("New lead created"), row.title ?? tr("A new lead was added"), "success");
       })
       .subscribe((channelStatus) => {
         if (channelStatus === "SUBSCRIBED") {
@@ -51,12 +53,12 @@ export function RealtimeNotifications() {
       .channel(`live-tasks-${Date.now()}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "tasks" }, (payload) => {
         const row = payload.new as { title?: string };
-        pushNotification("New task created", row.title ?? "A new task was added", "info");
+        pushNotification(tr("New task created"), row.title ?? tr("A new task was added"), "info");
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "tasks" }, (payload) => {
         const row = payload.new as { title?: string; status?: string };
         pushNotification(
-          "Task updated",
+          tr("Task updated"),
           `${row.title ?? "Task"} -> ${row.status ?? "updated"}`,
           row.status === "done" ? "success" : "info",
         );
@@ -78,7 +80,7 @@ export function RealtimeNotifications() {
           const recipient = row.recipient_email ?? "recipient";
           const isFailure = row.status === "failed";
           pushNotification(
-            isFailure ? "Email failed" : "Email log added",
+            isFailure ? tr("Email failed") : tr("Email log added"),
             `${recipient} (${row.status ?? "pending"})`,
             isFailure ? "danger" : "info",
           );
@@ -91,9 +93,9 @@ export function RealtimeNotifications() {
           const row = payload.new as { recipient_email?: string; open_count?: number; click_count?: number };
           const recipient = row.recipient_email ?? "recipient";
           if ((row.click_count ?? 0) > 0) {
-            pushNotification("Email clicked", `${recipient} clicked at least one link`, "success");
+            pushNotification(tr("Email clicked"), `${recipient} clicked at least one link`, "success");
           } else if ((row.open_count ?? 0) > 0) {
-            pushNotification("Email opened", `${recipient} opened an email`, "success");
+            pushNotification(tr("Email opened"), `${recipient} opened an email`, "success");
           }
         },
       )
@@ -114,7 +116,7 @@ export function RealtimeNotifications() {
       if (!alert) return;
       const dueLabel = new Date(alert.dueDate).toLocaleString();
       pushNotification(
-        alert.kind === "overdue" ? "Overdue task alert" : "Upcoming deadline",
+        alert.kind === "overdue" ? tr("Overdue task alert") : tr("Upcoming deadline"),
         `${alert.title} (${dueLabel})`,
         alert.kind === "overdue" ? "warning" : "info",
       );
@@ -133,18 +135,18 @@ export function RealtimeNotifications() {
       supabase.removeChannel(tasksChannel);
       supabase.removeChannel(emailsChannel);
     };
-  }, []);
+  }, [tr]);
 
   const statusLabel = useMemo(() => {
-    if (status === "connected") return "Live";
-    if (status === "connecting") return "Connecting";
-    return "Polling fallback";
-  }, [status]);
+    if (status === "connected") return tr("Live");
+    if (status === "connecting") return tr("Connecting");
+    return tr("Polling fallback");
+  }, [status, tr]);
 
   return (
     <section className="panel realtime-notify">
       <div className="inline-actions">
-        <h2>Notifications</h2>
+        <h2>{tr("Notifications")}</h2>
         <span className={`notify-status notify-status-${status}`}>{statusLabel}</span>
         {items.length > 0 ? (
           <button
@@ -152,13 +154,13 @@ export function RealtimeNotifications() {
             className="btn btn-secondary"
             onClick={() => setItems([])}
           >
-            Clear
+            {tr("Clear")}
           </button>
         ) : null}
       </div>
       <div className="notify-list">
         {items.length === 0 ? (
-          <p className="small">No recent notifications yet.</p>
+          <p className="small">{tr("No recent notifications yet.")}</p>
         ) : (
           items.map((item) => (
             <article key={item.id} className={`notify-item notify-${item.level}`}>

@@ -4,8 +4,13 @@ import Link from "next/link";
 import { ReactNode, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { BrandLogo } from "@/components/brand-logo";
+import { GlobalSearch } from "@/components/global-search";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useLocale } from "@/components/locale-provider";
 import { SignOutButton } from "@/components/sign-out-button";
 import { RealtimeNotifications } from "@/components/realtime-notifications";
+import { roleLabel } from "@/lib/i18n";
 
 type AppShellProps = {
   children: ReactNode;
@@ -24,11 +29,13 @@ const navItems = [
   { href: "/leads", label: "Leads" },
   { href: "/tasks", label: "Tasks" },
   { href: "/emails", label: "Emails" },
+  { href: "/help", label: "Help" },
   { href: "/settings", label: "Settings" },
 ];
 
 export function AppShell({ children, user }: AppShellProps) {
   const pathname = usePathname();
+  const { tr, locale } = useLocale();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -45,10 +52,8 @@ export function AppShell({ children, user }: AppShellProps) {
       />
 
       <aside className={clsx("sidebar", { open: isSidebarOpen })}>
-        <div className="brand">
-          <span className="brand-dot" />
-          <span>CRM Food Trading</span>
-        </div>
+        <BrandLogo compact />
+        <LanguageSwitcher compact />
         <nav className="nav-list">
           {navItems.map((item) => {
             const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -58,14 +63,16 @@ export function AppShell({ children, user }: AppShellProps) {
                 href={item.href}
                 className={clsx("nav-link", { active })}
               >
-                {item.label}
+                {tr(item.label)}
               </Link>
             );
           })}
         </nav>
         <div className="sidebar-footer">
-          <p className="small">Signed in as {user.fullName ?? user.email ?? "User"}</p>
-          <p className="small">Role: {user.role}</p>
+          <p className="small">
+            {tr("Signed in as {name}", { name: user.fullName ?? user.email ?? tr("User") })}
+          </p>
+          <p className="small">{tr("Role: {role}", { role: roleLabel(user.role, locale) })}</p>
           <SignOutButton />
         </div>
       </aside>
@@ -78,12 +85,19 @@ export function AppShell({ children, user }: AppShellProps) {
             onClick={() => setIsSidebarOpen((prev) => !prev)}
             aria-label="Toggle navigation menu"
           >
-            Menu
+            {tr("Menu")}
           </button>
           <div className="mobile-user">
-            <strong>{user.fullName ?? "User"}</strong>
-            <span className="small">{user.role}</span>
+            <strong>{user.fullName ?? tr("User")}</strong>
+            <span className="small">{roleLabel(user.role, locale)}</span>
           </div>
+          <LanguageSwitcher compact />
+        </div>
+        <div className="app-toolbar">
+          <GlobalSearch />
+          <Link href="/help" className="btn btn-secondary">
+            {tr("Open Help Center")}
+          </Link>
         </div>
         <RealtimeNotifications />
         {children}

@@ -1,6 +1,8 @@
 ﻿"use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { PageTip } from "@/components/page-tip";
+import { useLocale } from "@/components/locale-provider";
 import { Company, Contact } from "@/lib/types";
 
 type ContactsResponse = { contacts: Contact[]; error?: string };
@@ -27,6 +29,7 @@ const initialForm: ContactForm = {
 };
 
 export default function ContactsPage() {
+  const { tr } = useLocale();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -132,18 +135,23 @@ export default function ContactsPage() {
 
   return (
     <div className="stack">
+      <PageTip
+        id="tip-contacts-link-company"
+        title={tr("Quick onboarding")}
+        detail={tr("Link contacts to companies so pipeline and email automation stay consistent.")}
+      />
       <section className="page-head">
-        <h1>Contacts</h1>
-        <p>Manage customer and prospect contact records.</p>
+        <h1>{tr("Contacts")}</h1>
+        <p>{tr("Manage customer and prospect contact records.")}</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <h2>Contact filters</h2>
+        <h2>{tr("Contact filters")}</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
           <label className="col-5 stack">
-            Search
+            {tr("Search")}
             <input
               value={filters.q}
               onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
@@ -151,14 +159,14 @@ export default function ContactsPage() {
             />
           </label>
           <label className="col-5 stack">
-            Company
+            {tr("Company")}
             <select
               value={filters.company_id}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, company_id: event.target.value }))
               }
             >
-              <option value="">All companies</option>
+              <option value="">{tr("All companies")}</option>
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.name}
@@ -168,7 +176,7 @@ export default function ContactsPage() {
           </label>
           <div className="col-2 stack action-end">
             <button className="btn btn-secondary" type="submit">
-              Apply filters
+              {tr("Apply filters")}
             </button>
             <button
               className="btn"
@@ -179,18 +187,18 @@ export default function ContactsPage() {
                 void loadData(cleared);
               }}
             >
-              Clear
+              {tr("Clear")}
             </button>
           </div>
         </form>
       </section>
 
       <section className="panel stack">
-        <h2>{editingId ? "Edit contact" : "New contact"}</h2>
+        <h2>{editingId ? tr("Edit contact") : tr("New contact")}</h2>
         <form className="stack" onSubmit={handleSubmit}>
           <div className="row">
             <label className="col-3 stack">
-              First name
+              {tr("First name")}
               <input
                 value={form.first_name}
                 onChange={(e) => setForm((prev) => ({ ...prev, first_name: e.target.value }))}
@@ -198,7 +206,7 @@ export default function ContactsPage() {
               />
             </label>
             <label className="col-3 stack">
-              Last name
+              {tr("Last name")}
               <input
                 value={form.last_name}
                 onChange={(e) => setForm((prev) => ({ ...prev, last_name: e.target.value }))}
@@ -206,7 +214,7 @@ export default function ContactsPage() {
               />
             </label>
             <label className="col-3 stack">
-              Email
+              {tr("Email")}
               <input
                 type="email"
                 value={form.email}
@@ -214,26 +222,26 @@ export default function ContactsPage() {
               />
             </label>
             <label className="col-3 stack">
-              Phone
+              {tr("Phone")}
               <input
                 value={form.phone}
                 onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
               />
             </label>
             <label className="col-4 stack">
-              Job title
+              {tr("Job title")}
               <input
                 value={form.job_title}
                 onChange={(e) => setForm((prev) => ({ ...prev, job_title: e.target.value }))}
               />
             </label>
             <label className="col-4 stack">
-              Company
+              {tr("Company")}
               <select
                 value={form.company_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, company_id: e.target.value }))}
               >
-                <option value="">No company</option>
+                <option value="">{tr("No company")}</option>
                 {companies.map((company) => (
                   <option key={company.id} value={company.id}>
                     {company.name}
@@ -242,7 +250,7 @@ export default function ContactsPage() {
               </select>
             </label>
             <label className="col-4 stack">
-              Notes
+              {tr("Notes")}
               <input
                 value={form.notes}
                 onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
@@ -251,11 +259,11 @@ export default function ContactsPage() {
           </div>
           <div className="inline-actions">
             <button className="btn btn-primary" disabled={saving} type="submit">
-              {saving ? "Saving..." : editingId ? "Update contact" : "Create contact"}
+              {saving ? tr("Saving...") : editingId ? tr("Update contact") : tr("Create contact")}
             </button>
             {editingId ? (
               <button className="btn btn-secondary" type="button" onClick={resetForm}>
-                Cancel edit
+                {tr("Cancel edit")}
               </button>
             ) : null}
           </div>
@@ -263,7 +271,7 @@ export default function ContactsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Contact list</h2>
+        <h2>{tr("Contact list")}</h2>
         <table>
           <thead>
             <tr>
@@ -294,14 +302,14 @@ export default function ContactsPage() {
                       className="btn btn-secondary"
                       onClick={() => startEdit(contact)}
                     >
-                      Edit
+                      {tr("Edit")}
                     </button>
                     <button
                       type="button"
                       className="btn btn-danger"
                       onClick={() => void deleteContact(contact.id)}
                     >
-                      Delete
+                      {tr("Delete")}
                     </button>
                   </div>
                 </td>

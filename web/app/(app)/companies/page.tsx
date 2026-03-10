@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { PageTip } from "@/components/page-tip";
+import { useLocale } from "@/components/locale-provider";
 import { Company } from "@/lib/types";
 
 type ProductOption = { id: string; name: string };
@@ -41,13 +43,17 @@ const initialForm: CompanyForm = {
 type CompanyFilters = { q: string; sector: string; company_role: string };
 const initialFilters: CompanyFilters = { q: "", sector: "", company_role: "" };
 
-function companyRoleLabel(role: "supplier" | "customer" | "both") {
-  if (role === "supplier") return "Supplier";
-  if (role === "customer") return "Customer";
-  return "Supplier + Customer";
+function companyRoleLabel(
+  role: "supplier" | "customer" | "both",
+  tr: (key: string, vars?: Record<string, string | number>) => string,
+) {
+  if (role === "supplier") return tr("Supplier");
+  if (role === "customer") return tr("Customer");
+  return tr("Supplier + Customer");
 }
 
 export default function CompaniesPage() {
+  const { tr } = useLocale();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [links, setLinks] = useState<CompanyProductLink[]>([]);
@@ -169,18 +175,23 @@ export default function CompaniesPage() {
 
   return (
     <div className="stack">
+      <PageTip
+        id="tip-companies-role-products"
+        title={tr("Quick onboarding")}
+        detail={tr("Set company role first, then track traded and potential products for sales context.")}
+      />
       <section className="page-head">
-        <h1>Companies</h1>
-        <p>Manage partner companies, define their role, and track traded/potential product buckets.</p>
+        <h1>{tr("Companies")}</h1>
+        <p>{tr("Manage partner companies, define their role, and track traded/potential product buckets.")}</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <h2>Company filters</h2>
+        <h2>{tr("Company filters")}</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
           <label className="col-4 stack">
-            Search (name)
+            {tr("Search (name)")}
             <input
               value={filters.q}
               onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
@@ -188,7 +199,7 @@ export default function CompaniesPage() {
             />
           </label>
           <label className="col-4 stack">
-            Sector
+            {tr("Sector")}
             <input
               value={filters.sector}
               onChange={(event) =>
@@ -198,22 +209,22 @@ export default function CompaniesPage() {
             />
           </label>
           <label className="col-2 stack">
-            Role
+            {tr("Role")}
             <select
               value={filters.company_role}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, company_role: event.target.value }))
               }
             >
-              <option value="">All</option>
-              <option value="supplier">Supplier or Both</option>
-              <option value="customer">Customer or Both</option>
-              <option value="both">Both only</option>
+              <option value="">{tr("All")}</option>
+              <option value="supplier">{tr("Supplier or Both")}</option>
+              <option value="customer">{tr("Customer or Both")}</option>
+              <option value="both">{tr("Both only")}</option>
             </select>
           </label>
           <div className="col-2 stack action-end">
             <button className="btn btn-secondary" type="submit">
-              Apply filters
+              {tr("Apply filters")}
             </button>
             <button
               className="btn"
@@ -223,18 +234,18 @@ export default function CompaniesPage() {
                 void loadCompanies(initialFilters);
               }}
             >
-              Clear
+              {tr("Clear")}
             </button>
           </div>
         </form>
       </section>
 
       <section className="panel stack">
-        <h2>{editingId ? "Edit company" : "New company"}</h2>
+        <h2>{editingId ? tr("Edit company") : tr("New company")}</h2>
         <form className="stack" onSubmit={handleSubmit}>
           <div className="row">
             <label className="col-3 stack">
-              Name
+              {tr("Name")}
               <input
                 value={form.name}
                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -242,7 +253,7 @@ export default function CompaniesPage() {
               />
             </label>
             <label className="col-3 stack">
-              Company role
+              {tr("Company role")}
               <select
                 value={form.company_role}
                 onChange={(e) =>
@@ -252,41 +263,41 @@ export default function CompaniesPage() {
                   }))
                 }
               >
-                <option value="supplier">Supplier</option>
-                <option value="customer">Customer</option>
-                <option value="both">Supplier + Customer</option>
+                <option value="supplier">{tr("Supplier")}</option>
+                <option value="customer">{tr("Customer")}</option>
+                <option value="both">{tr("Supplier + Customer")}</option>
               </select>
             </label>
             <label className="col-3 stack">
-              Sector
+              {tr("Sector")}
               <input
                 value={form.sector}
                 onChange={(e) => setForm((prev) => ({ ...prev, sector: e.target.value }))}
               />
             </label>
             <label className="col-3 stack">
-              City
+              {tr("City")}
               <input
                 value={form.city}
                 onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
               />
             </label>
             <label className="col-3 stack">
-              Country
+              {tr("Country")}
               <input
                 value={form.country}
                 onChange={(e) => setForm((prev) => ({ ...prev, country: e.target.value }))}
               />
             </label>
             <label className="col-3 stack">
-              Website
+              {tr("Website")}
               <input
                 value={form.website}
                 onChange={(e) => setForm((prev) => ({ ...prev, website: e.target.value }))}
               />
             </label>
             <label className="col-6 stack">
-              Notes
+              {tr("Notes")}
               <input
                 value={form.notes}
                 onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
@@ -295,11 +306,11 @@ export default function CompaniesPage() {
           </div>
           <div className="inline-actions">
             <button className="btn btn-primary" disabled={saving} type="submit">
-              {saving ? "Saving..." : editingId ? "Update company" : "Create company"}
+              {saving ? tr("Saving...") : editingId ? tr("Update company") : tr("Create company")}
             </button>
             {editingId ? (
               <button className="btn btn-secondary" type="button" onClick={resetForm}>
-                Cancel edit
+                {tr("Cancel edit")}
               </button>
             ) : null}
           </div>
@@ -307,7 +318,7 @@ export default function CompaniesPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Company list</h2>
+        <h2>{tr("Company list")}</h2>
         <table>
           <thead>
             <tr>
@@ -327,7 +338,7 @@ export default function CompaniesPage() {
               return (
                 <tr key={company.id}>
                   <td>{company.name}</td>
-                  <td>{companyRoleLabel(company.company_role ?? "both")}</td>
+                  <td>{companyRoleLabel(company.company_role ?? "both", tr)}</td>
                   <td>{company.sector ?? "-"}</td>
                   <td>{company.city ?? "-"}</td>
                   <td>{company.country ?? "-"}</td>
@@ -364,14 +375,14 @@ export default function CompaniesPage() {
                         className="btn btn-secondary"
                         onClick={() => startEdit(company)}
                       >
-                        Edit
+                      {tr("Edit")}
                       </button>
                       <button
                         type="button"
                         className="btn btn-danger"
                         onClick={() => void deleteCompany(company.id)}
                       >
-                        Delete
+                        {tr("Delete")}
                       </button>
                     </div>
                   </td>
