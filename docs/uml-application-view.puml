@@ -1,0 +1,63 @@
+@startuml
+skinparam linetype ortho
+
+package "Presentation" {
+  class LandingPage
+  class LoginPage
+  class AppShell
+  class HelpCenterPage
+  class LanguageSwitcher
+  class GlobalSearch
+  class PageTip
+}
+
+package "Localization" {
+  class LocaleProvider
+  class I18nDictionary
+}
+
+package "Domain Screens" {
+  class DashboardPage
+  class LeadsPage
+  class TasksPage
+  class CompaniesPage
+  class ContactsPage
+  class ProductsPage
+  class EmailsPage
+  class SettingsPage
+}
+
+package "API" {
+  class LeadsAPI
+  class TasksAPI
+  class CompaniesAPI
+  class ContactsAPI
+  class ProductsAPI
+  class DashboardAPI
+  class EmailsAPI
+}
+
+LandingPage --> LoginPage : CTA
+LoginPage --> AppShell : authenticated
+AppShell --> LanguageSwitcher
+AppShell --> GlobalSearch
+AppShell --> PageTip
+AppShell --> HelpCenterPage
+
+LanguageSwitcher --> LocaleProvider
+LocaleProvider --> I18nDictionary
+
+DashboardPage --> DashboardAPI
+LeadsPage --> LeadsAPI
+TasksPage --> TasksAPI
+CompaniesPage --> CompaniesAPI
+ContactsPage --> ContactsAPI
+ProductsPage --> ProductsAPI
+EmailsPage --> EmailsAPI
+SettingsPage --> DashboardAPI
+
+GlobalSearch --> LeadsAPI
+GlobalSearch --> CompaniesAPI
+GlobalSearch --> ContactsAPI
+
+@enduml

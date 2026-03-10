@@ -122,6 +122,17 @@ KPI complementaires:
 - notifications live (leads, tasks, emails) avec fallback polling
 - containerisation Docker (`Dockerfile`, `docker-compose.yml`)
 
+### 6.8 Evolution UI/UX (impact rapide)
+- landing page publique avec branding et CTA (`/`)
+- logo simple (SVG + wordmark) sur landing/login/sidebar
+- design tokens harmonises (couleurs, rayons, ombres, typographie)
+- switch langue global `EN/FR/FA` avec persistance locale + cookie
+- RTL complet pour la version persane
+- Help Center interne (`/help`) avec onboarding, FAQ et guide des roles
+- in-app tips dismissibles (persistes en localStorage)
+- global quick search (leads/companies/contacts)
+- saved filters sur leads et tasks
+
 ## 7. API REST
 Routes principales:
 - `/api/contacts`
@@ -176,6 +187,8 @@ CI:
 Demo reproductible:
 - script `npm run seed:demo` (idempotent, < 2 minutes)
 - baseline securisee avant evolution: `docs/release-baseline-v1.md`
+- workflow onboarding/help: `docs/workflow-onboarding-help.mmd`
+- UML applicatif (i18n/help/search): `docs/uml-application-view.puml`
 
 ## 10. Plan de soutenance (8-10 min)
 Scenario recommande:

@@ -1,0 +1,14 @@
+flowchart LR
+  A["Visitor opens landing page"] --> B["Reads value proposition"]
+  B --> C["Clicks Login / Signup"]
+  C --> D["Authenticated AppShell"]
+  D --> E["Choose locale EN/FR/FA"]
+  E --> F{"Locale = FA?"}
+  F -->|"Yes"| G["Enable RTL layout"]
+  F -->|"No"| H["Keep LTR layout"]
+  G --> I["Open Help Center"]
+  H --> I
+  I --> J["Quick onboarding steps"]
+  I --> K["FAQ by scenario"]
+  I --> L["Role guide"]
+  J --> M["Start using Companies/Contacts/Leads/Tasks"]

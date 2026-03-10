@@ -14,6 +14,8 @@ import {
   subMonths,
 } from "date-fns";
 import { Company, Contact, Lead, Task } from "@/lib/types";
+import { PageTip } from "@/components/page-tip";
+import { useLocale } from "@/components/locale-provider";
 
 type TasksResponse = { tasks: Task[]; error?: string };
 type LeadsResponse = { leads: Lead[]; error?: string };
@@ -41,6 +43,8 @@ const initialFilters: TaskFilters = {
   from: "",
   to: "",
 };
+
+const TASK_FILTERS_STORAGE_KEY = "crm_saved_filters_tasks";
 
 type TaskForm = {
   title: string;
@@ -79,6 +83,7 @@ function getTaskDueDate(task: Task): Date | null {
 }
 
 export default function TasksPage() {
+  const { tr } = useLocale();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -140,7 +145,18 @@ export default function TasksPage() {
   }
 
   useEffect(() => {
-    void loadData();
+    let initial = initialFilters;
+    try {
+      const saved = window.localStorage.getItem(TASK_FILTERS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<TaskFilters>;
+        initial = { ...initialFilters, ...parsed };
+        setFilters(initial);
+      }
+    } catch {
+      initial = initialFilters;
+    }
+    void loadData(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -296,22 +312,27 @@ export default function TasksPage() {
 
   return (
     <div className="stack">
+      <PageTip
+        id="tip-tasks-deadline"
+        title={tr("Quick onboarding")}
+        detail={tr("Prioritize overdue and due soon tasks, then update status from the table quickly.")}
+      />
       <section className="page-head">
-        <h1>Tasks & Calendar</h1>
-        <p>Plan calls, meetings, and follow-up reminders with deadline notifications.</p>
+        <h1>{tr("Tasks & Calendar")}</h1>
+        <p>{tr("Plan calls, meetings, and follow-up reminders with deadline notifications.")}</p>
       </section>
 
       <section className="card-grid">
         <article className="card">
-          <p className="muted">Total tasks</p>
+          <p className="muted">{tr("Total tasks")}</p>
           <p className="kpi">{tasks.length}</p>
         </article>
         <article className="card">
-          <p className="muted">Overdue</p>
+          <p className="muted">{tr("Overdue")}</p>
           <p className="kpi">{overdueCount}</p>
         </article>
         <article className="card">
-          <p className="muted">Due in 24h</p>
+          <p className="muted">{tr("Due in 24h")}</p>
           <p className="kpi">{dueSoonCount}</p>
         </article>
       </section>
@@ -319,7 +340,7 @@ export default function TasksPage() {
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <h2>Deadline notifications</h2>
+        <h2>{tr("Deadline notifications")}</h2>
         <table>
           <thead>
             <tr>
@@ -332,12 +353,12 @@ export default function TasksPage() {
           <tbody>
             {deadlineAlerts.length === 0 ? (
               <tr>
-                <td colSpan={4}>No urgent deadline alerts</td>
+                <td colSpan={4}>{tr("No urgent deadline alerts")}</td>
               </tr>
             ) : (
               deadlineAlerts.map(({ task, kind }) => (
                 <tr key={task.id}>
-                  <td>{kind === "overdue" ? "Overdue" : "Due soon"}</td>
+                  <td>{kind === "overdue" ? tr("Overdue") : tr("Due soon")}</td>
                   <td>{task.title}</td>
                   <td>{task.priority}</td>
                   <td>{task.due_date ? new Date(task.due_date).toLocaleString() : "-"}</td>
@@ -349,10 +370,10 @@ export default function TasksPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Task filters</h2>
+        <h2>{tr("Task filters")}</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
           <label className="col-3 stack">
-            Search
+            {tr("Search")}
             <input
               value={filters.q}
               onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
@@ -360,40 +381,40 @@ export default function TasksPage() {
             />
           </label>
           <label className="col-2 stack">
-            Status
+            {tr("Status")}
             <select
               value={filters.status}
               onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))}
             >
-              <option value="">All</option>
-              <option value="todo">To do</option>
-              <option value="in_progress">In progress</option>
-              <option value="done">Done</option>
+              <option value="">{tr("All")}</option>
+              <option value="todo">{tr("To do")}</option>
+              <option value="in_progress">{tr("In progress")}</option>
+              <option value="done">{tr("Done")}</option>
             </select>
           </label>
           <label className="col-2 stack">
-            Priority
+            {tr("Priority")}
             <select
               value={filters.priority}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, priority: event.target.value }))
               }
             >
-              <option value="">All</option>
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
+              <option value="">{tr("All")}</option>
+              <option value="low">{tr("Low")}</option>
+              <option value="normal">{tr("Normal")}</option>
+              <option value="high">{tr("High")}</option>
+              <option value="urgent">{tr("Urgent")}</option>
             </select>
           </label>
           <label className="col-2 stack">
-            Overdue only
+            {tr("Overdue only")}
             <select
               value={filters.overdue}
               onChange={(event) => setFilters((prev) => ({ ...prev, overdue: event.target.value }))}
             >
-              <option value="">No</option>
-              <option value="true">Yes</option>
+              <option value="">{tr("No")}</option>
+              <option value="true">{tr("Yes")}</option>
             </select>
           </label>
           <label className="col-2 stack">
@@ -414,7 +435,16 @@ export default function TasksPage() {
           </label>
           <div className="col-1 stack action-end">
             <button className="btn btn-secondary" type="submit">
-              Apply
+              {tr("Apply")}
+            </button>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={() => {
+                window.localStorage.setItem(TASK_FILTERS_STORAGE_KEY, JSON.stringify(filters));
+              }}
+            >
+              {tr("Save filters")}
             </button>
             <button
               className="btn"
@@ -424,18 +454,18 @@ export default function TasksPage() {
                 void loadData(initialFilters);
               }}
             >
-              Clear
+              {tr("Clear")}
             </button>
           </div>
         </form>
       </section>
 
       <section className="panel stack">
-        <h2>{editingId ? "Edit task" : "New task"}</h2>
+        <h2>{editingId ? tr("Edit task") : tr("New task")}</h2>
         <form className="stack" onSubmit={handleSubmit}>
           <div className="row">
             <label className="col-3 stack">
-              Title
+              {tr("Title")}
               <input
                 value={form.title}
                 onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
@@ -443,7 +473,7 @@ export default function TasksPage() {
               />
             </label>
             <label className="col-3 stack">
-              Due date
+              {tr("Due date")}
               <input
                 type="datetime-local"
                 value={form.due_date}
@@ -451,7 +481,7 @@ export default function TasksPage() {
               />
             </label>
             <label className="col-2 stack">
-              Priority
+              {tr("Priority")}
               <select
                 value={form.priority}
                 onChange={(e) =>
@@ -461,14 +491,14 @@ export default function TasksPage() {
                   }))
                 }
               >
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
+                <option value="low">{tr("Low")}</option>
+                <option value="normal">{tr("Normal")}</option>
+                <option value="high">{tr("High")}</option>
+                <option value="urgent">{tr("Urgent")}</option>
               </select>
             </label>
             <label className="col-2 stack">
-              Status
+              {tr("Status")}
               <select
                 value={form.status}
                 onChange={(e) =>
@@ -478,18 +508,18 @@ export default function TasksPage() {
                   }))
                 }
               >
-                <option value="todo">To do</option>
-                <option value="in_progress">In progress</option>
-                <option value="done">Done</option>
+                <option value="todo">{tr("To do")}</option>
+                <option value="in_progress">{tr("In progress")}</option>
+                <option value="done">{tr("Done")}</option>
               </select>
             </label>
             <label className="col-2 stack">
-              Assigned to
+              {tr("Assigned to")}
               <select
                 value={form.assigned_to}
                 onChange={(e) => setForm((prev) => ({ ...prev, assigned_to: e.target.value }))}
               >
-                <option value="">Auto assign</option>
+                <option value="">{tr("Auto assign")}</option>
                 {profiles.map((profile) => (
                   <option key={profile.id} value={profile.id}>
                     {profile.full_name ?? profile.id.slice(0, 8)}
@@ -498,12 +528,12 @@ export default function TasksPage() {
               </select>
             </label>
             <label className="col-3 stack">
-              Lead
+              {tr("Lead")}
               <select
                 value={form.lead_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, lead_id: e.target.value }))}
               >
-                <option value="">No lead</option>
+                <option value="">{tr("No lead")}</option>
                 {leads.map((lead) => (
                   <option key={lead.id} value={lead.id}>
                     {lead.title}
@@ -512,12 +542,12 @@ export default function TasksPage() {
               </select>
             </label>
             <label className="col-3 stack">
-              Company
+              {tr("Company")}
               <select
                 value={form.company_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, company_id: e.target.value }))}
               >
-                <option value="">No company</option>
+                <option value="">{tr("No company")}</option>
                 {companies.map((company) => (
                   <option key={company.id} value={company.id}>
                     {company.name}
@@ -526,12 +556,12 @@ export default function TasksPage() {
               </select>
             </label>
             <label className="col-3 stack">
-              Contact
+              {tr("Contact")}
               <select
                 value={form.contact_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, contact_id: e.target.value }))}
               >
-                <option value="">No contact</option>
+                <option value="">{tr("No contact")}</option>
                 {contacts.map((contact) => (
                   <option key={contact.id} value={contact.id}>
                     {contact.first_name} {contact.last_name}
@@ -540,7 +570,7 @@ export default function TasksPage() {
               </select>
             </label>
             <label className="col-3 stack">
-              Description
+              {tr("Description")}
               <input
                 value={form.description}
                 onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
@@ -549,11 +579,11 @@ export default function TasksPage() {
           </div>
           <div className="inline-actions">
             <button className="btn btn-primary" type="submit" disabled={saving}>
-              {saving ? "Saving..." : editingId ? "Update task" : "Create task"}
+              {saving ? tr("Saving...") : editingId ? tr("Update task") : tr("Create task")}
             </button>
             {editingId ? (
               <button className="btn btn-secondary" type="button" onClick={resetForm}>
-                Cancel edit
+                {tr("Cancel edit")}
               </button>
             ) : null}
           </div>
@@ -562,13 +592,13 @@ export default function TasksPage() {
 
       <section className="panel stack">
         <div className="inline-actions">
-          <h2>Calendar view</h2>
+          <h2>{tr("Calendar view")}</h2>
           <button
             className="btn btn-secondary"
             type="button"
             onClick={() => setCalendarMonth((prev) => startOfMonth(subMonths(prev, 1)))}
           >
-            Prev month
+            {tr("Prev month")}
           </button>
           <strong>{format(calendarMonth, "MMMM yyyy")}</strong>
           <button
@@ -576,7 +606,7 @@ export default function TasksPage() {
             type="button"
             onClick={() => setCalendarMonth((prev) => startOfMonth(addMonths(prev, 1)))}
           >
-            Next month
+            {tr("Next month")}
           </button>
         </div>
 
@@ -604,7 +634,7 @@ export default function TasksPage() {
               >
                 <header>
                   <strong>{format(day, "d")}</strong>
-                  {dayTasks.length > 0 ? <span className="small">{dayTasks.length} task(s)</span> : null}
+                  {dayTasks.length > 0 ? <span className="small">{dayTasks.length} {tr("task(s)")}</span> : null}
                 </header>
                 <div className="calendar-task-list">
                   {dayTasks.slice(0, 3).map((task) => (
@@ -613,7 +643,7 @@ export default function TasksPage() {
                     </div>
                   ))}
                   {dayTasks.length > 3 ? (
-                    <div className="small">+{dayTasks.length - 3} more</div>
+                    <div className="small">+{dayTasks.length - 3} {tr("more")}</div>
                   ) : null}
                 </div>
               </article>
@@ -623,7 +653,7 @@ export default function TasksPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Task list</h2>
+        <h2>{tr("Task list")}</h2>
         <table>
           <thead>
             <tr>
@@ -652,9 +682,9 @@ export default function TasksPage() {
                       )
                     }
                   >
-                    <option value="todo">To do</option>
-                    <option value="in_progress">In progress</option>
-                    <option value="done">Done</option>
+                    <option value="todo">{tr("To do")}</option>
+                    <option value="in_progress">{tr("In progress")}</option>
+                    <option value="done">{tr("Done")}</option>
                   </select>
                 </td>
                 <td>{leads.find((lead) => lead.id === task.lead_id)?.title ?? "-"}</td>
@@ -666,14 +696,14 @@ export default function TasksPage() {
                       type="button"
                       onClick={() => startEdit(task)}
                     >
-                      Edit
+                      {tr("Edit")}
                     </button>
                     <button
                       className="btn btn-danger"
                       type="button"
                       onClick={() => void deleteTask(task.id)}
                     >
-                      Delete
+                      {tr("Delete")}
                     </button>
                   </div>
                 </td>

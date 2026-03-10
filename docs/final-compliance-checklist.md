@@ -31,6 +31,10 @@ Date: 2026-03-10
 - BI-ready secured endpoint (`/api/bi/kpis`): DONE
 - Docker packaging (`Dockerfile`, `docker-compose.yml`): DONE
 - End-to-end Playwright tests: DONE
+- Public landing page with branding: DONE
+- Full EN/FR/FA UI + FA RTL mode: DONE
+- Help Center + FAQ + in-app tips: DONE
+- Global search + saved filters (Leads/Tasks): DONE
 
 ## Delivery Evidence
 - CI workflow: `.github/workflows/ci.yml`
@@ -40,7 +44,7 @@ Date: 2026-03-10
 - FA summary: `docs/resume-projet-fa.md`
 - Demo checklist: `docs/checklist-demo.md`
 - Baseline freeze notes: `docs/release-baseline-v1.md`
-- Workflow and UML package: `docs/workflow-commercial.mmd`, `docs/sequence-followup.mmd`, `docs/uml-domain.puml`
+- Workflow and UML package: `docs/workflow-commercial.mmd`, `docs/workflow-onboarding-help.mmd`, `docs/sequence-followup.mmd`, `docs/uml-domain.puml`, `docs/uml-application-view.puml`
 
 ## Final Status
 Project scope is complete for submission and oral defense, including the identified bonus items.

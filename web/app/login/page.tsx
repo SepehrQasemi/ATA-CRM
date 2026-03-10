@@ -2,9 +2,14 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { BrandLogo } from "@/components/brand-logo";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useLocale } from "@/components/locale-provider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export default function LoginPage() {
+  const { tr } = useLocale();
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [email, setEmail] = useState("");
@@ -64,8 +69,15 @@ export default function LoginPage() {
   return (
     <div className="auth-wrap">
       <div className="auth-card stack">
-        <h1>CRM Food Trading</h1>
-        <p>Sign in to manage your leads, contacts, and email campaigns.</p>
+        <div className="inline-actions auth-head">
+          <BrandLogo compact />
+          <LanguageSwitcher />
+        </div>
+        <h1>{tr("CRM Food Trading")}</h1>
+        <p>{tr("Sign in to manage your leads, contacts, and email campaigns.")}</p>
+        <p className="small">
+          <Link href="/">{tr("Explore Features")}</Link>
+        </p>
 
         <div className="row">
           <button
@@ -73,39 +85,39 @@ export default function LoginPage() {
             className={`btn col-4 ${mode === "login" ? "btn-primary" : "btn-secondary"}`}
             onClick={() => setMode("login")}
           >
-            Login
+            {tr("Login")}
           </button>
           <button
             type="button"
             className={`btn col-4 ${mode === "signup" ? "btn-primary" : "btn-secondary"}`}
             onClick={() => setMode("signup")}
           >
-            Signup
+            {tr("Signup")}
           </button>
           <button
             type="button"
             className={`btn col-4 ${mode === "reset" ? "btn-primary" : "btn-secondary"}`}
             onClick={() => setMode("reset")}
           >
-            Reset
+            {tr("Reset")}
           </button>
         </div>
 
         <form className="stack" onSubmit={handleSubmit}>
           {mode === "signup" && (
             <label className="stack">
-              Full name
+              {tr("Full name")}
               <input
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
-                placeholder="Your Name"
+                placeholder={tr("Your Name")}
                 required
               />
             </label>
           )}
 
           <label className="stack">
-            Email
+            {tr("Email")}
             <input
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -117,7 +129,7 @@ export default function LoginPage() {
 
           {mode !== "reset" && (
             <label className="stack">
-              Password
+              {tr("Password")}
               <input
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
@@ -132,7 +144,13 @@ export default function LoginPage() {
           {success ? <p className="success">{success}</p> : null}
 
           <button className="btn btn-primary" type="submit" disabled={loading}>
-            {loading ? "Processing..." : mode === "login" ? "Login" : mode === "signup" ? "Create account" : "Send reset link"}
+            {loading
+              ? tr("Processing...")
+              : mode === "login"
+                ? tr("Login")
+                : mode === "signup"
+                  ? tr("Create account")
+                  : tr("Send reset link")}
           </button>
         </form>
       </div>

@@ -1,6 +1,8 @@
 ﻿"use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { PageTip } from "@/components/page-tip";
+import { useLocale } from "@/components/locale-provider";
 import { Lead, PipelineStage } from "@/lib/types";
 
 type LeadResponse = {
@@ -60,7 +62,10 @@ const initialFilters: LeadFilters = {
   to: "",
 };
 
+const LEAD_FILTERS_STORAGE_KEY = "crm_saved_filters_leads";
+
 export default function LeadsPage() {
+  const { tr } = useLocale();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [contacts, setContacts] = useState<LeadResponse["contacts"]>([]);
@@ -118,7 +123,18 @@ export default function LeadsPage() {
   }
 
   useEffect(() => {
-    void loadData();
+    let initial = initialFilters;
+    try {
+      const saved = window.localStorage.getItem(LEAD_FILTERS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<LeadFilters>;
+        initial = { ...initialFilters, ...parsed };
+        setFilters(initial);
+      }
+    } catch {
+      initial = initialFilters;
+    }
+    void loadData(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -219,6 +235,31 @@ export default function LeadsPage() {
     void loadData();
   }
 
+  async function createTaskFromLead(lead: Lead) {
+    const due = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+    const response = await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: `Follow-up: ${lead.title}`,
+        description: `Quick task created from lead ${lead.title}`,
+        due_date: due,
+        priority: "normal",
+        status: "todo",
+        assigned_to: lead.assigned_to ?? null,
+        lead_id: lead.id,
+        company_id: lead.company_id ?? null,
+        contact_id: lead.contact_id ?? null,
+      }),
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setError(json.error ?? "Failed to create task");
+      return;
+    }
+    setError(null);
+  }
+
   function handleFilterSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -240,18 +281,23 @@ export default function LeadsPage() {
 
   return (
     <div className="stack">
+      <PageTip
+        id="tip-leads-quick-actions"
+        title={tr("Quick onboarding")}
+        detail={tr("Use quick stage moves and create follow-up tasks directly from each lead card.")}
+      />
       <section className="page-head">
-        <h1>Leads & Pipeline</h1>
-        <p>Track prospects from first contact to conversion.</p>
+        <h1>{tr("Leads & Pipeline")}</h1>
+        <p>{tr("Track prospects from first contact to conversion.")}</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <h2>Lead filters</h2>
+        <h2>{tr("Lead filters")}</h2>
         <form className="row" onSubmit={handleFilterSubmit}>
           <label className="col-3 stack">
-            Search
+            {tr("Search")}
             <input
               value={filters.q}
               onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
@@ -259,14 +305,14 @@ export default function LeadsPage() {
             />
           </label>
           <label className="col-3 stack">
-            Stage
+            {tr("Stage")}
             <select
               value={filters.stage_id}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, stage_id: event.target.value }))
               }
             >
-              <option value="">All stages</option>
+              <option value="">{tr("All stages")}</option>
               {stages.map((stage) => (
                 <option key={stage.id} value={stage.id}>
                   {stage.name}
@@ -275,26 +321,26 @@ export default function LeadsPage() {
             </select>
           </label>
           <label className="col-2 stack">
-            Status
+            {tr("Status")}
             <select
               value={filters.status}
               onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))}
             >
-              <option value="">All</option>
-              <option value="open">Open</option>
-              <option value="won">Won</option>
-              <option value="lost">Lost</option>
+              <option value="">{tr("All")}</option>
+              <option value="open">{tr("Open")}</option>
+              <option value="won">{tr("Won")}</option>
+              <option value="lost">{tr("Lost")}</option>
             </select>
           </label>
           <label className="col-2 stack">
-            Assigned to
+            {tr("Assigned to")}
             <select
               value={filters.assigned_to}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, assigned_to: event.target.value }))
               }
             >
-              <option value="">All</option>
+              <option value="">{tr("All")}</option>
               {profiles.map((profile) => (
                 <option key={profile.id} value={profile.id}>
                   {profile.full_name ?? profile.id.slice(0, 8)}
@@ -303,7 +349,7 @@ export default function LeadsPage() {
             </select>
           </label>
           <label className="col-2 stack">
-            Source
+            {tr("Source")}
             <input
               value={filters.source}
               onChange={(event) =>
@@ -313,7 +359,7 @@ export default function LeadsPage() {
             />
           </label>
           <label className="col-2 stack">
-            Value from
+            {tr("Value from")}
             <input
               type="number"
               value={filters.from}
@@ -321,7 +367,7 @@ export default function LeadsPage() {
             />
           </label>
           <label className="col-2 stack">
-            Value to
+            {tr("Value to")}
             <input
               type="number"
               value={filters.to}
@@ -330,7 +376,16 @@ export default function LeadsPage() {
           </label>
           <div className="col-2 stack action-end">
             <button className="btn btn-secondary" type="submit">
-              Apply filters
+              {tr("Apply filters")}
+            </button>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={() => {
+                window.localStorage.setItem(LEAD_FILTERS_STORAGE_KEY, JSON.stringify(filters));
+              }}
+            >
+              {tr("Save filters")}
             </button>
             <button
               className="btn"
@@ -340,18 +395,18 @@ export default function LeadsPage() {
                 void loadData(initialFilters);
               }}
             >
-              Clear
+              {tr("Clear")}
             </button>
           </div>
         </form>
       </section>
 
       <section className="panel stack">
-        <h2>{editingId ? "Edit lead" : "New lead"}</h2>
+        <h2>{editingId ? tr("Edit lead") : tr("New lead")}</h2>
         <form className="stack" onSubmit={handleSaveLead}>
           <div className="row">
             <label className="col-3 stack">
-              Title
+              {tr("Title")}
               <input
                 value={form.title}
                 onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
@@ -359,7 +414,7 @@ export default function LeadsPage() {
               />
             </label>
             <label className="col-3 stack">
-              Source
+              {tr("Source")}
               <input
                 value={form.source}
                 onChange={(e) => setForm((prev) => ({ ...prev, source: e.target.value }))}
@@ -367,7 +422,7 @@ export default function LeadsPage() {
               />
             </label>
             <label className="col-2 stack">
-              Status
+              {tr("Status")}
               <select
                 value={form.status}
                 onChange={(e) =>
@@ -377,13 +432,13 @@ export default function LeadsPage() {
                   }))
                 }
               >
-                <option value="open">Open</option>
-                <option value="won">Won</option>
-                <option value="lost">Lost</option>
+                <option value="open">{tr("Open")}</option>
+                <option value="won">{tr("Won")}</option>
+                <option value="lost">{tr("Lost")}</option>
               </select>
             </label>
             <label className="col-2 stack">
-              Estimated value
+              {tr("Estimated value")}
               <input
                 type="number"
                 value={form.estimated_value}
@@ -391,14 +446,14 @@ export default function LeadsPage() {
               />
             </label>
             <label className="col-2 stack">
-              Stage
+              {tr("Stage")}
               <select
                 value={form.current_stage_id}
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, current_stage_id: e.target.value }))
                 }
               >
-                <option value="">Auto stage</option>
+                <option value="">{tr("Auto stage")}</option>
                 {stages.map((stage) => (
                   <option key={stage.id} value={stage.id}>
                     {stage.name}
@@ -407,12 +462,12 @@ export default function LeadsPage() {
               </select>
             </label>
             <label className="col-3 stack">
-              Contact
+              {tr("Contact")}
               <select
                 value={form.contact_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, contact_id: e.target.value }))}
               >
-                <option value="">No contact</option>
+                <option value="">{tr("No contact")}</option>
                 {contacts.map((contact) => (
                   <option key={contact.id} value={contact.id}>
                     {contact.first_name} {contact.last_name}
@@ -421,12 +476,12 @@ export default function LeadsPage() {
               </select>
             </label>
             <label className="col-3 stack">
-              Company
+              {tr("Company")}
               <select
                 value={form.company_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, company_id: e.target.value }))}
               >
-                <option value="">No company</option>
+                <option value="">{tr("No company")}</option>
                 {companies.map((company) => (
                   <option key={company.id} value={company.id}>
                     {company.name}
@@ -435,12 +490,12 @@ export default function LeadsPage() {
               </select>
             </label>
             <label className="col-3 stack">
-              Assigned to
+              {tr("Assigned to")}
               <select
                 value={form.assigned_to}
                 onChange={(e) => setForm((prev) => ({ ...prev, assigned_to: e.target.value }))}
               >
-                <option value="">Auto assign</option>
+                <option value="">{tr("Auto assign")}</option>
                 {profiles.map((profile) => (
                   <option key={profile.id} value={profile.id}>
                     {profile.full_name ?? profile.id.slice(0, 8)}
@@ -449,7 +504,7 @@ export default function LeadsPage() {
               </select>
             </label>
             <label className="col-3 stack">
-              Notes
+              {tr("Notes")}
               <input
                 value={form.notes}
                 onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
@@ -458,11 +513,11 @@ export default function LeadsPage() {
           </div>
           <div className="inline-actions">
             <button className="btn btn-primary" type="submit" disabled={saving}>
-              {saving ? "Saving..." : editingId ? "Update lead" : "Create lead"}
+              {saving ? tr("Saving...") : editingId ? tr("Update lead") : tr("Create lead")}
             </button>
             {editingId ? (
               <button className="btn btn-secondary" type="button" onClick={resetForm}>
-                Cancel edit
+                {tr("Cancel edit")}
               </button>
             ) : null}
           </div>
@@ -470,7 +525,7 @@ export default function LeadsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Pipeline board</h2>
+        <h2>{tr("Pipeline board")}</h2>
         <div className="board board-wide">
           {stages.map((stage) => {
             const stageLeads = grouped[stage.id] ?? [];
@@ -482,8 +537,8 @@ export default function LeadsPage() {
             return (
               <article key={stage.id} className="stage">
                 <h3>{stage.name}</h3>
-                <p className="small">Leads: {stageLeads.length}</p>
-                <p className="small">Total value: {stageValue.toLocaleString()} EUR</p>
+                <p className="small">{tr("Leads")}: {stageLeads.length}</p>
+                <p className="small">{tr("Total value")}: {stageValue.toLocaleString()} EUR</p>
 
                 {stageLeads.map((lead) => {
                   const currentIndex = stages.findIndex((item) => item.id === lead.current_stage_id);
@@ -497,7 +552,7 @@ export default function LeadsPage() {
                       <span className="small">
                         Assigned: {profiles.find((profile) => profile.id === lead.assigned_to)?.full_name ?? "-"}
                       </span>
-                      <span className="small">Status: {lead.status}</span>
+                      <span className="small">{tr("Status")}: {lead.status}</span>
 
                       <select
                         value={lead.current_stage_id ?? ""}
@@ -517,7 +572,7 @@ export default function LeadsPage() {
                           disabled={!canMovePrev}
                           onClick={() => void quickMove(lead, "prev")}
                         >
-                          Prev
+                          {tr("Prev")}
                         </button>
                         <button
                           className="btn"
@@ -525,20 +580,23 @@ export default function LeadsPage() {
                           disabled={!canMoveNext}
                           onClick={() => void quickMove(lead, "next")}
                         >
-                          Next
+                          {tr("Next")}
+                        </button>
+                        <button className="btn btn-secondary" type="button" onClick={() => void createTaskFromLead(lead)}>
+                          {tr("Create task")}
                         </button>
                       </div>
 
                       <div className="inline-actions">
                         <button className="btn btn-secondary" type="button" onClick={() => startEdit(lead)}>
-                          Edit
+                          {tr("Edit")}
                         </button>
                         <button
                           className="btn btn-danger"
                           type="button"
                           onClick={() => void deleteLead(lead.id)}
                         >
-                          Delete
+                          {tr("Delete")}
                         </button>
                       </div>
                     </div>
@@ -551,7 +609,7 @@ export default function LeadsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Lead list</h2>
+        <h2>{tr("Lead list")}</h2>
         <table>
           <thead>
             <tr>
@@ -578,10 +636,10 @@ export default function LeadsPage() {
                 <td>
                   <div className="inline-actions">
                     <button className="btn btn-secondary" type="button" onClick={() => startEdit(lead)}>
-                      Edit
+                      {tr("Edit")}
                     </button>
                     <button className="btn btn-danger" type="button" onClick={() => void deleteLead(lead.id)}>
-                      Delete
+                      {tr("Delete")}
                     </button>
                   </div>
                 </td>

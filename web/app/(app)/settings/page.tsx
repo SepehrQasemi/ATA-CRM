@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/locale-provider";
 
 type MetaResponse = {
   profiles: Array<{ id: string; full_name: string | null; role: string }>;
@@ -9,6 +10,7 @@ type MetaResponse = {
 };
 
 export default function SettingsPage() {
+  const { tr } = useLocale();
   const [meta, setMeta] = useState<MetaResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,14 +30,14 @@ export default function SettingsPage() {
   return (
     <div className="stack">
       <section className="page-head">
-        <h1>Settings</h1>
-        <p>Quick view of CRM setup, roles, and automations.</p>
+        <h1>{tr("Settings")}</h1>
+        <p>{tr("Quick view of CRM setup, roles, and automations.")}</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <h2>Configured pipeline</h2>
+        <h2>{tr("Configured pipeline")}</h2>
         <table>
           <thead>
             <tr>
@@ -57,7 +59,7 @@ export default function SettingsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Email templates</h2>
+        <h2>{tr("Email templates")}</h2>
         <table>
           <thead>
             <tr>
@@ -81,7 +83,7 @@ export default function SettingsPage() {
       </section>
 
       <section className="panel stack">
-        <h2>Team roles</h2>
+        <h2>{tr("Team roles")}</h2>
         <table>
           <thead>
             <tr>

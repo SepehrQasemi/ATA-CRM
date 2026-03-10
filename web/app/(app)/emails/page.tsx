@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { PageTip } from "@/components/page-tip";
+import { useLocale } from "@/components/locale-provider";
 import { Lead, Contact } from "@/lib/types";
 
 type MetaResponse = {
@@ -35,6 +37,7 @@ type LogsResponse = {
 };
 
 export default function EmailsPage() {
+  const { tr } = useLocale();
   const [templates, setTemplates] = useState<MetaResponse["templates"]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -238,9 +241,14 @@ export default function EmailsPage() {
 
   return (
     <div className="stack">
+      <PageTip
+        id="tip-emails-jobs"
+        title={tr("Quick onboarding")}
+        detail={tr("Start with dry-run jobs, then run real sends and verify open/click analytics in logs.")}
+      />
       <section className="page-head">
-        <h1>Email Automation</h1>
-        <p>Manual sends, template tests, follow-up automation, and email performance analytics.</p>
+        <h1>{tr("Email Automation")}</h1>
+        <p>{tr("Manual sends, template tests, follow-up automation, and email performance analytics.")}</p>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
@@ -248,14 +256,14 @@ export default function EmailsPage() {
 
       <section className="panel stack">
         <div className="inline-actions">
-          <h2>Run follow-up 72h</h2>
+          <h2>{tr("Run follow-up 72h")}</h2>
           <button
             type="button"
             className="btn btn-secondary"
             onClick={() => void runFollowupJob(true)}
             disabled={runningFollowupJob}
           >
-            {runningFollowupJob ? "Running..." : "Dry run follow-up"}
+            {runningFollowupJob ? tr("Running...") : tr("Dry run follow-up")}
           </button>
           <button
             type="button"
@@ -263,21 +271,21 @@ export default function EmailsPage() {
             onClick={() => void runFollowupJob(false)}
             disabled={runningFollowupJob}
           >
-            {runningFollowupJob ? "Running..." : "Run real send"}
+            {runningFollowupJob ? tr("Running...") : tr("Run real send")}
           </button>
         </div>
       </section>
 
       <section className="panel stack">
         <div className="inline-actions">
-          <h2>Run task deadline reminders</h2>
+          <h2>{tr("Run task deadline reminders")}</h2>
           <button
             type="button"
             className="btn btn-secondary"
             onClick={() => void runTaskReminderJob(true)}
             disabled={runningTaskReminders}
           >
-            {runningTaskReminders ? "Running..." : "Dry run reminders"}
+            {runningTaskReminders ? tr("Running...") : tr("Dry run reminders")}
           </button>
           <button
             type="button"
@@ -285,22 +293,22 @@ export default function EmailsPage() {
             onClick={() => void runTaskReminderJob(false)}
             disabled={runningTaskReminders}
           >
-            {runningTaskReminders ? "Running..." : "Run reminder sends"}
+            {runningTaskReminders ? tr("Running...") : tr("Run reminder sends")}
           </button>
         </div>
       </section>
 
       <section className="panel stack">
-        <h2>Send manual email</h2>
+        <h2>{tr("Send manual email")}</h2>
         <form className="stack" onSubmit={handleSend}>
           <div className="row">
             <label className="col-4 stack">
-              Lead
+              {tr("Lead")}
               <select
                 value={form.lead_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, lead_id: e.target.value }))}
               >
-                <option value="">No lead</option>
+                <option value="">{tr("No lead")}</option>
                 {leads.map((lead) => (
                   <option key={lead.id} value={lead.id}>
                     {lead.title}
@@ -309,12 +317,12 @@ export default function EmailsPage() {
               </select>
             </label>
             <label className="col-4 stack">
-              Template
+              {tr("Template")}
               <select
                 value={form.template_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, template_id: e.target.value }))}
               >
-                <option value="">Auto by event</option>
+                <option value="">{tr("Auto by event")}</option>
                 {templates.map((template) => (
                   <option key={template.id} value={template.id}>
                     {template.name} ({template.event_type})
@@ -323,7 +331,7 @@ export default function EmailsPage() {
               </select>
             </label>
             <label className="col-4 stack">
-              Recipient email (optional)
+              {tr("Recipient email (optional)")}
               <input
                 type="email"
                 value={form.recipient_email}
@@ -333,14 +341,14 @@ export default function EmailsPage() {
               />
             </label>
             <label className="col-6 stack">
-              Subject (optional)
+              {tr("Subject (optional)")}
               <input
                 value={form.subject}
                 onChange={(e) => setForm((prev) => ({ ...prev, subject: e.target.value }))}
               />
             </label>
             <label className="col-6 stack">
-              Body (optional)
+              {tr("Body (optional)")}
               <textarea
                 value={form.body}
                 onChange={(e) => setForm((prev) => ({ ...prev, body: e.target.value }))}
@@ -348,17 +356,17 @@ export default function EmailsPage() {
             </label>
           </div>
           <button className="btn btn-primary" type="submit" disabled={sending}>
-            {sending ? "Sending..." : "Send email"}
+            {sending ? tr("Sending...") : tr("Send email")}
           </button>
         </form>
       </section>
 
       <section className="panel stack">
-        <h2>Send test email</h2>
+        <h2>{tr("Send test email")}</h2>
         <form className="stack" onSubmit={handleSendTest}>
           <div className="row">
             <label className="col-4 stack">
-              Template
+              {tr("Template")}
               <select
                 value={testForm.template_id}
                 onChange={(event) =>
@@ -366,7 +374,7 @@ export default function EmailsPage() {
                 }
                 required
               >
-                <option value="">Select template</option>
+                <option value="">{tr("Select template")}</option>
                 {templates.map((template) => (
                   <option key={template.id} value={template.id}>
                     {template.name} ({template.event_type})
@@ -375,7 +383,7 @@ export default function EmailsPage() {
               </select>
             </label>
             <label className="col-4 stack">
-              Contact
+              {tr("Contact")}
               <select
                 value={testForm.contact_id}
                 onChange={(event) =>
@@ -383,7 +391,7 @@ export default function EmailsPage() {
                 }
                 required
               >
-                <option value="">Select contact</option>
+                <option value="">{tr("Select contact")}</option>
                 {contacts.map((contact) => (
                   <option key={contact.id} value={contact.id}>
                     {contact.first_name} {contact.last_name} ({contact.email ?? "no-email"})
@@ -392,7 +400,7 @@ export default function EmailsPage() {
               </select>
             </label>
             <label className="col-4 stack">
-              Subject override (optional)
+              {tr("Subject override (optional)")}
               <input
                 value={testForm.subject}
                 onChange={(event) =>
@@ -402,35 +410,35 @@ export default function EmailsPage() {
             </label>
           </div>
           <button className="btn btn-primary" type="submit" disabled={sendingTest}>
-            {sendingTest ? "Sending..." : "Send test email"}
+            {sendingTest ? tr("Sending...") : tr("Send test email")}
           </button>
         </form>
       </section>
 
       <section className="panel stack">
-        <h2>Email analytics</h2>
+        <h2>{tr("Email analytics")}</h2>
         <div className="card-grid">
           <article className="card">
-            <p className="muted">Sent emails</p>
+          <p className="muted">{tr("Sent emails")}</p>
             <p className="kpi">{emailStats.sent}</p>
           </article>
           <article className="card">
-            <p className="muted">Opened emails</p>
+          <p className="muted">{tr("Opened emails")}</p>
             <p className="kpi">{emailStats.opened}</p>
           </article>
           <article className="card">
-            <p className="muted">Open rate</p>
+          <p className="muted">{tr("Open rate")}</p>
             <p className="kpi">{emailStats.openRate}%</p>
           </article>
           <article className="card">
-            <p className="muted">Click rate</p>
+          <p className="muted">{tr("Click rate")}</p>
             <p className="kpi">{emailStats.clickRate}%</p>
           </article>
         </div>
       </section>
 
       <section className="panel stack">
-        <h2>Email logs</h2>
+        <h2>{tr("Email logs")}</h2>
         <table>
           <thead>
             <tr>
