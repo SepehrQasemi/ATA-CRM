@@ -11,6 +11,7 @@ type CompanyProductLink = {
   company_id: string;
   product_id: string;
   relation_type: "traded" | "potential";
+  product_model: string;
 };
 
 type CompaniesResponse = {
@@ -104,11 +105,17 @@ export default function CompaniesPage() {
         map[link.company_id] = { traded: [], potential: [] };
       }
       const productName = productById[link.product_id]?.name ?? "Unknown product";
+      const modelSuffix = link.product_model ? ` (${link.product_model})` : "";
+      const displayLabel = `${productName}${modelSuffix}`;
       if (link.relation_type === "traded") {
-        map[link.company_id].traded.push(productName);
+        map[link.company_id].traded.push(displayLabel);
       } else {
-        map[link.company_id].potential.push(productName);
+        map[link.company_id].potential.push(displayLabel);
       }
+    });
+    Object.values(map).forEach((bucket) => {
+      bucket.traded = [...new Set(bucket.traded)];
+      bucket.potential = [...new Set(bucket.potential)];
     });
     return map;
   }, [links, productById]);
@@ -327,8 +334,8 @@ export default function CompaniesPage() {
               <th>Sector</th>
               <th>City</th>
               <th>Country</th>
-              <th>Traded products</th>
-              <th>Potential products</th>
+              <th>Traded products (model)</th>
+              <th>Potential products (model)</th>
               <th />
             </tr>
           </thead>

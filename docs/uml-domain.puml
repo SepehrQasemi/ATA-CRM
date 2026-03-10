@@ -32,6 +32,7 @@ class Product {
 class ProductCompanyLink {
   +id: uuid
   +relation_type: enum(traded, potential)
+  +product_model: text
 }
 
 class PipelineStage {

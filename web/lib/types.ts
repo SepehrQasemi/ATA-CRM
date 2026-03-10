@@ -97,6 +97,7 @@ export type ProductCompanyLink = {
   product_id: string;
   company_id: string;
   relation_type: "traded" | "potential";
+  product_model: string;
   last_price: number | null;
   notes: string | null;
   owner_id: string | null;

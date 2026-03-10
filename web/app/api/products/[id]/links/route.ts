@@ -53,6 +53,7 @@ export async function POST(
     product_id: id,
     company_id: companyId,
     relation_type: relationType,
+    product_model: body.product_model ? String(body.product_model).trim() : "",
     last_price:
       body.last_price === null
         ? null
@@ -65,8 +66,8 @@ export async function POST(
 
   const { data, error } = await supabaseAdmin
     .from("product_company_links")
-    .upsert(payload, { onConflict: "product_id,company_id,relation_type" })
-    .select("id,product_id,company_id,relation_type,last_price,notes,owner_id,created_at")
+    .upsert(payload, { onConflict: "product_id,company_id,relation_type,product_model" })
+    .select("id,product_id,company_id,relation_type,product_model,last_price,notes,owner_id,created_at")
     .single();
 
   if (error) return fail("Failed to save product link", 500, error.message);

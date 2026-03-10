@@ -59,6 +59,7 @@ type RelationForm = {
   product_id: string;
   company_id: string;
   relation_type: "traded" | "potential";
+  product_model: string;
   last_price: string;
   notes: string;
 };
@@ -67,6 +68,7 @@ const initialRelationForm: RelationForm = {
   product_id: "",
   company_id: "",
   relation_type: "traded",
+  product_model: "",
   last_price: "",
   notes: "",
 };
@@ -236,6 +238,16 @@ export default function ProductsPage() {
       setSavingRelation(false);
       return;
     }
+    if (!relationForm.company_id) {
+      setError("Select a company first");
+      setSavingRelation(false);
+      return;
+    }
+    if (!relationForm.product_model.trim()) {
+      setError("Product model/grade is required");
+      setSavingRelation(false);
+      return;
+    }
 
     const response = await fetch(`/api/products/${relationForm.product_id}/links`, {
       method: "POST",
@@ -243,6 +255,7 @@ export default function ProductsPage() {
       body: JSON.stringify({
         company_id: relationForm.company_id,
         relation_type: relationForm.relation_type,
+        product_model: relationForm.product_model.trim(),
         last_price: relationForm.last_price === "" ? null : Number(relationForm.last_price),
         notes: relationForm.notes || null,
       }),
@@ -260,6 +273,7 @@ export default function ProductsPage() {
     setRelationForm((prev) => ({
       ...prev,
       company_id: "",
+      product_model: "",
       last_price: "",
       notes: "",
     }));
@@ -521,6 +535,7 @@ export default function ProductsPage() {
                           <span key={link.id} className={`tag tag-${link.relation_type}`}>
                             {relationLabel(link.relation_type, tr)}:{" "}
                             {companyById[link.company_id]?.name ?? "Company"}
+                            {link.product_model ? ` (${link.product_model})` : ""}
                           </span>
                         ))}
                       </div>
@@ -605,6 +620,17 @@ export default function ProductsPage() {
               </select>
             </label>
             <label className="col-2 stack">
+              Model / Grade
+              <input
+                value={relationForm.product_model}
+                onChange={(event) =>
+                  setRelationForm((prev) => ({ ...prev, product_model: event.target.value }))
+                }
+                placeholder="E1422, Kappa, 80 mesh..."
+                required
+              />
+            </label>
+            <label className="col-2 stack">
               Last price
               <input
                 type="number"
@@ -614,7 +640,8 @@ export default function ProductsPage() {
                 }
               />
             </label>
-            <label className="col-2 stack">
+          </div>
+          <label className="stack">
               {tr("Notes")}
               <input
                 value={relationForm.notes}
@@ -622,8 +649,7 @@ export default function ProductsPage() {
                   setRelationForm((prev) => ({ ...prev, notes: event.target.value }))
                 }
               />
-            </label>
-          </div>
+          </label>
           <button className="btn btn-primary" type="submit" disabled={savingRelation}>
             {savingRelation ? tr("Saving...") : tr("Save relation")}
           </button>
@@ -635,6 +661,7 @@ export default function ProductsPage() {
               <th>Product</th>
               <th>Company</th>
               <th>Category</th>
+              <th>Model / Grade</th>
               <th>Last price</th>
               <th>Notes</th>
               <th />
@@ -646,6 +673,7 @@ export default function ProductsPage() {
                 <td>{products.find((product) => product.id === link.product_id)?.name ?? "-"}</td>
                 <td>{companyById[link.company_id]?.name ?? "-"}</td>
                 <td>{relationLabel(link.relation_type, tr)}</td>
+                <td>{link.product_model || "-"}</td>
                 <td>{link.last_price == null ? "-" : `${Number(link.last_price).toLocaleString()} EUR`}</td>
                 <td>{link.notes ?? "-"}</td>
                 <td>

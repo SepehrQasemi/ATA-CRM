@@ -39,6 +39,8 @@ export async function PATCH(
 
   const payload = {
     relation_type: relationType,
+    product_model:
+      body.product_model === undefined ? undefined : String(body.product_model ?? "").trim(),
     last_price:
       body.last_price === undefined
         ? undefined
@@ -53,7 +55,7 @@ export async function PATCH(
     .update(payload)
     .eq("id", linkId)
     .eq("product_id", id)
-    .select("id,product_id,company_id,relation_type,last_price,notes,owner_id,created_at")
+    .select("id,product_id,company_id,relation_type,product_model,last_price,notes,owner_id,created_at")
     .single();
 
   if (error) return fail("Failed to update product link", 500, error.message);

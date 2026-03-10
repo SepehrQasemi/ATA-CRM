@@ -60,28 +60,30 @@ test.describe("CRM end-to-end", () => {
     await pickSelectOptionByText(relationProductSelect, productName);
     await pickSelectOptionByText(relationCompanySelect, companyName);
     await relationCategorySelect.selectOption("traded");
+    await relationSection.getByLabel("Model / Grade").fill("Food Grade A");
     await saveRelationButton.click();
     await expect(page.getByText("Product relation saved")).toBeVisible();
 
     await pickSelectOptionByText(relationProductSelect, productName);
     await pickSelectOptionByText(relationCompanySelect, companyName);
     await relationCategorySelect.selectOption("potential");
+    await relationSection.getByLabel("Model / Grade").fill("Food Grade B");
     await saveRelationButton.click();
     await expect(page.getByText("Product relation saved")).toBeVisible();
 
     const productList = sectionByHeading(page, "Product list");
     const productRow = productList.locator("tbody tr", { hasText: productName }).first();
     await expect(productRow).toBeVisible();
-    await expect(productRow.locator(".tag-traded", { hasText: companyName })).toBeVisible();
-    await expect(productRow.locator(".tag-potential", { hasText: companyName })).toBeVisible();
+    await expect(productRow.locator(".tag-traded", { hasText: `${companyName} (Food Grade A)` })).toBeVisible();
+    await expect(productRow.locator(".tag-potential", { hasText: `${companyName} (Food Grade B)` })).toBeVisible();
 
     await page.getByRole("link", { name: "Companies" }).click();
     const companyRowAfterLinks = sectionByHeading(page, "Company list")
       .locator("tbody tr", { hasText: companyName })
       .first();
-    await expect(companyRowAfterLinks.locator(".tag-traded", { hasText: productName })).toBeVisible();
+    await expect(companyRowAfterLinks.locator(".tag-traded", { hasText: `${productName} (Food Grade A)` })).toBeVisible();
     await expect(
-      companyRowAfterLinks.locator(".tag-potential", { hasText: productName }),
+      companyRowAfterLinks.locator(".tag-potential", { hasText: `${productName} (Food Grade B)` }),
     ).toBeVisible();
 
     await page.getByRole("link", { name: "Leads" }).click();

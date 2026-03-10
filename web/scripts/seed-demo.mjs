@@ -166,7 +166,7 @@ async function ensureProduct(payload) {
 async function ensureProductLink(payload) {
   const { data, error } = await supabase
     .from("product_company_links")
-    .upsert(payload, { onConflict: "product_id,company_id,relation_type" })
+    .upsert(payload, { onConflict: "product_id,company_id,relation_type,product_model" })
     .select("id")
     .single();
 
@@ -421,6 +421,7 @@ async function main() {
     product_id: productA,
     company_id: companyA,
     relation_type: "traded",
+    product_model: "Natural 10-12% Fat",
     last_price: 3800,
     notes: "[DEMO] Traded in previous order cycle",
     owner_id: ownerId,
@@ -430,6 +431,7 @@ async function main() {
     product_id: productA,
     company_id: companyB,
     relation_type: "potential",
+    product_model: "Alkalized 10-12% Fat",
     last_price: 4200,
     notes: "[DEMO] Potential opportunity for next quarter",
     owner_id: ownerId,
@@ -439,6 +441,7 @@ async function main() {
     product_id: productB,
     company_id: companyB,
     relation_type: "traded",
+    product_model: "Instant 26% Fat",
     last_price: 2500,
     notes: "[DEMO] Already traded with this company",
     owner_id: ownerId,
@@ -448,6 +451,7 @@ async function main() {
     product_id: productB,
     company_id: companyC,
     relation_type: "potential",
+    product_model: "Skim 1.5% Fat",
     last_price: 2950,
     notes: "[DEMO] Potential product expansion",
     owner_id: ownerId,
@@ -457,6 +461,7 @@ async function main() {
     product_id: productC,
     company_id: companyC,
     relation_type: "traded",
+    product_model: "Curry Blend 80 Mesh",
     last_price: 2100,
     notes: "[DEMO] Traded recently",
     owner_id: ownerId,
@@ -466,6 +471,7 @@ async function main() {
     product_id: productC,
     company_id: companyA,
     relation_type: "potential",
+    product_model: "Paprika Blend 60 Mesh",
     last_price: 2780,
     notes: "[DEMO] Potential upsell candidate",
     owner_id: ownerId,

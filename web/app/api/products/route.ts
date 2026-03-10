@@ -54,7 +54,7 @@ export async function GET(request: Request) {
 
   const linksQuery = supabaseAdmin
     .from("product_company_links")
-    .select("id,product_id,company_id,relation_type,last_price,notes,owner_id,created_at")
+    .select("id,product_id,company_id,relation_type,product_model,last_price,notes,owner_id,created_at")
     .order("created_at", { ascending: false });
 
   if (!isAdmin) {
