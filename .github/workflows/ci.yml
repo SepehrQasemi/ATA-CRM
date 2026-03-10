@@ -10,7 +10,7 @@ on:
       - main
 
 jobs:
-  quality:
+  lint-build:
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
@@ -60,7 +60,7 @@ jobs:
 
   e2e-smoke:
     if: ${{ github.event_name == 'pull_request' && secrets.E2E_NEXT_PUBLIC_SUPABASE_URL != '' && secrets.E2E_NEXT_PUBLIC_SUPABASE_ANON_KEY != '' && secrets.E2E_SUPABASE_SERVICE_ROLE_KEY != '' }}
-    needs: quality
+    needs: lint-build
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.E2E_NEXT_PUBLIC_SUPABASE_URL }}
@@ -117,7 +117,7 @@ jobs:
 
   release-gate:
     if: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && secrets.E2E_NEXT_PUBLIC_SUPABASE_URL != '' && secrets.E2E_NEXT_PUBLIC_SUPABASE_ANON_KEY != '' && secrets.E2E_SUPABASE_SERVICE_ROLE_KEY != '' }}
-    needs: quality
+    needs: lint-build
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.E2E_NEXT_PUBLIC_SUPABASE_URL }}
