@@ -34,7 +34,6 @@ const baseNavItems = [
   { href: "/emails", label: "Emails" },
   { href: "/profile", label: "My Profile" },
   { href: "/help", label: "Help" },
-  { href: "/settings", label: "Settings" },
 ];
 
 export function AppShell({ children, user }: AppShellProps) {

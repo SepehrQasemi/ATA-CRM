@@ -1,9 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/components/locale-provider";
 
 type FaqItem = { q: string; a: string };
+type MetaResponse = {
+  profiles: Array<{ id: string; full_name: string | null; role: string }>;
+  stages: Array<{ id: string; name: string; sort_order: number; is_closed: boolean }>;
+  templates: Array<{ id: string; name: string; event_type: string; subject: string; is_active: boolean }>;
+};
 
 function contentByLocale(locale: "en" | "fr" | "fa") {
   if (locale === "fr") {
@@ -136,6 +141,29 @@ export default function HelpPage() {
   const { locale } = useLocale();
   const content = useMemo(() => contentByLocale(locale), [locale]);
   const faqs = useMemo(() => faqsByLocale(locale), [locale]);
+  const [meta, setMeta] = useState<MetaResponse | null>(null);
+  const [metaError, setMetaError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadMeta() {
+      const response = await fetch("/api/meta");
+      const json = (await response.json()) as MetaResponse & { error?: string };
+      if (!response.ok) {
+        setMetaError(json.error ?? "Failed to load CRM setup snapshot.");
+        return;
+      }
+      setMeta(json);
+    }
+    void loadMeta();
+  }, []);
+
+  const roleStats = useMemo(() => {
+    const stats = new Map<string, number>();
+    for (const profile of meta?.profiles ?? []) {
+      stats.set(profile.role, (stats.get(profile.role) ?? 0) + 1);
+    }
+    return Array.from(stats.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [meta?.profiles]);
 
   return (
     <div className="stack">
@@ -160,6 +188,100 @@ export default function HelpPage() {
             <li key={item}>{item}</li>
           ))}
         </ul>
+      </section>
+
+      <section id="setup-archive" className="panel stack">
+        <h2>CRM setup snapshot (moved from Settings)</h2>
+        <p className="muted">
+          Pipeline stages, email templates, and team role distribution are now documented here.
+        </p>
+        {metaError ? <p className="error">{metaError}</p> : null}
+        {!meta && !metaError ? <p className="small">Loading setup snapshot...</p> : null}
+        {meta ? (
+          <>
+            <div className="card-grid card-grid-wide">
+              <article className="card stack">
+                <strong>Pipeline stages</strong>
+                <span className="kpi">{meta.stages.length}</span>
+              </article>
+              <article className="card stack">
+                <strong>Email templates</strong>
+                <span className="kpi">{meta.templates.length}</span>
+              </article>
+              <article className="card stack">
+                <strong>Active templates</strong>
+                <span className="kpi">{meta.templates.filter((item) => item.is_active).length}</span>
+              </article>
+              <article className="card stack">
+                <strong>Team members</strong>
+                <span className="kpi">{meta.profiles.length}</span>
+              </article>
+            </div>
+
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Stage order</th>
+                    <th>Stage name</th>
+                    <th>Closed stage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {meta.stages.map((stage) => (
+                    <tr key={stage.id}>
+                      <td>{stage.sort_order}</td>
+                      <td>{stage.name}</td>
+                      <td>{stage.is_closed ? "Yes" : "No"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Template name</th>
+                    <th>Event type</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {meta.templates.map((template) => (
+                    <tr key={template.id}>
+                      <td>{template.name}</td>
+                      <td>{template.event_type}</td>
+                      <td>{template.subject}</td>
+                      <td>{template.is_active ? "Active" : "Inactive"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Role</th>
+                    <th>Users</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {roleStats.map(([role, count]) => (
+                    <tr key={role}>
+                      <td>{role}</td>
+                      <td>{count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : null}
       </section>
 
       <section className="panel stack">
