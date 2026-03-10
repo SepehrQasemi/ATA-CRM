@@ -1,0 +1,18 @@
+flowchart LR
+  A["Lead Created"] --> B["Qualification"]
+  B --> C["Sample Sent"]
+  C --> D["Quote Sent"]
+  D --> E{"No reply for 72h?"}
+  E -->|"Yes"| F["Follow-up Job"]
+  F --> G["Brevo Send"]
+  G --> H["Email Logs"]
+  H --> I["Brevo Webhook Events (open/click)"]
+  I --> H
+  E -->|"No"| J["Negotiation"]
+  J --> K{"Deal Outcome"}
+  K -->|"Won"| L["Stage Won"]
+  K -->|"Lost"| M["Stage Lost"]
+  A --> N["Task Created"]
+  N --> O{"Due soon / Overdue?"}
+  O -->|"Yes"| P["Task Reminder Job"]
+  P --> G

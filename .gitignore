@@ -3,7 +3,8 @@ node_modules/
 web/node_modules/
 web/.next/
 web/out/
-web/test-results/
+web/test-results/*
+!web/test-results/.gitkeep
 web/playwright-report/
 
 # Env files

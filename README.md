@@ -153,4 +153,6 @@ Notes:
 - Persian summary: `docs/resume-projet-fa.md`
 - Demo checklist: `docs/checklist-demo.md`
 - Final compliance matrix: `docs/final-compliance-checklist.md`
-- Diagrams: `docs/architecture.mmd`, `docs/mcd.mmd`, `docs/use-case.puml`
+- Safe baseline notes: `docs/release-baseline-v1.md`
+- Docs index: `docs/README.md`
+- Diagrams: `docs/architecture.mmd`, `docs/workflow-commercial.mmd`, `docs/sequence-followup.mmd`, `docs/mcd.mmd`, `docs/use-case.puml`, `docs/uml-domain.puml`

@@ -1,0 +1,24 @@
+sequenceDiagram
+  actor Scheduler as Cron Scheduler
+  participant API as "/api/jobs/followup"
+  participant DB as "Supabase DB"
+  participant Brevo as "Brevo API"
+  participant Hook as "/api/webhooks/brevo"
+
+  Scheduler->>API: POST dry_run=false
+  API->>DB: Create idempotent lock key
+
+  alt lock already exists
+    API-->>Scheduler: skipped (duplicate window)
+  else lock acquired
+    API->>DB: Query eligible leads (72h in Quote Sent)
+    loop for each eligible lead
+      API->>Brevo: Send email from template
+      Brevo-->>API: provider_message_id
+      API->>DB: Insert email_log (sent / failed)
+    end
+    API-->>Scheduler: summary (sent, skipped, failed)
+  end
+
+  Brevo->>Hook: open / click event
+  Hook->>DB: Update open_count, click_count, timestamps
