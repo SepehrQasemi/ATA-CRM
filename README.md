@@ -78,6 +78,32 @@ npx -y supabase@latest db push
 npm run dev
 ```
 
+## One-Click Start (Windows)
+Use one of these options from `C:\dev\crm-food-trading`:
+
+1. Double-click:
+- `open-crm.bat`
+
+2. Terminal command:
+```bash
+npm run start:oneclick
+```
+
+What it does automatically:
+- checks `node` and `npm`
+- creates `web/.env.local` from `C:\dev\crm-secrets.env` if needed
+- installs dependencies if missing
+- runs quick health checks (`lint` + `build`)
+- starts the app and opens `http://127.0.0.1:3000/login`
+
+Useful flags:
+```bash
+npm run start:oneclick -- --SkipHealth
+npm run start:oneclick -- --NoBrowser
+npm run start:oneclick -- --ForceInstall
+npm run start:oneclick -- --DryRun
+```
+
 ## Environment Variables
 Required:
 - `NEXT_PUBLIC_SUPABASE_URL`
@@ -95,6 +121,11 @@ Optional:
 ```bash
 npm run lint
 npm run build
+```
+
+Full health (lint + build + e2e):
+```bash
+npm run health
 ```
 
 ## End-to-End Tests (Playwright)

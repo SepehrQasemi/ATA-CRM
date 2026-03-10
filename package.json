@@ -9,6 +9,8 @@
     "build": "npm --workspace web run build",
     "lint": "npm --workspace web run lint",
     "seed:demo": "npm --workspace web run seed:demo",
-    "test:e2e": "npm --workspace web run test:e2e"
+    "test:e2e": "npm --workspace web run test:e2e",
+    "health": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\health-check.ps1",
+    "start:oneclick": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\one-click-start.ps1"
   }
 }
