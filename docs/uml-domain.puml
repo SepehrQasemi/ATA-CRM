@@ -1,0 +1,107 @@
+@startuml
+hide circle
+skinparam linetype ortho
+
+class Profile {
+  +id: uuid
+  +email: text
+  +role: enum(admin, commercial, standard_user)
+}
+
+class Company {
+  +id: uuid
+  +name: text
+  +sector: text
+  +company_role: enum(supplier, customer, both)
+}
+
+class Contact {
+  +id: uuid
+  +full_name: text
+  +email: text
+  +phone: text
+}
+
+class Product {
+  +id: uuid
+  +name: text
+  +category: text
+  +is_active: bool
+}
+
+class ProductCompanyLink {
+  +id: uuid
+  +relation_type: enum(traded, potential)
+}
+
+class PipelineStage {
+  +id: int
+  +name: text
+  +position: int
+}
+
+class Lead {
+  +id: uuid
+  +title: text
+  +status: text
+  +source: text
+  +value: numeric
+}
+
+class LeadStageHistory {
+  +id: uuid
+  +changed_at: timestamptz
+}
+
+class Task {
+  +id: uuid
+  +title: text
+  +status: text
+  +priority: text
+  +due_date: timestamptz
+}
+
+class EmailTemplate {
+  +id: uuid
+  +name: text
+  +subject: text
+}
+
+class EmailLog {
+  +id: uuid
+  +status: text
+  +provider_message_id: text
+  +open_count: int
+  +click_count: int
+}
+
+class AutomationExecutionLock {
+  +id: uuid
+  +job_name: text
+  +entity_key: text
+  +window_key: text
+}
+
+Profile "1" -- "0..*" Company : owner
+Profile "1" -- "0..*" Contact : owner
+Profile "1" -- "0..*" Lead : owner
+Profile "1" -- "0..*" Lead : assigned_to
+Profile "1" -- "0..*" Task : owner/assignee
+
+Company "1" -- "0..*" Contact
+Company "1" -- "0..*" Lead
+Contact "1" -- "0..*" Lead
+Lead "1" -- "0..*" Task
+Lead "1" -- "0..*" LeadStageHistory
+PipelineStage "1" -- "0..*" Lead : current_stage
+PipelineStage "1" -- "0..*" LeadStageHistory : from/to
+
+Product "1" -- "0..*" ProductCompanyLink
+Company "1" -- "0..*" ProductCompanyLink
+
+Lead "1" -- "0..*" EmailLog
+Contact "1" -- "0..*" EmailLog
+EmailTemplate "1" -- "0..*" EmailLog
+AutomationExecutionLock "1" -- "0..*" EmailLog : guards sends
+
+@enduml

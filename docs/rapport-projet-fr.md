@@ -50,6 +50,9 @@ Le schema MCD est fourni dans `docs/mcd.mmd`.
 - Container runtime bonus: Docker
 
 Le schema d architecture est fourni dans `docs/architecture.mmd`.
+Le workflow commercial detaille est fourni dans `docs/workflow-commercial.mmd`.
+Le sequence diagram de relance 72h est fourni dans `docs/sequence-followup.mmd`.
+Le diagramme UML de domaine detaille est fourni dans `docs/uml-domain.puml`.
 
 ## 6. Modules implementes
 ### 6.1 Authentification et roles
@@ -172,6 +175,7 @@ CI:
 
 Demo reproductible:
 - script `npm run seed:demo` (idempotent, < 2 minutes)
+- baseline securisee avant evolution: `docs/release-baseline-v1.md`
 
 ## 10. Plan de soutenance (8-10 min)
 Scenario recommande:

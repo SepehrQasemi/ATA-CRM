@@ -46,6 +46,7 @@
 - تست خودکار E2E با Playwright: `npm run test:e2e` (پاس)
 - گزارش کامل FR: `docs/rapport-projet-fr.md`
 - چک‌لیست دفاع: `docs/checklist-demo.md`
+- نسخه امن قبل از ارتقا: `docs/release-baseline-v1.md`
 
 ## مسیر دمو پیشنهادی (8 تا 10 دقیقه)
 1. ورود به سیستم

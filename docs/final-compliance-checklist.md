@@ -39,6 +39,8 @@ Date: 2026-03-10
 - FR report: `docs/rapport-projet-fr.md`
 - FA summary: `docs/resume-projet-fa.md`
 - Demo checklist: `docs/checklist-demo.md`
+- Baseline freeze notes: `docs/release-baseline-v1.md`
+- Workflow and UML package: `docs/workflow-commercial.mmd`, `docs/sequence-followup.mmd`, `docs/uml-domain.puml`
 
 ## Final Status
 Project scope is complete for submission and oral defense, including the identified bonus items.
