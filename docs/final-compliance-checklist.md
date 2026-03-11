@@ -15,6 +15,8 @@ Date: 2026-03-11
 - Category profile with products + suppliers + customers lists (10-per-page pagination): DONE
 - Product profile with description + supplier/customer lists (10-per-page pagination): DONE
 - Sales pipeline + stage transition history: DONE
+- Negotiation stage explicit outcome actions (Won/Lost): DONE
+- Lead success probability model by stage (5/20/30/50/70/100/0): DONE
 - Funnel and conversion visibility: DONE
 - Monthly task planning + deadline alerts: DONE
 - Email workflows (manual + template + automation): DONE
@@ -23,6 +25,8 @@ Date: 2026-03-11
   - Non-admin analytics scoped to own sent emails
 - Follow-up automation (72h) with anti-duplicate logic: DONE
 - Dashboard KPI (7d/30d/90d): DONE
+- Weighted pipeline forecasting calendar (monthly): DONE
+- Dashboard role scope (`own` for all, `team` for manager/admin): DONE
 - Responsive UI (desktop/mobile): DONE
 - Shared internal read visibility on core business data (contacts/companies/products/leads): DONE
 - Deployment (Vercel + Supabase): DONE

@@ -194,6 +194,47 @@ test.describe("CRM end-to-end", () => {
       )
       .not.toBe(stageBeforeMove);
 
+    const leadsSnapshot = await page.request.get("/api/leads");
+    expect(leadsSnapshot.ok()).toBeTruthy();
+    const leadsSnapshotJson = (await leadsSnapshot.json()) as {
+      leads?: Array<{ id: string; title: string }>;
+      stages?: Array<{ id: string; name: string }>;
+    };
+    const createdLeadId = leadsSnapshotJson.leads?.find((lead) => lead.title === leadTitle)?.id;
+    const negotiationStageId = leadsSnapshotJson.stages?.find((stage) =>
+      stage.name.toLowerCase().includes("negotiation"),
+    )?.id;
+    if (!createdLeadId || !negotiationStageId) {
+      throw new Error("Could not resolve lead/stage ids for negotiation check");
+    }
+
+    const moveToNegotiation = await page.request.post(
+      `/api/leads/${createdLeadId}/stage`,
+      {
+        data: {
+          stage_id: negotiationStageId,
+          comment: "E2E to negotiation",
+        },
+      },
+    );
+    expect(moveToNegotiation.ok()).toBeTruthy();
+
+    await page.reload();
+    await page.getByRole("tab", { name: "Pipeline board" }).click();
+    const negotiationLeadCard = sectionByHeading(page, "Pipeline board")
+      .locator(".lead-card", { hasText: leadTitle })
+      .first();
+    await expect(negotiationLeadCard).toBeVisible();
+    await expect(
+      negotiationLeadCard.getByRole("button", { name: /Mark Won|Marquer gagn/i }),
+    ).toBeVisible();
+    await expect(
+      negotiationLeadCard.getByRole("button", { name: /Mark Lost|Marquer perd/i }),
+    ).toBeVisible();
+    await expect(negotiationLeadCard.getByRole("button", { name: "Prev" })).toBeVisible();
+    await expect(negotiationLeadCard.getByRole("button", { name: "Create task" })).toBeVisible();
+    await expect(negotiationLeadCard.getByRole("button", { name: "Edit" })).toBeVisible();
+
     await page.getByRole("link", { name: "Tasks" }).click();
     await expect(page).toHaveURL(/\/tasks$/);
     await page.getByRole("tab", { name: "New task" }).click();

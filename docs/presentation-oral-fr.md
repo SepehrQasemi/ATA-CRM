@@ -22,7 +22,9 @@
 ## 4. Leads + Pipeline + Funnel (2m)
 - Creation de lead et affectation.
 - Pipeline: deplacement d etape (select + prev/next).
-- Carte lead simplifiee: titre, entreprise, agent, commercial assigne.
+- Regle Negotiation: deux sorties explicites `Won` / `Lost` (plus de `next` ambigu).
+- Carte lead simplifiee: titre, entreprise cible, agent, commercial assigne, actions (prev / edit / create task / issue).
+- Probabilite de succes par etape: New 5% -> Qualification 20% -> Sample 30% -> Quote 50% -> Negotiation 70% -> Won 100% / Lost 0%.
 - Funnel: chaines de conversion et taux par transition.
 
 ## 5. Taches + calendrier + notifications (1m30)
@@ -40,12 +42,16 @@
 ## 7. Dashboard KPI (1m30)
 - KPI: total leads, won/lost, conversion rate, pipeline value, overdue tasks, sent emails.
 - KPI avances: leads by source, leaderboard, stage aging.
+- Forecast pondere: `valeur_lead * probabilite(etape)` avec projection mensuelle.
+- Scope d affichage:
+  - commercial / standard_user: "My pipeline" uniquement
+  - manager / admin: "My pipeline" + "Team pipeline"
 - Filtres temporels: 7d / 30d / 90d.
 - Export CSV / PDF.
 
 ## 8. Qualite / DevOps / conclusion (1m)
 - CI: lint + build + tests + e2e smoke/full.
-- Coverage gate: statements 98.94%, branches 73.51%, functions 89.47%, lines 98.94%.
+- Coverage gate: statements 98.95%, branches 73.51%, functions 89.47%, lines 98.95%.
 - Deploiement Vercel connecte GitHub.
 - Docker en bonus pour portabilite locale.
 - Conclusion: projet full SaaS operationnel, demonstrable et evolutif.

@@ -5,6 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { AutocompleteInput } from "@/components/autocomplete-input";
 import { PageTip } from "@/components/page-tip";
 import { useLocale } from "@/components/locale-provider";
+import {
+  getLeadSuccessProbability,
+  isLostStageName,
+  isNegotiationStageName,
+  isWonStageName,
+} from "@/lib/pipeline-stage-labels";
 import { Lead, PipelineStage } from "@/lib/types";
 import { startsWithSuggestions } from "@/lib/search-suggestions";
 
@@ -115,6 +121,16 @@ export default function LeadsPage() {
     });
     return map;
   }, [profiles]);
+
+  const wonStageId = useMemo(
+    () => stages.find((stage) => isWonStageName(stage.name))?.id ?? null,
+    [stages],
+  );
+
+  const lostStageId = useMemo(
+    () => stages.find((stage) => isLostStageName(stage.name))?.id ?? null,
+    [stages],
+  );
 
   async function loadData(activeFilters = filters) {
     const params = new URLSearchParams();
@@ -251,6 +267,9 @@ export default function LeadsPage() {
     if (!lead.current_stage_id) return;
     const currentIndex = stages.findIndex((stage) => stage.id === lead.current_stage_id);
     if (currentIndex === -1) return;
+    if (direction === "next" && isNegotiationStageName(stageById[lead.current_stage_id]?.name)) {
+      return;
+    }
 
     const targetIndex = direction === "prev" ? currentIndex - 1 : currentIndex + 1;
     if (targetIndex < 0 || targetIndex >= stages.length) return;
@@ -623,8 +642,17 @@ export default function LeadsPage() {
 
                 {stageLeads.map((lead) => {
                   const currentIndex = stages.findIndex((item) => item.id === lead.current_stage_id);
+                  const currentStageName = lead.current_stage_id
+                    ? stageById[lead.current_stage_id]?.name ?? ""
+                    : "";
+                  const isNegotiation = isNegotiationStageName(currentStageName);
+                  const successProbability = getLeadSuccessProbability({
+                    stageName: currentStageName,
+                    status: lead.status,
+                  });
                   const canMovePrev = currentIndex > 0;
-                  const canMoveNext = currentIndex >= 0 && currentIndex < stages.length - 1;
+                  const canMoveNext =
+                    !isNegotiation && currentIndex >= 0 && currentIndex < stages.length - 1;
                   const assignedLabel =
                     profileNameById[lead.assigned_to ?? ""] ??
                     profileNameById[lead.owner_id ?? ""] ??
@@ -641,6 +669,9 @@ export default function LeadsPage() {
                       </span>
                       <span className="small lead-card-line">
                         {tr("Assigned to")}: {assignedLabel}
+                      </span>
+                      <span className="small lead-card-line">
+                        {tr("Success probability")}: {successProbability}%
                       </span>
                       <div className="inline-actions lead-card-actions">
                         <button className="btn btn-secondary" type="button" onClick={() => startEdit(lead)}>
@@ -662,6 +693,32 @@ export default function LeadsPage() {
                         >
                           {tr("Next")}
                         </button>
+                        {isNegotiation ? (
+                          <>
+                            <button
+                              className="btn btn-primary"
+                              type="button"
+                              disabled={!wonStageId}
+                              onClick={() => {
+                                if (!wonStageId) return;
+                                void moveLeadStage(lead.id, wonStageId, tr("Marked as won from negotiation"));
+                              }}
+                            >
+                              {tr("Mark Won")}
+                            </button>
+                            <button
+                              className="btn btn-danger"
+                              type="button"
+                              disabled={!lostStageId}
+                              onClick={() => {
+                                if (!lostStageId) return;
+                                void moveLeadStage(lead.id, lostStageId, tr("Marked as lost from negotiation"));
+                              }}
+                            >
+                              {tr("Mark Lost")}
+                            </button>
+                          </>
+                        ) : null}
                         <button className="btn btn-secondary" type="button" onClick={() => void createTaskFromLead(lead)}>
                           {tr("Create task")}
                         </button>

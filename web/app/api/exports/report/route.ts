@@ -4,12 +4,14 @@ import { buildDashboardCsvReport, buildDashboardPdfReport } from "@/lib/report-e
 
 type DashboardPayload = {
   range: "7d" | "30d" | "90d";
+  scope?: "own" | "team";
   kpis: {
     totalLeads: number;
     wonLeads: number;
     lostLeads: number;
     conversionRate: number;
     pipelineValue: number;
+    weightedPipelineValue?: number;
     overdueTasks: number;
     dueSoonTasks: number;
     emailsSent: number;
@@ -47,6 +49,10 @@ export async function GET(request: Request) {
 
   const dashboardUrl = new URL("/api/dashboard", url.origin);
   dashboardUrl.searchParams.set("range", range);
+  const scope = url.searchParams.get("scope");
+  if (scope === "own" || scope === "team") {
+    dashboardUrl.searchParams.set("scope", scope);
+  }
 
   const dashboardRes = await fetch(dashboardUrl.toString(), {
     headers: {

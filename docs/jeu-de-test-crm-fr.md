@@ -24,30 +24,36 @@ npm run seed:demo
 - Attendu: relation visible dans profil produit et profil entreprise.
 
 ## Cas 4 - Lead et progression pipeline
-- Action: creer lead, assigner commercial, deplacer de stage (next/prev).
-- Attendu: lead visible dans colonne stage cible + historique stage.
+- Action: creer lead, assigner commercial, deplacer de stage (next/prev), puis passer en `Negotiation`.
+- Attendu: en `Negotiation`, la carte affiche deux actions explicites `Mark Won` et `Mark Lost` (et conserve `Prev`, `Edit`, `Create task`).
 
-## Cas 5 - Task depuis lead
+## Cas 5 - Probabilite et forecast
+- Action: verifier la probabilite affichee sur la carte lead selon l etape (5/20/30/50/70/100/0).
+- Attendu: dashboard met a jour la valeur pipeline ponderee et le calendrier de prevision mensuelle.
+
+## Cas 6 - Task depuis lead
 - Action: creer task via bouton "Create task" depuis carte lead.
 - Attendu: task visible dans liste + calendrier.
 
-## Cas 6 - Alertes et notifications
+## Cas 7 - Alertes et notifications
 - Action: afficher alertes due soon/overdue + bell notification.
 - Attendu: preview au hover, page notifications avec suppression unitaire/totale.
 
-## Cas 7 - Email test + follow-up dry run
+## Cas 8 - Email test + follow-up dry run
 - Action: envoyer email test puis lancer follow-up en `dry_run`.
 - Attendu: logs email mis a jour, rapport dry-run visible.
 
-## Cas 8 - Dashboard et export
-- Action: ouvrir dashboard 30d puis exporter CSV/PDF.
-- Attendu: KPI/Funnel/Leaderboard visibles + fichier export telecharge.
+## Cas 9 - Dashboard scopes et export
+- Action: en manager/admin, basculer `My pipeline` / `Team pipeline`, puis exporter CSV/PDF.
+- Attendu: changement de scope pris en compte (KPI + forecast), fichier export telecharge.
 
-## Cas 9 - RBAC
+## Cas 10 - RBAC
 - Action: verifier acces admin/manager/commercial/standard.
-- Attendu: restrictions respectees (access page, edition scope, visibilite).
+- Attendu: restrictions respectees (access page, edition scope, visibilite), notamment:
+  - standard/commercial: scope personnel force
+  - manager/admin: scope equipe autorise
 
-## Cas 10 - Regression technique
+## Cas 11 - Regression technique
 - Action: lancer qualite complete.
 - Commandes:
 ```bash

@@ -74,7 +74,7 @@ Points forts a valoriser:
 4. Lead pipeline/funnel (2m): creation lead, movement stage, lecture funnel.
 5. Taches + notifications (1m30): task privee/groupe/publique + deadlines + bell.
 6. Emails (1m30): test email + follow-up dry-run + logs.
-7. Dashboard KPI + export (1m30): 7/30/90j, leaderboard, CSV/PDF.
+7. Dashboard KPI + forecast + export (1m30): 7/30/90j, forecast pondere, leaderboard, CSV/PDF.
 8. Qualite & deploiement (1m): tests, CI, Vercel, Docker bonus.
 
 ## 5) Questions probables + reponses courtes
@@ -88,7 +88,7 @@ Points forts a valoriser:
 - "Pourquoi le reset password est robuste?"
   - Callback auth dedie + formulaire reset + fallback messages clairs + gestion rate-limit.
 - "Que reste-t-il a faire en V2?"
-  - BI multi-pages, scoring lead avance, forecasting commercial.
+  - BI multi-pages, scoring lead avance, notifications push.
 
 ## 6) Risques de derniere minute et fallback
 

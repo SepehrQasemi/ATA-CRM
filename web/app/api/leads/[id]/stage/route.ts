@@ -1,5 +1,9 @@
 import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
 import { fail, ok } from "@/lib/http";
+import {
+  isLostStageName,
+  isWonStageName,
+} from "@/lib/pipeline-stage-labels";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function POST(
@@ -37,13 +41,7 @@ export async function POST(
 
   if (stageError || !stage) return fail("Stage not found", 404);
 
-  const normalizedStageName = stage.name.toLowerCase();
-  const status =
-    normalizedStageName.includes("won") || normalizedStageName.includes("gagne")
-      ? "won"
-      : normalizedStageName.includes("lost") || normalizedStageName.includes("perdu")
-        ? "lost"
-        : "open";
+  const status = isWonStageName(stage.name) ? "won" : isLostStageName(stage.name) ? "lost" : "open";
 
   const { error: updateError } = await supabaseAdmin
     .from("leads")

@@ -21,6 +21,9 @@ Reference enonce: `C:\Users\Sepehr\Downloads\Énoncé du projet_CRM.docx`
 | Gestion categories produits (CRUD + profil categorie) | COMPLETE | `web/app/(app)/categories/page.tsx`, `web/app/(app)/categories/[id]/page.tsx`, `web/app/api/product-categories/route.ts` |
 | Gestion leads (CRUD + attribution) | COMPLETE | `web/app/(app)/leads/page.tsx`, `web/app/api/leads/route.ts`, `web/app/api/leads/[id]/route.ts` |
 | Pipeline + funnel + cycle de vente | COMPLETE | `web/app/(app)/leads/page.tsx`, `web/app/(app)/dashboard/page.tsx`, `web/app/api/dashboard/route.ts` |
+| Negociation avec issue explicite (gagne/perdu) | COMPLETE | `web/app/(app)/leads/page.tsx` (boutons `Mark Won` / `Mark Lost`), `web/app/api/leads/[id]/stage/route.ts` |
+| Forecast commercial pondere par probabilite | COMPLETE | `web/app/api/dashboard/route.ts` (`weightedPipelineValue`, `forecastCalendar`), `web/app/(app)/dashboard/page.tsx` |
+| Scope dashboard par role (own/team) | COMPLETE | `web/app/api/dashboard/route.ts`, `web/app/(app)/dashboard/page.tsx` |
 | Gestion taches + calendrier + echeances | COMPLETE | `web/app/(app)/tasks/page.tsx`, `web/app/api/tasks/route.ts` |
 | Notifications echeances | COMPLETE | `web/app/api/dashboard/route.ts` (deadline alerts), `web/components/notification-bell.tsx`, `web/app/(app)/notifications/page.tsx` |
 | Automatisation emails (Brevo) | COMPLETE | `web/app/api/emails/send/route.ts`, `web/app/api/jobs/followup/route.ts`, `web/app/api/webhooks/brevo/route.ts` |

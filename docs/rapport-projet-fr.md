@@ -91,6 +91,15 @@ Fonctions:
 - valeur totale par etape
 - historique de changement de stage
 - funnel avec chaines de conversion et taux inter-etapes
+- depuis l etape Negociation, actions explicites `Marquer gagne` / `Marquer perdu`
+- probabilite de succes par etape:
+  - Nouveau lead: 5%
+  - Qualification: 20%
+  - Echantillon envoye: 30%
+  - Devis envoye: 50%
+  - Negociation: 70%
+  - Gagne: 100%
+  - Perdu: 0%
 
 ### 6.4 Planning et notifications de taches
 - vue calendrier mensuelle
@@ -114,7 +123,12 @@ KPI complementaires:
 - leads by source
 - sales by commercial (sur leads won)
 - stage aging (moyenne jours dans etape)
+- weighted pipeline value (somme valeur * probabilite)
+- forecast calendar mensuel (valeur brute vs valeur ponderee)
 - range selector: `7d`, `30d`, `90d`
+- scope selector:
+  - `own` pour tous les utilisateurs
+  - `team` disponible pour `manager` et `admin`
 
 ### 6.6 Email automation robuste
 - envoi manuel avec templates
@@ -160,7 +174,7 @@ Routes principales:
 - `/api/leads/:id/stage`
 - `/api/tasks`
 - `/api/tasks/:id`
-- `/api/dashboard?range=7d|30d|90d`
+- `/api/dashboard?range=7d|30d|90d&scope=own|team`
 - `/api/exports/report?format=csv|pdf&range=7d|30d|90d`
 - `/api/bi/kpis?range=7d|30d|90d` (x-api-key requis)
 - `/api/emails/send`
@@ -195,10 +209,10 @@ Validation technique:
 - `npm run test:release` : OK
 - `npm --workspace web run test:coverage` : OK
 - couverture globale:
-  - statements: 98.94%
+  - statements: 98.95%
   - branches: 73.51%
   - functions: 89.47%
-  - lines: 98.94%
+  - lines: 98.95%
 - migrations Supabase appliquees (dont categories produits):
   - `20260309224000_email_analytics_and_task_reminders.sql`
   - `20260311112000_product_categories.sql`
@@ -224,7 +238,7 @@ Scenario recommande:
 6. envoi email test
 7. run follow-up dry-run puis execution reelle
 8. run task reminders dry-run
-9. lecture dashboard (KPI + funnel + leaderboard + rates email)
+9. lecture dashboard (KPI + weighted forecast calendar + funnel + leaderboard + rates email)
 
 Checklist complete dans `docs/checklist-demo.md`.
 
@@ -232,7 +246,7 @@ Checklist complete dans `docs/checklist-demo.md`.
 Limitations actuelles:
 - pas encore de dashboard BI multi-pages preconfigure (uniquement endpoint API)
 - pas encore de gestion avancee des permissions BI par scope
-- pas encore de module forecasting previsionnel commercial
+- module forecasting commercial implemente sur dashboard interne, mais pas encore expose en BI multi-pages externe
 
 Next iteration:
 - connecteur Power BI template + data model documente

@@ -5,15 +5,19 @@ import { useLocale } from "@/components/locale-provider";
 import { PageTip } from "@/components/page-tip";
 
 type RangeKey = "7d" | "30d" | "90d";
+type ScopeKey = "own" | "team";
 
 type DashboardResponse = {
   range: RangeKey;
+  scope: ScopeKey;
+  availableScopes: ScopeKey[];
   kpis: {
     totalLeads: number;
     wonLeads: number;
     lostLeads: number;
     conversionRate: number;
     pipelineValue: number;
+    weightedPipelineValue: number;
     overdueTasks: number;
     dueSoonTasks: number;
     emailsSent: number;
@@ -35,6 +39,13 @@ type DashboardResponse = {
   salesByCommercial: Array<{ userId: string; name: string; amount: number }>;
   stageAging: Array<{ stageId: string; stageName: string; avgDays: number }>;
   leaderboard: Array<{ userId: string; amount: number; name: string }>;
+  forecastCalendar: Array<{
+    month: string;
+    monthLabel: string;
+    leadCount: number;
+    grossValue: number;
+    weightedValue: number;
+  }>;
   deadlineAlerts: Array<{
     taskId: string;
     title: string;
@@ -49,16 +60,17 @@ type DashboardResponse = {
 export default function DashboardPage() {
   const { tr } = useLocale();
   const [range, setRange] = useState<RangeKey>("30d");
+  const [scope, setScope] = useState<ScopeKey>("own");
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState<"csv" | "pdf" | null>(null);
 
-  async function loadDashboard(nextRange: RangeKey) {
+  async function loadDashboard(nextRange: RangeKey, nextScope: ScopeKey) {
     setError(null);
     setLoading(true);
 
-    const response = await fetch(`/api/dashboard?range=${nextRange}`);
+    const response = await fetch(`/api/dashboard?range=${nextRange}&scope=${nextScope}`);
     const json = (await response.json()) as DashboardResponse;
 
     if (!response.ok) {
@@ -68,20 +80,23 @@ export default function DashboardPage() {
     }
 
     setData(json);
+    if (json.scope !== nextScope) {
+      setScope(json.scope);
+    }
     setLoading(false);
   }
 
   useEffect(() => {
-    void loadDashboard(range);
+    void loadDashboard(range, scope);
     // loadDashboard includes locale fallback messages; range remains the refresh trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range]);
+  }, [range, scope]);
 
   async function handleExport(format: "csv" | "pdf") {
     setExporting(format);
     setError(null);
 
-    const response = await fetch(`/api/exports/report?format=${format}&range=${range}`);
+    const response = await fetch(`/api/exports/report?format=${format}&range=${range}&scope=${scope}`);
     if (!response.ok) {
       const json = (await response.json().catch(() => ({}))) as { error?: string };
       setError(json.error ?? tr("Failed to export {format}", { format: format.toUpperCase() }));
@@ -139,6 +154,26 @@ export default function DashboardPage() {
           >
             {tr("90 days")}
           </button>
+          {data?.availableScopes?.includes("team") ? (
+            <>
+              <button
+                className={`btn ${scope === "own" ? "btn-primary" : "btn-secondary"}`}
+                type="button"
+                onClick={() => setScope("own")}
+                disabled={loading}
+              >
+                {tr("My pipeline")}
+              </button>
+              <button
+                className={`btn ${scope === "team" ? "btn-primary" : "btn-secondary"}`}
+                type="button"
+                onClick={() => setScope("team")}
+                disabled={loading}
+              >
+                {tr("Team pipeline")}
+              </button>
+            </>
+          ) : null}
           <button
             className="btn btn-secondary"
             type="button"
@@ -180,6 +215,10 @@ export default function DashboardPage() {
           <p className="kpi">{(data?.kpis.pipelineValue ?? 0).toLocaleString()} EUR</p>
         </article>
         <article className="card">
+          <p className="muted">{tr("Weighted pipeline value")}</p>
+          <p className="kpi">{(data?.kpis.weightedPipelineValue ?? 0).toLocaleString()} EUR</p>
+        </article>
+        <article className="card">
           <p className="muted">{tr("Overdue tasks")}</p>
           <p className="kpi">{data?.kpis.overdueTasks ?? 0}</p>
         </article>
@@ -199,6 +238,36 @@ export default function DashboardPage() {
           <p className="muted">{tr("Email click rate")}</p>
           <p className="kpi">{data?.kpis.emailClickRate ?? 0}%</p>
         </article>
+      </section>
+
+      <section className="panel stack">
+        <h2>{tr("Forecast calendar (weighted pipeline)")}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>{tr("Month")}</th>
+              <th>{tr("Leads")}</th>
+              <th>{tr("Gross value")}</th>
+              <th>{tr("Weighted value")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data?.forecastCalendar ?? []).length === 0 ? (
+              <tr>
+                <td colSpan={4}>{tr("No forecast data in the next 6 months")}</td>
+              </tr>
+            ) : (
+              (data?.forecastCalendar ?? []).map((entry) => (
+                <tr key={entry.month}>
+                  <td>{entry.monthLabel}</td>
+                  <td>{entry.leadCount}</td>
+                  <td>{entry.grossValue.toLocaleString()} EUR</td>
+                  <td>{entry.weightedValue.toLocaleString()} EUR</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </section>
 
       <section className="panel stack">

@@ -30,13 +30,15 @@
 5. Set company role (supplier/customer/both), then link products as traded/potential
 6. Create lead and assign owner
 7. Move lead stage (select + quick move)
-8. Create task, show monthly calendar, and update status
-9. (Admin account) Send test email (template + contact)
-10. (Admin account) Run follow-up in dry-run, then real run
-11. (Admin account) Run task reminders in dry-run
-12. Show dashboard: KPI + funnel + leaderboard + stage aging + email rates
-13. Export dashboard report (CSV/PDF) in front of jury
-14. Conclusion: limitations and next iteration
+8. On a negotiation lead, show `Mark Won` / `Mark Lost` actions
+9. Create task, show monthly calendar, and update status
+10. (Admin account) Send test email (template + contact)
+11. (Admin account) Run follow-up in dry-run, then real run
+12. (Admin account) Run task reminders in dry-run
+13. Show dashboard: KPI + weighted forecast calendar + funnel + leaderboard + stage aging + email rates
+14. If logged as manager/admin, switch dashboard scope between `My pipeline` and `Team pipeline`
+15. Export dashboard report (CSV/PDF) in front of jury
+16. Conclusion: limitations and next iteration
 
 ## Technical Fallback
 - If Brevo is unavailable:

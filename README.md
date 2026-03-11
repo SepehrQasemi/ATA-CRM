@@ -35,11 +35,15 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - Tasks workspace tabs (List / Calendar / New Task) for cleaner navigation
 - Company role model (`supplier`, `customer`, `both`)
 - Sales pipeline with stage change, quick move, and history
+- Negotiation stage supports explicit outcome actions (`Mark Won` / `Mark Lost`) while keeping `Prev`, `Edit`, `Create task`
+- Success probability model per lead stage (5/20/30/50/70/100/0)
 - Multi-criteria filters on leads/tasks/contacts/companies
 - Prefix-based smart suggestions (top 5) on name search inputs
 - Company role filter is exact (`supplier` / `customer` / `both`)
 - Saved filters for leads and tasks
 - KPI dashboard (7/30/90 days) + funnel + leaderboard + stage aging
+- Weighted pipeline forecasting calendar (monthly gross vs weighted value)
+- Dashboard scope switch: `own` for all users, `own/team` for manager and admin
 - Task planning with monthly calendar + deadline alerts (overdue / due soon)
 - Manual email for all internal users (required recipient/subject/body)
 - Recipient smart suggestions from contacts, colleagues, and company domains
@@ -70,7 +74,7 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `PATCH/DELETE /api/products/:id/links/:linkId`
 - `GET/POST /api/product-categories`
 - `GET/PATCH/DELETE /api/product-categories/:id`
-- `GET /api/dashboard?range=7d|30d|90d`
+- `GET /api/dashboard?range=7d|30d|90d&scope=own|team`
 - `GET /api/exports/report?format=csv|pdf&range=7d|30d|90d`
 - `GET /api/bi/kpis?range=7d|30d|90d` (requires `BI_API_KEY`)
 - `POST /api/emails/send`
@@ -88,6 +92,7 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - `GET /api/companies`: `q`, `sector`, `company_role`
 - `GET /api/products`: `q`, `category`, `is_active`, `relation_type`
 - `GET /api/product-categories`: `q`, `page`, `per_page`
+- `GET /api/dashboard`: `range`, `scope`
 
 ## Local Setup
 1. Copy secrets into `web/.env.local`
