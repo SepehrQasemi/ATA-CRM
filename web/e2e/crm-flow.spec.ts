@@ -28,6 +28,7 @@ test.describe("CRM end-to-end", () => {
     const productName = uniqueLabel("Product");
     const agentFirstName = `Agent${Date.now().toString().slice(-5)}`;
     const agentLastName = "Buyer";
+    const agentEmail = `agent.${Date.now()}@example.test`;
     const leadTitle = uniqueLabel("Lead");
     const taskTitle = uniqueLabel("Task");
     const sku = `SKU-${Date.now()}`;
@@ -72,7 +73,7 @@ test.describe("CRM end-to-end", () => {
       data: {
         first_name: agentFirstName,
         last_name: agentLastName,
-        email: `agent.${Date.now()}@example.test`,
+        email: agentEmail,
         company_id: companyId,
         is_company_agent: true,
         agent_rank: 1,
@@ -154,8 +155,17 @@ test.describe("CRM end-to-end", () => {
     await page.getByRole("tab", { name: "New lead" }).click();
     const leadForm = sectionByHeading(page, "New lead");
     await leadForm.getByLabel("Title").fill(leadTitle);
-    await leadForm.getByLabel("Source").fill("E2E");
+    await leadForm.getByLabel("Source").selectOption("LinkedIn");
     await leadForm.getByLabel("Estimated value").fill("5200");
+    const companyInput = leadForm.getByLabel("Company");
+    await companyInput.fill("Demo");
+    await expect(page.locator("#lead-company-suggestions button").first()).toBeVisible();
+    await companyInput.fill(companyName);
+
+    const contactInput = leadForm.getByLabel("Contact");
+    await contactInput.fill(agentFirstName.slice(0, 4));
+    await expect(page.locator("#lead-contact-suggestions button").first()).toBeVisible();
+    await contactInput.fill(`${agentFirstName} ${agentLastName} - ${agentEmail}`);
     await leadForm.getByRole("button", { name: "Create lead" }).click();
 
     await expect(

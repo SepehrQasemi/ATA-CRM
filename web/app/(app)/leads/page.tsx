@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AutocompleteInput } from "@/components/autocomplete-input";
+import { PaginationControls } from "@/components/pagination-controls";
 import { PageTip } from "@/components/page-tip";
 import { useLocale } from "@/components/locale-provider";
 import {
@@ -27,10 +28,13 @@ type MetaResponse = {
   error?: string;
 };
 
+type ProfileMeResponse = {
+  profile?: { id: string; role: string };
+};
+
 type LeadForm = {
   title: string;
   source: string;
-  status: "open" | "won" | "lost";
   estimated_value: string;
   current_stage_id: string;
   contact_id: string;
@@ -39,10 +43,22 @@ type LeadForm = {
   notes: string;
 };
 
+const LEAD_SOURCE_OPTIONS = [
+  "Trade show",
+  "LinkedIn",
+  "Existing customer",
+  "Referral",
+  "Website",
+  "Cold call",
+  "Inbound",
+  "Other",
+] as const;
+
+const CLOSED_STAGE_PAGE_SIZE = 5;
+
 const initialForm: LeadForm = {
   title: "",
-  source: "",
-  status: "open",
+  source: LEAD_SOURCE_OPTIONS[0],
   estimated_value: "",
   current_stage_id: "",
   contact_id: "",
@@ -74,6 +90,45 @@ const initialFilters: LeadFilters = {
 const LEAD_FILTERS_STORAGE_KEY = "crm_saved_filters_leads";
 type LeadWorkspaceTab = "pipeline" | "list" | "manage";
 
+type AutocompleteOption = {
+  id: string;
+  label: string;
+  searchTokens: string[];
+};
+
+function normalizeSearchValue(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function optionMatchesQuery(option: AutocompleteOption, query: string): boolean {
+  if (!query) return false;
+  return option.searchTokens.some((token) => token.startsWith(query));
+}
+
+function buildAutocompleteSuggestions(options: AutocompleteOption[], rawQuery: string): string[] {
+  const query = normalizeSearchValue(rawQuery);
+  if (!query) return [];
+
+  const seen = new Set<string>();
+  const output: string[] = [];
+  for (const option of options) {
+    const key = option.label.toLowerCase();
+    if (seen.has(key)) continue;
+    if (!optionMatchesQuery(option, query)) continue;
+    output.push(option.label);
+    seen.add(key);
+    if (output.length === 5) break;
+  }
+  return output;
+}
+
+function findOptionIdByLabel(options: AutocompleteOption[], rawValue: string): string {
+  const normalized = normalizeSearchValue(rawValue);
+  if (!normalized) return "";
+  const match = options.find((option) => normalizeSearchValue(option.label) === normalized);
+  return match?.id ?? "";
+}
+
 export default function LeadsPage() {
   const { tr } = useLocale();
   const searchParams = useSearchParams();
@@ -83,12 +138,20 @@ export default function LeadsPage() {
   const [contacts, setContacts] = useState<LeadResponse["contacts"]>([]);
   const [companies, setCompanies] = useState<LeadResponse["companies"]>([]);
   const [profiles, setProfiles] = useState<MetaResponse["profiles"]>([]);
+  const [currentUserId, setCurrentUserId] = useState("");
+  const [currentUserRole, setCurrentUserRole] = useState("standard_user");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filters, setFilters] = useState<LeadFilters>(initialFilters);
   const [form, setForm] = useState<LeadForm>(initialForm);
+  const [contactQuery, setContactQuery] = useState("");
+  const [companyQuery, setCompanyQuery] = useState("");
+  const [assigneeQuery, setAssigneeQuery] = useState("");
+  const [closedStagePages, setClosedStagePages] = useState<Record<string, number>>({});
   const [activeTab, setActiveTab] = useState<LeadWorkspaceTab>("pipeline");
+
+  const isAdmin = currentUserRole === "admin";
 
   const stageById = useMemo(() => {
     const map: Record<string, PipelineStage> = {};
@@ -122,6 +185,87 @@ export default function LeadsPage() {
     return map;
   }, [profiles]);
 
+  const contactOptions = useMemo<AutocompleteOption[]>(
+    () =>
+      contacts.map((contact) => {
+        const name = `${contact.first_name} ${contact.last_name}`.trim();
+        const email = contact.email?.trim() ?? "";
+        const label = email ? `${name} - ${email}` : name;
+        return {
+          id: contact.id,
+          label,
+          searchTokens: [name, contact.first_name, contact.last_name, email]
+            .join(" ")
+            .toLowerCase()
+            .split(/[\s@._-]+/)
+            .filter(Boolean),
+        };
+      }),
+    [contacts],
+  );
+
+  const companyOptions = useMemo<AutocompleteOption[]>(
+    () =>
+      companies.map((company) => ({
+        id: company.id,
+        label: company.name,
+        searchTokens: company.name.toLowerCase().split(/[\s@._-]+/).filter(Boolean),
+      })),
+    [companies],
+  );
+
+  const assigneeOptions = useMemo<AutocompleteOption[]>(
+    () =>
+      profiles.map((profile) => {
+        const label = profile.full_name ?? profile.id.slice(0, 8);
+        return {
+          id: profile.id,
+          label,
+          searchTokens: [label, profile.role].join(" ").toLowerCase().split(/[\s@._-]+/).filter(Boolean),
+        };
+      }),
+    [profiles],
+  );
+
+  const contactLabelById = useMemo(() => {
+    const map: Record<string, string> = {};
+    contactOptions.forEach((option) => {
+      map[option.id] = option.label;
+    });
+    return map;
+  }, [contactOptions]);
+
+  const assigneeLabelById = useMemo(() => {
+    const map: Record<string, string> = {};
+    assigneeOptions.forEach((option) => {
+      map[option.id] = option.label;
+    });
+    return map;
+  }, [assigneeOptions]);
+
+  const contactSuggestions = useMemo(
+    () => buildAutocompleteSuggestions(contactOptions, contactQuery),
+    [contactOptions, contactQuery],
+  );
+
+  const companySuggestions = useMemo(
+    () => buildAutocompleteSuggestions(companyOptions, companyQuery),
+    [companyOptions, companyQuery],
+  );
+
+  const assigneeSuggestions = useMemo(
+    () => buildAutocompleteSuggestions(assigneeOptions, assigneeQuery),
+    [assigneeOptions, assigneeQuery],
+  );
+
+  const leadSourceOptions = useMemo(() => {
+    const options = [...LEAD_SOURCE_OPTIONS] as string[];
+    if (form.source && !options.includes(form.source)) {
+      options.push(form.source);
+    }
+    return options;
+  }, [form.source]);
+
   const wonStageId = useMemo(
     () => stages.find((stage) => isWonStageName(stage.name))?.id ?? null,
     [stages],
@@ -130,6 +274,11 @@ export default function LeadsPage() {
   const lostStageId = useMemo(
     () => stages.find((stage) => isLostStageName(stage.name))?.id ?? null,
     [stages],
+  );
+
+  const currentUserLabel = useMemo(
+    () => profileNameById[currentUserId] ?? tr("Auto assign"),
+    [profileNameById, currentUserId, tr],
   );
 
   async function loadData(activeFilters = filters) {
@@ -144,9 +293,14 @@ export default function LeadsPage() {
 
     const leadsUrl = `/api/leads${params.toString() ? `?${params.toString()}` : ""}`;
 
-    const [leadRes, metaRes] = await Promise.all([fetch(leadsUrl), fetch("/api/meta")]);
+    const [leadRes, metaRes, meRes] = await Promise.all([
+      fetch(leadsUrl),
+      fetch("/api/meta"),
+      fetch("/api/profile/me"),
+    ]);
     const leadJson = (await leadRes.json()) as LeadResponse;
     const metaJson = (await metaRes.json()) as MetaResponse;
+    const meJson = (await meRes.json().catch(() => ({}))) as ProfileMeResponse;
 
     if (!leadRes.ok) {
       setError(leadJson.error ?? tr("Failed to load leads"));
@@ -163,10 +317,23 @@ export default function LeadsPage() {
     setContacts(leadJson.contacts ?? []);
     setCompanies(leadJson.companies ?? []);
     setProfiles(metaJson.profiles ?? []);
+    setClosedStagePages({});
 
-    if (!form.current_stage_id && (leadJson.stages?.length ?? 0) > 0) {
-      setForm((prev) => ({ ...prev, current_stage_id: leadJson.stages[0].id }));
+    if (meRes.ok && meJson.profile) {
+      setCurrentUserId(meJson.profile.id);
+      setCurrentUserRole(meJson.profile.role);
     }
+
+    setForm((prev) => {
+      let next = prev;
+      if (!prev.current_stage_id && (leadJson.stages?.length ?? 0) > 0) {
+        next = { ...next, current_stage_id: leadJson.stages[0].id };
+      }
+      if (!editingId && !prev.assigned_to && meJson.profile?.id) {
+        next = { ...next, assigned_to: meJson.profile.id };
+      }
+      return next;
+    });
   }
 
   useEffect(() => {
@@ -191,10 +358,30 @@ export default function LeadsPage() {
 
   function resetForm() {
     setEditingId(null);
-    setForm((prev) => ({
+    setContactQuery("");
+    setCompanyQuery("");
+    setAssigneeQuery("");
+    setForm({
       ...initialForm,
-      current_stage_id: stages[0]?.id ?? prev.current_stage_id,
-    }));
+      source: LEAD_SOURCE_OPTIONS[0],
+      current_stage_id: stages[0]?.id ?? "",
+      assigned_to: currentUserId,
+    });
+  }
+
+  function setContactFromInput(value: string) {
+    setContactQuery(value);
+    setForm((prev) => ({ ...prev, contact_id: findOptionIdByLabel(contactOptions, value) }));
+  }
+
+  function setCompanyFromInput(value: string) {
+    setCompanyQuery(value);
+    setForm((prev) => ({ ...prev, company_id: findOptionIdByLabel(companyOptions, value) }));
+  }
+
+  function setAssigneeFromInput(value: string) {
+    setAssigneeQuery(value);
+    setForm((prev) => ({ ...prev, assigned_to: findOptionIdByLabel(assigneeOptions, value) }));
   }
 
   async function handleSaveLead(event: FormEvent<HTMLFormElement>) {
@@ -210,10 +397,11 @@ export default function LeadsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        source: form.source.trim() || LEAD_SOURCE_OPTIONS[0],
         estimated_value: Number(form.estimated_value || 0),
         contact_id: form.contact_id || null,
         company_id: form.company_id || null,
-        assigned_to: form.assigned_to || null,
+        assigned_to: isAdmin ? form.assigned_to || null : null,
         current_stage_id: form.current_stage_id || null,
       }),
     });
@@ -236,15 +424,21 @@ export default function LeadsPage() {
     setActiveTab("manage");
     setForm({
       title: lead.title,
-      source: lead.source ?? "",
-      status: lead.status,
+      source: lead.source ?? LEAD_SOURCE_OPTIONS[0],
       estimated_value: String(Number(lead.estimated_value || 0)),
       current_stage_id: lead.current_stage_id ?? "",
       contact_id: lead.contact_id ?? "",
       company_id: lead.company_id ?? "",
-      assigned_to: lead.assigned_to ?? "",
+      assigned_to: lead.assigned_to ?? lead.owner_id ?? currentUserId,
       notes: lead.notes ?? "",
     });
+    setContactQuery(lead.contact_id ? contactLabelById[lead.contact_id] ?? "" : "");
+    setCompanyQuery(lead.company_id ? companyById[lead.company_id] ?? "" : "");
+    setAssigneeQuery(
+      lead.assigned_to
+        ? assigneeLabelById[lead.assigned_to] ?? profileNameById[lead.assigned_to] ?? ""
+        : "",
+    );
   }
 
   async function moveLeadStage(leadId: string, stageId: string, comment = "Manual update") {
@@ -446,13 +640,19 @@ export default function LeadsPage() {
           </label>
           <label className="col-2 stack">
             {tr("Source")}
-            <input
+            <select
               value={filters.source}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, source: event.target.value }))
               }
-              placeholder={tr("LinkedIn")}
-            />
+            >
+              <option value="">{tr("All")}</option>
+              {LEAD_SOURCE_OPTIONS.map((source) => (
+                <option key={source} value={source}>
+                  {tr(source)}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="col-2 stack">
             {tr("Value from")}
@@ -503,7 +703,7 @@ export default function LeadsPage() {
         <h2>{editingId ? tr("Edit lead") : tr("New lead")}</h2>
         <form className="stack" onSubmit={handleSaveLead}>
           <div className="row">
-            <label className="col-3 stack">
+            <label className="col-4 stack">
               {tr("Title")}
               <input
                 value={form.title}
@@ -513,26 +713,15 @@ export default function LeadsPage() {
             </label>
             <label className="col-3 stack">
               {tr("Source")}
-              <input
+              <select
                 value={form.source}
                 onChange={(e) => setForm((prev) => ({ ...prev, source: e.target.value }))}
-                placeholder={tr("Salon, LinkedIn, Referral")}
-              />
-            </label>
-            <label className="col-2 stack">
-              {tr("Status")}
-              <select
-                value={form.status}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    status: e.target.value as "open" | "won" | "lost",
-                  }))
-                }
               >
-                <option value="open">{tr("Open")}</option>
-                <option value="won">{tr("Won")}</option>
-                <option value="lost">{tr("Lost")}</option>
+                {leadSourceOptions.map((source) => (
+                  <option key={source} value={source}>
+                    {tr(source)}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="col-2 stack">
@@ -559,56 +748,51 @@ export default function LeadsPage() {
                 ))}
               </select>
             </label>
-            <label className="col-3 stack">
+            <label className="col-4 stack">
               {tr("Contact")}
-              <select
-                value={form.contact_id}
-                onChange={(e) => setForm((prev) => ({ ...prev, contact_id: e.target.value }))}
-              >
-                <option value="">{tr("No contact")}</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name}
-                  </option>
-                ))}
-              </select>
+              <AutocompleteInput
+                value={contactQuery}
+                onChange={setContactFromInput}
+                placeholder={tr("Contact name or email")}
+                suggestions={contactSuggestions}
+                listId="lead-contact-suggestions"
+              />
             </label>
-            <label className="col-3 stack">
+            <label className="col-4 stack">
               {tr("Company")}
-              <select
-                value={form.company_id}
-                onChange={(e) => setForm((prev) => ({ ...prev, company_id: e.target.value }))}
-              >
-                <option value="">{tr("No company")}</option>
-                {companies.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
+              <AutocompleteInput
+                value={companyQuery}
+                onChange={setCompanyFromInput}
+                placeholder={tr("Company name")}
+                suggestions={companySuggestions}
+                listId="lead-company-suggestions"
+              />
             </label>
-            <label className="col-3 stack">
+            <label className="col-4 stack">
               {tr("Assigned to")}
-              <select
-                value={form.assigned_to}
-                onChange={(e) => setForm((prev) => ({ ...prev, assigned_to: e.target.value }))}
-              >
-                <option value="">{tr("Auto assign")}</option>
-                {profiles.map((profile) => (
-                  <option key={profile.id} value={profile.id}>
-                    {profile.full_name ?? profile.id.slice(0, 8)}
-                  </option>
-                ))}
-              </select>
+              {isAdmin ? (
+                <AutocompleteInput
+                  value={assigneeQuery}
+                  onChange={setAssigneeFromInput}
+                  placeholder={tr("Type colleague name")}
+                  suggestions={assigneeSuggestions}
+                  listId="lead-assignee-suggestions"
+                />
+              ) : (
+                <input value={currentUserLabel} readOnly />
+              )}
             </label>
-            <label className="col-3 stack">
+            <label className="col-12 stack">
               {tr("Notes")}
-              <input
+              <textarea
                 value={form.notes}
                 onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
               />
             </label>
           </div>
+          {!isAdmin ? (
+            <p className="small">{tr("Lead stays assigned to creator unless admin reassigns it.")}</p>
+          ) : null}
           <div className="inline-actions">
             <button className="btn btn-primary" type="submit" disabled={saving}>
               {saving ? tr("Saving...") : editingId ? tr("Update lead") : tr("Create lead")}
@@ -633,6 +817,17 @@ export default function LeadsPage() {
               (sum, lead) => sum + Number(lead.estimated_value || 0),
               0,
             );
+            const isClosedOutcomeStage = isWonStageName(stage.name) || isLostStageName(stage.name);
+            const totalPages = isClosedOutcomeStage
+              ? Math.max(1, Math.ceil(stageLeads.length / CLOSED_STAGE_PAGE_SIZE))
+              : 1;
+            const currentPage = Math.min(closedStagePages[stage.id] ?? 1, totalPages);
+            const visibleLeads = isClosedOutcomeStage
+              ? stageLeads.slice(
+                  (currentPage - 1) * CLOSED_STAGE_PAGE_SIZE,
+                  currentPage * CLOSED_STAGE_PAGE_SIZE,
+                )
+              : stageLeads;
 
             return (
               <article key={stage.id} className="stage">
@@ -640,7 +835,9 @@ export default function LeadsPage() {
                 <p className="small">{tr("Leads")}: {stageLeads.length}</p>
                 <p className="small">{tr("Total value")}: {stageValue.toLocaleString()} EUR</p>
 
-                {stageLeads.map((lead) => {
+                {visibleLeads.length === 0 ? <p className="small">{tr("No data found.")}</p> : null}
+
+                {visibleLeads.map((lead) => {
                   const currentIndex = stages.findIndex((item) => item.id === lead.current_stage_id);
                   const currentStageName = lead.current_stage_id
                     ? stageById[lead.current_stage_id]?.name ?? ""
@@ -726,6 +923,18 @@ export default function LeadsPage() {
                     </div>
                   );
                 })}
+                {isClosedOutcomeStage && stageLeads.length > CLOSED_STAGE_PAGE_SIZE ? (
+                  <PaginationControls
+                    page={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={(nextPage) =>
+                      setClosedStagePages((prev) => ({
+                        ...prev,
+                        [stage.id]: Math.min(Math.max(nextPage, 1), totalPages),
+                      }))
+                    }
+                  />
+                ) : null}
               </article>
             );
           })}

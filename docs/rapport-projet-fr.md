@@ -195,6 +195,7 @@ Filtres exposes:
 - RLS active sur les tables metier
 - Mode "petite equipe": lecture partagee des donnees metier pour les utilisateurs internes
 - Controle strict d edition/suppression par role (admin/manager vs utilisateurs standards)
+- Regle d assignation des opportunites: createur assigne par defaut, reaffectation reservee admin
 - Cle service role uniquement cote serveur
 - Jobs proteges admin-only (ou secret cron)
 - Webhook Brevo protege par token secret optionnel
@@ -209,10 +210,10 @@ Validation technique:
 - `npm run test:release` : OK
 - `npm --workspace web run test:coverage` : OK
 - couverture globale:
-  - statements: 98.95%
-  - branches: 73.51%
+  - statements: 98.96%
+  - branches: 74.55%
   - functions: 89.47%
-  - lines: 98.95%
+  - lines: 98.96%
 - migrations Supabase appliquees (dont categories produits):
   - `20260309224000_email_analytics_and_task_reminders.sql`
   - `20260311112000_product_categories.sql`

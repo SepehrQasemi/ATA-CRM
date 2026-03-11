@@ -21,8 +21,11 @@
 
 ## 4. Leads + Pipeline + Funnel (2m)
 - Creation de lead et affectation.
+- Saisie de lead guidee: source fixe + autocompletion contact/entreprise (prefix suggestions).
+- Règle d'affectation: le créateur reste assigné par défaut, réaffectation réservée à l'admin.
 - Pipeline: deplacement d etape (select + prev/next).
 - Regle Negotiation: deux sorties explicites `Won` / `Lost` (plus de `next` ambigu).
+- Colonnes `Won` / `Lost` paginées (5 cartes par page) pour garder le board lisible.
 - Carte lead simplifiee: titre, entreprise cible, agent, commercial assigne, actions (prev / edit / create task / issue).
 - Probabilite de succes par etape: New 5% -> Qualification 20% -> Sample 30% -> Quote 50% -> Negotiation 70% -> Won 100% / Lost 0%.
 - Funnel: chaines de conversion et taux par transition.
@@ -51,7 +54,7 @@
 
 ## 8. Qualite / DevOps / conclusion (1m)
 - CI: lint + build + tests + e2e smoke/full.
-- Coverage gate: statements 98.95%, branches 73.51%, functions 89.47%, lines 98.95%.
+- Coverage gate: statements 98.96%, branches 74.55%, functions 89.47%, lines 98.96%.
 - Deploiement Vercel connecte GitHub.
 - Docker en bonus pour portabilite locale.
 - Conclusion: projet full SaaS operationnel, demonstrable et evolutif.

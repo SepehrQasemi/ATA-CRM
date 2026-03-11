@@ -35,7 +35,12 @@ SaaS CRM project for a B2B company trading raw food ingredients.
 - Tasks workspace tabs (List / Calendar / New Task) for cleaner navigation
 - Company role model (`supplier`, `customer`, `both`)
 - Sales pipeline with stage change, quick move, and history
+- Lead form autocomplete (type-to-suggest) for Contact/Company, with top 5 prefix suggestions
+- Lead source is standardized via fixed list (`Trade show`, `LinkedIn`, `Existing customer`, `Referral`, `Website`, `Cold call`, `Inbound`, `Other`)
+- Lead ownership rule: creator owns the lead by default; only admin can reassign `assigned_to`
+- New leads are always created with `open` status (status is not manually set in create form)
 - Negotiation stage supports explicit outcome actions (`Mark Won` / `Mark Lost`) while keeping `Prev`, `Edit`, `Create task`
+- Won/Lost stages support 5-card pagination to keep pipeline columns readable
 - Success probability model per lead stage (5/20/30/50/70/100/0)
 - Multi-criteria filters on leads/tasks/contacts/companies
 - Prefix-based smart suggestions (top 5) on name search inputs

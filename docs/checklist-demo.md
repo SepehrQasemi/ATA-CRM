@@ -28,17 +28,19 @@
 3. Create company + contact
 4. Create/select product category, then create product
 5. Set company role (supplier/customer/both), then link products as traded/potential
-6. Create lead and assign owner
-7. Move lead stage (select + quick move)
-8. On a negotiation lead, show `Mark Won` / `Mark Lost` actions
-9. Create task, show monthly calendar, and update status
-10. (Admin account) Send test email (template + contact)
-11. (Admin account) Run follow-up in dry-run, then real run
-12. (Admin account) Run task reminders in dry-run
-13. Show dashboard: KPI + weighted forecast calendar + funnel + leaderboard + stage aging + email rates
-14. If logged as manager/admin, switch dashboard scope between `My pipeline` and `Team pipeline`
-15. Export dashboard report (CSV/PDF) in front of jury
-16. Conclusion: limitations and next iteration
+6. Create lead using fixed source list + contact/company autocomplete suggestions
+7. (Admin only) show lead reassignment via assignee type-ahead; non-admin remains auto-assigned
+8. Move lead stage (select + quick move)
+9. On a negotiation lead, show `Mark Won` / `Mark Lost` actions
+10. Show Won/Lost stage pagination (5 cards per page)
+11. Create task, show monthly calendar, and update status
+12. (Admin account) Send test email (template + contact)
+13. (Admin account) Run follow-up in dry-run, then real run
+14. (Admin account) Run task reminders in dry-run
+15. Show dashboard: KPI + weighted forecast calendar + funnel + leaderboard + stage aging + email rates
+16. If logged as manager/admin, switch dashboard scope between `My pipeline` and `Team pipeline`
+17. Export dashboard report (CSV/PDF) in front of jury
+18. Conclusion: limitations and next iteration
 
 ## Technical Fallback
 - If Brevo is unavailable:

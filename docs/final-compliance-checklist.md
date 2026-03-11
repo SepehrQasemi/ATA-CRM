@@ -10,12 +10,16 @@ Date: 2026-03-11
 - CRUD `contacts`: DONE
 - CRUD `companies`: DONE
 - CRUD `leads`: DONE
+- Lead create UX: contact/company type-ahead suggestions + fixed source list: DONE
+- Lead ownership/assignment rule (creator by default, admin reassign only): DONE
+- New lead status fixed to `open` at creation: DONE
 - CRUD `tasks`: DONE
 - Product categories management (create/select/profile): DONE
 - Category profile with products + suppliers + customers lists (10-per-page pagination): DONE
 - Product profile with description + supplier/customer lists (10-per-page pagination): DONE
 - Sales pipeline + stage transition history: DONE
 - Negotiation stage explicit outcome actions (Won/Lost): DONE
+- Won/Lost pipeline columns paginated (5 per page): DONE
 - Lead success probability model by stage (5/20/30/50/70/100/0): DONE
 - Funnel and conversion visibility: DONE
 - Monthly task planning + deadline alerts: DONE
