@@ -1,16 +1,11 @@
-import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
+import { requireAuthenticatedUser } from "@/lib/auth";
 import { fail, ok } from "@/lib/http";
 import { normalizeStageRows } from "@/lib/pipeline-stage-labels";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const ownershipFilter = (userId: string) => `owner_id.eq.${userId},assigned_to.eq.${userId}`;
-
 export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
   const url = new URL(request.url);
   const stageId = url.searchParams.get("stage_id");
   const status = url.searchParams.get("status");
@@ -27,7 +22,6 @@ export async function GET(request: Request) {
     )
     .order("created_at", { ascending: false });
 
-  if (!isAdmin) query.or(ownershipFilter(user.id));
   if (stageId) query.eq("current_stage_id", stageId);
   if (status) query.eq("status", status);
   if (assignedTo) query.eq("assigned_to", assignedTo);

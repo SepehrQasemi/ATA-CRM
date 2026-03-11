@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale } from "@/components/locale-provider";
 
 type SearchItem = {
@@ -13,18 +14,27 @@ type SearchItem = {
 
 type SearchResults = {
   leads: SearchItem[];
+  tasks: SearchItem[];
   companies: SearchItem[];
   contacts: SearchItem[];
+  products: SearchItem[];
+  categories: SearchItem[];
+  colleagues: SearchItem[];
 };
 
 const initialResults: SearchResults = {
   leads: [],
+  tasks: [],
   companies: [],
   contacts: [],
+  products: [],
+  categories: [],
+  colleagues: [],
 };
 
 export function GlobalSearch() {
   const { tr } = useLocale();
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,7 +42,7 @@ export function GlobalSearch() {
 
   useEffect(() => {
     const trimmed = q.trim();
-    if (trimmed.length < 2) {
+    if (trimmed.length < 1) {
       setResults(initialResults);
       setLoading(false);
       return;
@@ -41,36 +51,13 @@ export function GlobalSearch() {
     const timeout = setTimeout(async () => {
       setLoading(true);
       try {
-        const [leadsRes, companiesRes, contactsRes] = await Promise.all([
-          fetch(`/api/leads?q=${encodeURIComponent(trimmed)}`),
-          fetch(`/api/companies?q=${encodeURIComponent(trimmed)}`),
-          fetch(`/api/contacts?q=${encodeURIComponent(trimmed)}`),
-        ]);
-
-        const leadsJson = (await leadsRes.json().catch(() => ({}))) as { leads?: Array<{ id: string; title: string; source?: string | null }> };
-        const companiesJson = (await companiesRes.json().catch(() => ({}))) as { companies?: Array<{ id: string; name: string; sector?: string | null }> };
-        const contactsJson = (await contactsRes.json().catch(() => ({}))) as { contacts?: Array<{ id: string; first_name: string; last_name: string; email?: string | null }> };
-
-        setResults({
-          leads: (leadsJson.leads ?? []).slice(0, 4).map((lead) => ({
-            id: lead.id,
-            label: lead.title,
-            sublabel: lead.source ?? undefined,
-            href: "/leads",
-          })),
-          companies: (companiesJson.companies ?? []).slice(0, 4).map((company) => ({
-            id: company.id,
-            label: company.name,
-            sublabel: company.sector ?? undefined,
-            href: "/companies",
-          })),
-          contacts: (contactsJson.contacts ?? []).slice(0, 4).map((contact) => ({
-            id: contact.id,
-            label: `${contact.first_name} ${contact.last_name}`,
-            sublabel: contact.email ?? undefined,
-            href: "/contacts",
-          })),
-        });
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(trimmed)}&limit=5`,
+        );
+        const json = (await response.json().catch(() => ({}))) as {
+          results?: SearchResults;
+        };
+        setResults(json.results ?? initialResults);
       } finally {
         setLoading(false);
       }
@@ -82,10 +69,27 @@ export function GlobalSearch() {
   const hasResults = useMemo(
     () =>
       results.leads.length > 0 ||
+      results.tasks.length > 0 ||
       results.companies.length > 0 ||
-      results.contacts.length > 0,
+      results.contacts.length > 0 ||
+      results.products.length > 0 ||
+      results.categories.length > 0 ||
+      results.colleagues.length > 0,
     [results],
   );
+
+  const firstResult = useMemo(() => {
+    const ordered = [
+      ...results.companies,
+      ...results.contacts,
+      ...results.products,
+      ...results.categories,
+      ...results.colleagues,
+      ...results.leads,
+      ...results.tasks,
+    ];
+    return ordered[0] ?? null;
+  }, [results]);
 
   return (
     <div className="search-box">
@@ -97,29 +101,50 @@ export function GlobalSearch() {
             setQ(event.target.value);
             setOpen(true);
           }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setOpen(false);
+            }
+            if (event.key === "Enter" && firstResult) {
+              event.preventDefault();
+              router.push(firstResult.href);
+            }
+          }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 140)}
-          placeholder={tr("Search")}
+          placeholder={tr("Search everything")}
         />
       </label>
 
       {open ? (
         <div className="search-results">
           {loading ? <p className="small">{tr("Loading data...")}</p> : null}
-          {!loading && q.trim().length >= 2 && !hasResults ? (
-            <p className="small">{tr("No results yet.")}</p>
+          {!loading && q.trim().length >= 1 && !hasResults ? (
+            <p className="small">{tr("No results found.")}</p>
           ) : null}
 
           {!loading && hasResults ? (
             <div className="stack">
-              {results.leads.length > 0 ? (
-                <ResultGroup title={tr("Leads")} items={results.leads} />
-              ) : null}
               {results.companies.length > 0 ? (
                 <ResultGroup title={tr("Companies")} items={results.companies} />
               ) : null}
               {results.contacts.length > 0 ? (
                 <ResultGroup title={tr("Contacts")} items={results.contacts} />
+              ) : null}
+              {results.products.length > 0 ? (
+                <ResultGroup title={tr("Products")} items={results.products} />
+              ) : null}
+              {results.categories.length > 0 ? (
+                <ResultGroup title={tr("Categories")} items={results.categories} />
+              ) : null}
+              {results.colleagues.length > 0 ? (
+                <ResultGroup title={tr("Colleagues")} items={results.colleagues} />
+              ) : null}
+              {results.leads.length > 0 ? (
+                <ResultGroup title={tr("Leads")} items={results.leads} />
+              ) : null}
+              {results.tasks.length > 0 ? (
+                <ResultGroup title={tr("Tasks")} items={results.tasks} />
               ) : null}
             </div>
           ) : null}

@@ -401,8 +401,8 @@ export default function CompaniesPage() {
                           <span className="small">{`${tr("Potential")}: ${buckets.potential.length}`}</span>
                         </div>
                       </td>
-                      <td>
-                        <Link className="btn btn-secondary" href={`/companies/${company.id}`}>
+                      <td className="table-action-cell">
+                        <Link className="btn btn-secondary btn-detail" href={`/companies/${company.id}`}>
                           {tr("View details")}
                         </Link>
                       </td>

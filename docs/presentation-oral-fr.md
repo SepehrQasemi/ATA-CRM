@@ -7,12 +7,16 @@
 
 ## 2. Authentification et roles (45s)
 - Login / signup / reset password.
+- Signup avec confirmation mot de passe + bouton afficher/masquer.
+- Reset flow: email -> `/auth/callback?next=/reset-password` -> formulaire de nouveau mot de passe.
+- Page Settings minimale (reset password) pour gestion autonome du compte.
 - Roles: `admin`, `manager`, `commercial`, `standard_user`.
 - Controle d acces par role + RLS cote base.
 
 ## 3. Donnees metier (1m30)
 - Contacts: fiche detaillee, profil, edition in-page.
 - Companies: role (`supplier` / `customer` / `both`) + agents + produits lies.
+- Categories: gestion dediee + profil categorie (description, produits, clients, fournisseurs).
 - Products: catalogue + profil + relations entreprise/produit (traded/potential, model/grade).
 
 ## 4. Leads + Pipeline + Funnel (2m)
@@ -41,6 +45,7 @@
 
 ## 8. Qualite / DevOps / conclusion (1m)
 - CI: lint + build + tests + e2e smoke/full.
+- Coverage gate: statements 98.94%, branches 73.51%, functions 89.47%, lines 98.94%.
 - Deploiement Vercel connecte GitHub.
 - Docker en bonus pour portabilite locale.
 - Conclusion: projet full SaaS operationnel, demonstrable et evolutif.

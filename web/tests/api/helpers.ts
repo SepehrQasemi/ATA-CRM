@@ -24,6 +24,7 @@ export function createFluentQuery<T = unknown>(result: QueryResult<T>) {
     "neq",
     "in",
     "limit",
+    "range",
     "insert",
     "update",
     "delete",

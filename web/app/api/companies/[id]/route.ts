@@ -22,14 +22,7 @@ export async function GET(
 ) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
   const { id } = await params;
-
-  const allowed = await ensureAccess(id, user.id, isAdmin);
-  if (!allowed) return fail("Forbidden", 403);
 
   const { data: company, error: companyError } = await supabaseAdmin
     .from("companies")
@@ -45,10 +38,6 @@ export async function GET(
     .eq("company_id", id)
     .order("created_at", { ascending: false });
 
-  if (!isAdmin) {
-    linksQuery.eq("owner_id", user.id);
-  }
-
   const agentsQuery = supabaseAdmin
     .from("contacts")
     .select("id,first_name,last_name,email,phone,job_title,is_company_agent,agent_rank,created_at")
@@ -56,10 +45,6 @@ export async function GET(
     .eq("is_company_agent", true)
     .order("agent_rank", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
-
-  if (!isAdmin) {
-    agentsQuery.eq("owner_id", user.id);
-  }
 
   const [{ data: links, error: linksError }, { data: agents, error: agentsError }] =
     await Promise.all([linksQuery, agentsQuery]);
@@ -72,9 +57,6 @@ export async function GET(
 
   if (productIds.length > 0) {
     const productsQuery = supabaseAdmin.from("products").select("id,name").in("id", productIds);
-    if (!isAdmin) {
-      productsQuery.eq("owner_id", user.id);
-    }
     const { data: productRows, error: productsError } = await productsQuery;
     if (productsError) return fail("Failed to load products", 500, productsError.message);
     products = productRows ?? [];
@@ -94,14 +76,7 @@ export async function PATCH(
 ) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
   const { id } = await params;
-
-  const allowed = await ensureAccess(id, user.id, isAdmin);
-  if (!allowed) return fail("Forbidden", 403);
 
   const body = await request.json();
   const companyRoleRaw =

@@ -360,8 +360,8 @@ export default function ContactsPage() {
                     <td>{contact.phone ?? "-"}</td>
                     <td>{companies.find((company) => company.id === contact.company_id)?.name ?? "-"}</td>
                     <td>{contact.job_title ?? "-"}</td>
-                    <td>
-                      <Link className="btn btn-secondary" href={`/contacts/${contact.id}`}>
+                    <td className="table-action-cell">
+                      <Link className="btn btn-secondary btn-detail" href={`/contacts/${contact.id}`}>
                         {tr("View details")}
                       </Link>
                     </td>

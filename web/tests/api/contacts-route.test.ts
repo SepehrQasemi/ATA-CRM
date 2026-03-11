@@ -53,7 +53,7 @@ describe("GET /api/contacts", () => {
     expect(response.status).toBe(200);
     expect(json.contacts).toEqual([]);
     expect(companiesLookup.ilike).toHaveBeenCalledWith("name", "Acme%");
-    expect(companiesLookup.or).toHaveBeenCalledWith("owner_id.eq.user-1,owner_id.is.null");
+    expect(companiesLookup.or).not.toHaveBeenCalled();
   });
 
   it("applies text search and returns contact rows", async () => {

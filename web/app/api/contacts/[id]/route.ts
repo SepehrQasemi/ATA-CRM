@@ -21,13 +21,8 @@ export async function GET(
 ) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
 
   const { id } = await params;
-  const allowed = await ensureAccess(id, user.id, isAdmin);
-  if (!allowed) return fail("Forbidden", 403);
 
   const { data: contact, error } = await supabaseAdmin
     .from("contacts")
@@ -63,13 +58,8 @@ export async function PATCH(
 ) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
 
   const { id } = await params;
-  const allowed = await ensureAccess(id, user.id, isAdmin);
-  if (!allowed) return fail("Forbidden", 403);
 
   const body = await request.json();
   let agentRank: number | null | undefined = undefined;

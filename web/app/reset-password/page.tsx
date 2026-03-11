@@ -7,11 +7,42 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { useLocale } from "@/components/locale-provider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
+function PasswordVisibilityIcon({ visible }: { visible: boolean }) {
+  if (visible) {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" width="18" height="18">
+        <path
+          d="M3 4.5L20 21.5M9.88 9.88A3 3 0 0 0 14.12 14.12M10.73 5.08A10.94 10.94 0 0 1 12 5C16.67 5 20.44 8 22 12c-.49 1.25-1.2 2.39-2.09 3.36M6.61 6.61C4.45 8 2.76 9.89 2 12c1.56 4 5.33 7 10 7 1.85 0 3.59-.47 5.1-1.29"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" width="18" height="18">
+      <path
+        d="M2 12C3.56 8 7.33 5 12 5s8.44 3 10 7c-1.56 4-5.33 7-10 7S3.56 16 2 12Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 export default function ResetPasswordPage() {
   const { tr } = useLocale();
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [hasRecoverySession, setHasRecoverySession] = useState(false);
@@ -32,10 +63,6 @@ export default function ResetPasswordPage() {
       const accessToken = hashParams.get("access_token");
       const refreshToken = hashParams.get("refresh_token");
 
-      // Support all Supabase recovery URL variants:
-      // 1) PKCE code in query
-      // 2) token_hash + type=recovery
-      // 3) implicit hash tokens
       if (accessToken && refreshToken) {
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
@@ -52,11 +79,18 @@ export default function ResetPasswordPage() {
       } else if (code) {
         const { error: codeError } = await supabase.auth.exchangeCodeForSession(code);
         if (codeError) {
-          if (!mounted) return;
-          setHasRecoverySession(false);
-          setReady(true);
-          setError(codeError.message);
-          return;
+          // Fallback for environments where recovery URL carries a code that can be verified as token hash.
+          const { error: otpFallbackError } = await supabase.auth.verifyOtp({
+            token_hash: code,
+            type: "recovery",
+          });
+          if (otpFallbackError) {
+            if (!mounted) return;
+            setHasRecoverySession(false);
+            setReady(true);
+            setError(codeError.message);
+            return;
+          }
         }
         window.history.replaceState({}, "", "/reset-password");
       } else if (tokenHash && otpType === "recovery") {
@@ -74,7 +108,7 @@ export default function ResetPasswordPage() {
         window.history.replaceState({}, "", "/reset-password");
       }
 
-      for (let attempt = 0; attempt < 4; attempt += 1) {
+      for (let attempt = 0; attempt < 20; attempt += 1) {
         const { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) {
           if (!mounted) return;
@@ -88,7 +122,14 @@ export default function ResetPasswordPage() {
           setReady(true);
           return;
         }
-        await new Promise((resolve) => window.setTimeout(resolve, 300));
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+      }
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user) {
+        if (!mounted) return;
+        setHasRecoverySession(true);
+        setReady(true);
+        return;
       }
       if (!mounted) return;
       setHasRecoverySession(false);
@@ -161,29 +202,53 @@ export default function ResetPasswordPage() {
 
         {ready && hasRecoverySession ? (
           <form className="stack" onSubmit={handleSubmit}>
-            <label className="stack">
-              {tr("New password")}
-              <input
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                type="password"
-                placeholder="********"
-                minLength={8}
-                required
-              />
-            </label>
+            <div className="stack">
+              <label htmlFor="reset-password">{tr("New password")}</label>
+              <div className="password-input-wrap">
+                <input
+                  id="reset-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="********"
+                  minLength={8}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? tr("Hide password") : tr("Show password")}
+                  title={showPassword ? tr("Hide password") : tr("Show password")}
+                >
+                  <PasswordVisibilityIcon visible={showPassword} />
+                </button>
+              </div>
+            </div>
 
-            <label className="stack">
-              {tr("Confirm password")}
-              <input
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                type="password"
-                placeholder="********"
-                minLength={8}
-                required
-              />
-            </label>
+            <div className="stack">
+              <label htmlFor="reset-confirm-password">{tr("Confirm password")}</label>
+              <div className="password-input-wrap">
+                <input
+                  id="reset-confirm-password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="********"
+                  minLength={8}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  aria-label={showConfirmPassword ? tr("Hide password") : tr("Show password")}
+                  title={showConfirmPassword ? tr("Hide password") : tr("Show password")}
+                >
+                  <PasswordVisibilityIcon visible={showConfirmPassword} />
+                </button>
+              </div>
+            </div>
 
             {error ? <p className="error">{error}</p> : null}
             {success ? <p className="success">{success}</p> : null}
@@ -192,11 +257,7 @@ export default function ResetPasswordPage() {
               {loading ? tr("Processing...") : tr("Update password")}
             </button>
 
-            <button
-              className="btn-link"
-              type="button"
-              onClick={() => router.push("/login")}
-            >
+            <button className="btn-link" type="button" onClick={() => router.push("/login")}>
               {tr("Back to login")}
             </button>
           </form>

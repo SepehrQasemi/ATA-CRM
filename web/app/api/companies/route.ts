@@ -1,18 +1,13 @@
-import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
+import { requireAuthenticatedUser } from "@/lib/auth";
 import { fail, ok } from "@/lib/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const ownershipFilter = (userId: string) => `owner_id.eq.${userId},owner_id.is.null`;
 const PRODUCT_LINK_TYPES = new Set(["traded", "potential"]);
 const COMPANY_ROLES = new Set(["supplier", "customer", "both"]);
 
 export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
 
   const url = new URL(request.url);
   const search = url.searchParams.get("q") ?? url.searchParams.get("search");
@@ -23,10 +18,6 @@ export async function GET(request: Request) {
     .from("companies")
     .select("id,name,company_role,sector,city,country,website,notes,created_at,owner_id")
     .order("created_at", { ascending: false });
-
-  if (!isAdmin) {
-    query.or(ownershipFilter(user.id));
-  }
 
   if (sector) {
     query.ilike("sector", `%${sector}%`);
@@ -45,18 +36,10 @@ export async function GET(request: Request) {
     .select("id,product_id,company_id,relation_type,product_model,last_price,notes,owner_id,created_at")
     .order("created_at", { ascending: false });
 
-  if (!isAdmin) {
-    linksQuery.eq("owner_id", user.id);
-  }
-
   const productsQuery = supabaseAdmin
     .from("products")
     .select("id,name")
     .order("name", { ascending: true });
-
-  if (!isAdmin) {
-    productsQuery.eq("owner_id", user.id);
-  }
 
   const agentsQuery = supabaseAdmin
     .from("contacts")
@@ -64,10 +47,6 @@ export async function GET(request: Request) {
     .eq("is_company_agent", true)
     .order("agent_rank", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
-
-  if (!isAdmin) {
-    agentsQuery.eq("owner_id", user.id);
-  }
 
   const [
     { data: companies, error: companiesError },

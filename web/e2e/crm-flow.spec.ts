@@ -20,7 +20,7 @@ test.describe("CRM end-to-end", () => {
     await expect(page.getByRole("button", { name: "Back to login" })).toBeVisible();
 
     await page.getByRole("button", { name: "Back to login" }).click();
-    await expect(page.getByLabel("Password")).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
   });
 
   test("@smoke covers dashboard, companies, products, leads, tasks, and emails", async ({ page }) => {
@@ -86,7 +86,7 @@ test.describe("CRM end-to-end", () => {
     const productForm = sectionByHeading(page, "New product");
     await productForm.getByLabel("Name").fill(productName);
     await productForm.getByLabel("SKU").fill(sku);
-    await productForm.getByLabel("Category").fill("Cocoa");
+    await pickSelectOptionByText(productForm.getByLabel("Category"), "Cocoa");
     await productForm.getByLabel("Purchase price").fill("1200");
     await productForm.getByLabel("Sale price").fill("1450");
     await productForm.getByRole("button", { name: "Create product" }).click();

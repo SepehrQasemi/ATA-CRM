@@ -13,6 +13,7 @@
     "test:api": "vitest run tests/api",
     "test:coverage": "vitest run --coverage && node scripts/check-coverage.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
+    "seed:presentation": "node scripts/seed-presentation.mjs",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test --grep @smoke",
     "test:e2e:full": "playwright test",

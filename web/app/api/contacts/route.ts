@@ -1,14 +1,10 @@
-import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
+import { requireAuthenticatedUser } from "@/lib/auth";
 import { fail, ok } from "@/lib/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
 
   const url = new URL(request.url);
   const search = url.searchParams.get("q") ?? url.searchParams.get("search");
@@ -20,10 +16,6 @@ export async function GET(request: Request) {
     .select("id,first_name,last_name,email,phone,job_title,notes,company_id,is_company_agent,agent_rank,created_at,owner_id")
     .order("created_at", { ascending: false });
 
-  if (!isAdmin) {
-    query.eq("owner_id", user.id);
-  }
-
   if (companyId) {
     query.eq("company_id", companyId);
   } else if (companyQuery) {
@@ -32,10 +24,6 @@ export async function GET(request: Request) {
       .select("id")
       .ilike("name", `${companyQuery}%`)
       .limit(50);
-
-    if (!isAdmin) {
-      companyLookup.or(`owner_id.eq.${user.id},owner_id.is.null`);
-    }
 
     const { data: matchingCompanies, error: companiesError } = await companyLookup;
     if (companiesError) {

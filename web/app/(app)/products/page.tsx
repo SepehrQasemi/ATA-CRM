@@ -6,7 +6,7 @@ import { AutocompleteInput } from "@/components/autocomplete-input";
 import { PaginationControls } from "@/components/pagination-controls";
 import { PageTip } from "@/components/page-tip";
 import { useLocale } from "@/components/locale-provider";
-import { Product, ProductCompanyLink } from "@/lib/types";
+import { Product, ProductCategory, ProductCompanyLink } from "@/lib/types";
 import { startsWithSuggestions } from "@/lib/search-suggestions";
 
 type CompanyOption = {
@@ -29,6 +29,7 @@ type ProductsResponse = {
   companies: CompanyOption[];
   links: ProductCompanyLink[];
   agents: CompanyAgent[];
+  categories: ProductCategory[];
   error?: string;
 };
 
@@ -36,7 +37,7 @@ type ProductFilters = { q: string; category: string; is_active: string; relation
 type ProductForm = {
   name: string;
   sku: string;
-  category: string;
+  category_id: string;
   unit: string;
   default_purchase_price: string;
   default_sale_price: string;
@@ -57,7 +58,7 @@ const initialFilters: ProductFilters = { q: "", category: "", is_active: "", rel
 const initialForm: ProductForm = {
   name: "",
   sku: "",
-  category: "",
+  category_id: "",
   unit: "kg",
   default_purchase_price: "",
   default_sale_price: "",
@@ -87,6 +88,7 @@ function companyRoleLabel(role: "supplier" | "customer" | "both", tr: (key: stri
 export default function ProductsPage() {
   const { tr } = useLocale();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [links, setLinks] = useState<ProductCompanyLink[]>([]);
   const [agents, setAgents] = useState<CompanyAgent[]>([]);
@@ -118,6 +120,7 @@ export default function ProductsPage() {
     }
 
     setProducts(json.products ?? []);
+    setCategories(json.categories ?? []);
     setCompanies(json.companies ?? []);
     setLinks(json.links ?? []);
     setAgents(json.agents ?? []);
@@ -180,7 +183,7 @@ export default function ProductsPage() {
       body: JSON.stringify({
         ...form,
         sku: form.sku || null,
-        category: form.category || null,
+        category_id: form.category_id || null,
         default_purchase_price: Number(form.default_purchase_price || 0),
         default_sale_price: Number(form.default_sale_price || 0),
       }),
@@ -302,7 +305,17 @@ export default function ProductsPage() {
           <h2>{tr("Product filters")}</h2>
           <form className="row" onSubmit={(e) => { e.preventDefault(); setError(null); setSuccess(null); void loadData(filters); }}>
             <label className="col-5 stack">{tr("Search")}<AutocompleteInput value={filters.q} onChange={(v) => setFilters((p) => ({ ...p, q: v }))} placeholder={tr("Product name")} suggestions={productSearchSuggestions} listId="product-search-suggestions" /></label>
-            <label className="col-4 stack">{tr("Category")}<input value={filters.category} onChange={(e) => setFilters((p) => ({ ...p, category: e.target.value }))} /></label>
+            <label className="col-4 stack">
+              {tr("Category")}
+              <select value={filters.category} onChange={(e) => setFilters((p) => ({ ...p, category: e.target.value }))}>
+                <option value="">{tr("All categories")}</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.name}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="col-3 stack">{tr("Active")}<select value={filters.is_active} onChange={(e) => setFilters((p) => ({ ...p, is_active: e.target.value }))}><option value="">{tr("All")}</option><option value="true">{tr("Active")}</option><option value="false">{tr("Inactive")}</option></select></label>
             <div className="col-12 inline-actions action-end"><button className="btn btn-secondary" type="submit">{tr("Apply")}</button><button className="btn" type="button" onClick={() => { setFilters(initialFilters); void loadData(initialFilters); }}>{tr("Clear")}</button></div>
           </form>
@@ -316,14 +329,32 @@ export default function ProductsPage() {
             <div className="row">
               <label className="col-3 stack">{tr("Name")}<input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required /></label>
               <label className="col-2 stack">{tr("SKU")}<input value={form.sku} onChange={(e) => setForm((p) => ({ ...p, sku: e.target.value }))} /></label>
-              <label className="col-2 stack">{tr("Category")}<input value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} /></label>
+              <label className="col-2 stack">
+                {tr("Category")}
+                <select
+                  value={form.category_id}
+                  onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))}
+                >
+                  <option value="">{tr("No category")}</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="col-1 stack">{tr("Unit")}<input value={form.unit} onChange={(e) => setForm((p) => ({ ...p, unit: e.target.value }))} /></label>
               <label className="col-2 stack">{tr("Purchase price")}<input type="number" value={form.default_purchase_price} onChange={(e) => setForm((p) => ({ ...p, default_purchase_price: e.target.value }))} /></label>
               <label className="col-2 stack">{tr("Sale price")}<input type="number" value={form.default_sale_price} onChange={(e) => setForm((p) => ({ ...p, default_sale_price: e.target.value }))} /></label>
               <label className="col-2 stack">{tr("Active")}<select value={form.is_active ? "true" : "false"} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.value === "true" }))}><option value="true">{tr("Yes")}</option><option value="false">{tr("No")}</option></select></label>
               <label className="col-10 stack">{tr("Notes")}<textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} /></label>
             </div>
-            <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? tr("Saving...") : tr("Create product")}</button>
+            <div className="inline-actions">
+              <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? tr("Saving...") : tr("Create product")}</button>
+              <Link className="btn btn-secondary" href="/categories">
+                {tr("Manage categories")}
+              </Link>
+            </div>
           </form>
         </section>
       ) : null}
@@ -340,7 +371,7 @@ export default function ProductsPage() {
                     <td>{product.name}<div className="small">{`${tr("Unit")}: ${product.unit}`}</div></td>
                     <td>{product.category ?? "-"}</td>
                     <td><div className="small">{`${tr("Buy")}: ${Number(product.default_purchase_price || 0).toLocaleString()} EUR`}</div><div className="small">{`${tr("Sell")}: ${Number(product.default_sale_price || 0).toLocaleString()} EUR`}</div></td>
-                    <td><Link className="btn btn-secondary" href={`/products/${product.id}`}>{tr("View details")}</Link></td>
+                    <td className="table-action-cell"><Link className="btn btn-secondary btn-detail" href={`/products/${product.id}`}>{tr("View details")}</Link></td>
                   </tr>
                 ))}
               </tbody>

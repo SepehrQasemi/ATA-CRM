@@ -10,9 +10,9 @@ Le besoin metier est de centraliser la relation client, standardiser le cycle de
 - Gestion des leads avec pipeline commercial
 - Gestion des taches commerciales
 - Planification sur calendrier mensuel + alertes d echeance
-- Suivi email (manuel, test, relance 72h, rappels de taches)
+- Suivi email (manuel pour tous, test/admin, relance 72h/admin, rappels de taches/admin)
 - Dashboard KPI pour la prise de decision
-- Securite par roles et isolation des donnees
+- Securite par roles, controle d edition et visibilite interne partagee
 
 ## 3. Use cases principaux
 - Un commercial cree un lead, l assigne, puis le fait progresser dans le pipeline
@@ -57,15 +57,24 @@ Le diagramme UML de domaine detaille est fourni dans `docs/uml-domain.puml`.
 ## 6. Modules implementes
 ### 6.1 Authentification et roles
 - Login / signup / reset password
+- Signup avec confirmation de mot de passe
+- Champs mot de passe avec bouton afficher/masquer (icone oeil) sur login/reset/settings
 - Roles: `admin`, `manager`, `commercial`, `standard_user`
 - Premier compte inscrit auto-promu `admin`
+- Page `Settings` restauree avec scope minimal: reset password
 
 ### 6.2 CRUD metier complet
 - `contacts`: create/read/update/delete + filtres q/company
 - `companies`: create/read/update/delete + filtres q/sector/company_role
+- `product_categories`: create/read/update/delete + profil categorie
 - `products`: create/read/update/delete + liens traded/potential avec les entreprises
 - `leads`: create/read/update/delete + pipeline stage move + quick move
 - `tasks`: create/read/update/delete + statuts/priorites/echeances
+
+Detail categories/produits:
+- creation d une categorie puis selection obligatoire dans la fiche produit
+- profil categorie avec description, liste produits, liste fournisseurs et clients (pagination 10 par carte)
+- profil produit avec description + listes fournisseurs/clients (pagination 10 par carte)
 
 ### 6.3 Pipeline et funnel
 Pipeline metier:
@@ -109,12 +118,15 @@ KPI complementaires:
 
 ### 6.6 Email automation robuste
 - envoi manuel avec templates
-- envoi test (template + contact)
-- job follow-up 72h
-- job task reminders
+- envoi manuel avec champs obligatoires (destinataire, objet, contenu)
+- suggestions intelligentes de destinataire (contacts, collegues, domaines d entreprises)
+- envoi test (template + contact) reserve admin
+- job follow-up 72h reserve admin
+- job task reminders reserve admin
 - mode `dry_run` pour demo
 - journal detaille (status, error, provider_message_id)
 - analytics email via webhook Brevo (`open_count`, `click_count`, timestamps)
+- scope analytics: admin = global, non-admin = uniquement ses propres envois
 
 ### 6.7 Bonus engineering
 - export dashboard en CSV/PDF
@@ -167,17 +179,29 @@ Filtres exposes:
 ## 8. Securite
 - Auth Supabase (JWT session)
 - RLS active sur les tables metier
-- Filtrage owner/assigned pour utilisateurs non-admin
+- Mode "petite equipe": lecture partagee des donnees metier pour les utilisateurs internes
+- Controle strict d edition/suppression par role (admin/manager vs utilisateurs standards)
 - Cle service role uniquement cote serveur
-- Jobs proteges par role (admin/commercial) ou secret cron
+- Jobs proteges admin-only (ou secret cron)
 - Webhook Brevo protege par token secret optionnel
 
 ## 9. Qualite, tests et CI/CD
 Validation technique:
 - `npm run lint` : OK
 - `npm run build` : OK
-- `npm run test:e2e` : OK (2 scenarios Playwright)
-- migration Supabase appliquee (`20260309224000_email_analytics_and_task_reminders.sql`)
+- `npm run test` : OK (unit + component + api)
+- `npm run test:e2e` : OK (suite complete Playwright)
+- `npm --workspace web run test:e2e:smoke` : OK
+- `npm run test:release` : OK
+- `npm --workspace web run test:coverage` : OK
+- couverture globale:
+  - statements: 98.94%
+  - branches: 73.51%
+  - functions: 89.47%
+  - lines: 98.94%
+- migrations Supabase appliquees (dont categories produits):
+  - `20260309224000_email_analytics_and_task_reminders.sql`
+  - `20260311112000_product_categories.sql`
 - export CSV/PDF valide en local et production
 - endpoint BI valide avec cle API
 

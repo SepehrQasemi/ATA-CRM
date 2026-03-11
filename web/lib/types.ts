@@ -67,6 +67,7 @@ export type Task = {
 
 export type EmailLog = {
   id: string;
+  sender_user_id?: string | null;
   recipient_email: string;
   subject: string;
   status: "pending" | "sent" | "failed";
@@ -92,6 +93,14 @@ export type Product = {
   notes: string | null;
   owner_id: string | null;
   created_at: string;
+};
+
+export type ProductCategory = {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  product_count?: number;
 };
 
 export type ProductCompanyLink = {

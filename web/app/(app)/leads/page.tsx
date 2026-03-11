@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AutocompleteInput } from "@/components/autocomplete-input";
 import { PageTip } from "@/components/page-tip";
 import { useLocale } from "@/components/locale-provider";
@@ -69,6 +70,8 @@ type LeadWorkspaceTab = "pipeline" | "list" | "manage";
 
 export default function LeadsPage() {
   const { tr } = useLocale();
+  const searchParams = useSearchParams();
+  const queryFromUrl = (searchParams.get("q") ?? "").trim();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [contacts, setContacts] = useState<LeadResponse["contacts"]>([]);
@@ -157,14 +160,18 @@ export default function LeadsPage() {
       if (saved) {
         const parsed = JSON.parse(saved) as Partial<LeadFilters>;
         initial = { ...initialFilters, ...parsed };
-        setFilters(initial);
       }
     } catch {
       initial = initialFilters;
     }
+    if (queryFromUrl) {
+      initial = { ...initial, q: queryFromUrl };
+      setActiveTab("list");
+    }
+    setFilters(initial);
     void loadData(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [queryFromUrl]);
 
   function resetForm() {
     setEditingId(null);

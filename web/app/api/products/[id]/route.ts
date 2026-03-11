@@ -20,13 +20,7 @@ export async function GET(
 ) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
   const { id } = await params;
-
-  const allowed = await ensureAccess(id, user.id, isAdmin);
-  if (!allowed) return fail("Forbidden", 403);
 
   const { data: product, error: productError } = await supabaseAdmin
     .from("products")
@@ -44,10 +38,6 @@ export async function GET(
     .eq("product_id", id)
     .order("created_at", { ascending: false });
 
-  if (!isAdmin) {
-    linksQuery.eq("owner_id", user.id);
-  }
-
   const { data: links, error: linksError } = await linksQuery;
   if (linksError) return fail("Failed to load product links", 500, linksError.message);
 
@@ -61,6 +51,13 @@ export async function GET(
     city: string | null;
     country: string | null;
   }> = [];
+  let categories: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    created_at: string;
+  }> = [];
+  let categoryInfo: { id: string; name: string; description: string | null } | null = null;
   let agents: Array<{
     id: string;
     company_id: string | null;
@@ -72,15 +69,23 @@ export async function GET(
     agent_rank: number | null;
   }> = [];
 
+  const { data: categoryRows, error: categoriesError } = await supabaseAdmin
+    .from("product_categories")
+    .select("id,name,description,created_at")
+    .order("name", { ascending: true });
+
+  if (categoriesError) return fail("Failed to load categories", 500, categoriesError.message);
+  categories = categoryRows ?? [];
+  if (product.category) {
+    categoryInfo =
+      categories.find((category) => category.name === product.category) ?? null;
+  }
+
   if (companyIds.length > 0) {
     const companiesQuery = supabaseAdmin
       .from("companies")
       .select("id,name,company_role,sector,city,country,owner_id")
       .in("id", companyIds);
-
-    if (!isAdmin) {
-      companiesQuery.or(`owner_id.eq.${user.id},owner_id.is.null`);
-    }
 
     const agentsQuery = supabaseAdmin
       .from("contacts")
@@ -89,10 +94,6 @@ export async function GET(
       .eq("is_company_agent", true)
       .order("agent_rank", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true });
-
-    if (!isAdmin) {
-      agentsQuery.eq("owner_id", user.id);
-    }
 
     const [{ data: companyRows, error: companiesError }, { data: agentRows, error: agentsError }] =
       await Promise.all([companiesQuery, agentsQuery]);
@@ -111,10 +112,35 @@ export async function GET(
     agents = agentRows ?? [];
   }
 
+  const uniqueByCompanyId = (
+    rows: typeof companies,
+    predicate: (company: (typeof companies)[number]) => boolean,
+  ) =>
+    Object.values(
+      rows.reduce<Record<string, (typeof companies)[number]>>((acc, row) => {
+        if (!predicate(row)) return acc;
+        acc[row.id] = row;
+        return acc;
+      }, {}),
+    );
+
+  const suppliers = uniqueByCompanyId(
+    companies,
+    (company) => company.company_role === "supplier" || company.company_role === "both",
+  );
+  const customers = uniqueByCompanyId(
+    companies,
+    (company) => company.company_role === "customer" || company.company_role === "both",
+  );
+
   return ok({
     product,
     links: links ?? [],
     companies,
+    categories,
+    categoryInfo,
+    suppliers,
+    customers,
     agents,
   });
 }
@@ -125,20 +151,31 @@ export async function PATCH(
 ) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
   const { id } = await params;
 
-  const allowed = await ensureAccess(id, user.id, isAdmin);
-  if (!allowed) return fail("Forbidden", 403);
-
   const body = (await request.json()) as Record<string, unknown>;
+  let categoryValue: string | null | undefined = undefined;
+  if (body.category_id !== undefined) {
+    const categoryId = body.category_id ? String(body.category_id) : "";
+    if (!categoryId) {
+      categoryValue = null;
+    } else {
+      const { data: categoryRow, error: categoryError } = await supabaseAdmin
+        .from("product_categories")
+        .select("id,name")
+        .eq("id", categoryId)
+        .single();
+      if (categoryError || !categoryRow) return fail("Category not found", 404);
+      categoryValue = categoryRow.name;
+    }
+  } else if (body.category !== undefined) {
+    categoryValue = body.category === null ? null : String(body.category || "").trim() || null;
+  }
+
   const payload = {
     name: body.name ? String(body.name).trim() : undefined,
     sku: body.sku === null ? null : body.sku ? String(body.sku).trim() : undefined,
-    category:
-      body.category === null ? null : body.category ? String(body.category).trim() : undefined,
+    category: categoryValue,
     unit: body.unit ? String(body.unit).trim() : undefined,
     default_purchase_price:
       body.default_purchase_price !== undefined ? Number(body.default_purchase_price || 0) : undefined,

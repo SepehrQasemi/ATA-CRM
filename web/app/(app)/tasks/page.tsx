@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   addDays,
   addMonths,
@@ -87,6 +88,8 @@ function getTaskDueDate(task: Task): Date | null {
 
 export default function TasksPage() {
   const { tr } = useLocale();
+  const searchParams = useSearchParams();
+  const queryFromUrl = (searchParams.get("q") ?? "").trim();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -155,14 +158,17 @@ export default function TasksPage() {
       if (saved) {
         const parsed = JSON.parse(saved) as Partial<TaskFilters>;
         initial = { ...initialFilters, ...parsed };
-        setFilters(initial);
       }
     } catch {
       initial = initialFilters;
     }
+    if (queryFromUrl) {
+      initial = { ...initial, q: queryFromUrl };
+    }
+    setFilters(initial);
     void loadData(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [queryFromUrl]);
 
   function resetForm() {
     setEditingId(null);

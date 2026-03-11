@@ -4,16 +4,22 @@ import { env } from "@/lib/env";
 import { fail, ok } from "@/lib/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-async function canRunJob(request: Request) {
+type RunnerContext = {
+  isCron: boolean;
+  userId: string | null;
+};
+
+async function resolveRunner(request: Request): Promise<RunnerContext | null> {
   const cronSecret = request.headers.get("x-cron-secret");
   if (env.cronSecret && cronSecret === env.cronSecret) {
-    return true;
+    return { isCron: true, userId: null };
   }
 
   const auth = await requireAuthenticatedUser();
-  if (auth.response) return false;
+  if (auth.response) return null;
   const role = await getUserRole(auth.user!.id);
-  return role === "admin" || role === "commercial";
+  if (role !== "admin") return null;
+  return { isCron: false, userId: auth.user!.id };
 }
 
 function buildExecutionKey(leadId: string, pivotDate: string) {
@@ -21,8 +27,8 @@ function buildExecutionKey(leadId: string, pivotDate: string) {
 }
 
 export async function POST(request: Request) {
-  const allowed = await canRunJob(request);
-  if (!allowed) return fail("Unauthorized to run followup job", 401);
+  const runner = await resolveRunner(request);
+  if (!runner) return fail("Unauthorized to run followup job", 401);
 
   const requestUrl = new URL(request.url);
   const dryRun = requestUrl.searchParams.get("dry_run") === "true";
@@ -142,6 +148,7 @@ export async function POST(request: Request) {
       lead_id: lead.id,
       contact_id: contact.id,
       template_id: template?.id ?? null,
+      sender_user_id: runner.userId,
       recipient_email: contact.email,
       subject,
       body,

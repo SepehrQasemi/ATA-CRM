@@ -29,9 +29,11 @@ const baseNavItems = [
   { href: "/contacts", label: "Contacts" },
   { href: "/companies", label: "Companies" },
   { href: "/products", label: "Products" },
+  { href: "/categories", label: "Categories" },
   { href: "/leads", label: "Leads" },
   { href: "/tasks", label: "Tasks" },
   { href: "/emails", label: "Emails" },
+  { href: "/settings", label: "Settings" },
   { href: "/profile", label: "My Profile" },
   { href: "/help", label: "Help" },
 ];
