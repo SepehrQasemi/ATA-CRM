@@ -20,7 +20,7 @@ async function resolveRunner(request: Request): Promise<RunnerContext | null> {
   if (auth.response) return null;
 
   const role = await getUserRole(auth.user!.id);
-  if (role !== "admin" && role !== "commercial") return null;
+  if (role !== "admin") return null;
 
   return {
     isCron: false,
@@ -157,6 +157,7 @@ export async function POST(request: Request) {
       lead_id: task.lead_id,
       contact_id: null,
       template_id: null,
+      sender_user_id: runner.userId,
       recipient_email: assigneeEmail,
       subject,
       body,

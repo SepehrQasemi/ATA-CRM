@@ -29,6 +29,8 @@ export async function PATCH(
   if (!allowed) return fail("Forbidden", 403);
 
   const body = await request.json();
+  const assignedToValue =
+    body.assigned_to === null ? null : body.assigned_to ? String(body.assigned_to) : undefined;
   const payload = {
     title: body.title ? String(body.title) : undefined,
     source: body.source === null ? null : body.source ? String(body.source) : undefined,
@@ -39,8 +41,7 @@ export async function PATCH(
       body.company_id === null ? null : body.company_id ? String(body.company_id) : undefined,
     contact_id:
       body.contact_id === null ? null : body.contact_id ? String(body.contact_id) : undefined,
-    assigned_to:
-      body.assigned_to === null ? null : body.assigned_to ? String(body.assigned_to) : undefined,
+    assigned_to: isAdmin ? assignedToValue : undefined,
     current_stage_id:
       body.current_stage_id === null
         ? null

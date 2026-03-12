@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   addDays,
   addMonths,
@@ -87,6 +88,8 @@ function getTaskDueDate(task: Task): Date | null {
 
 export default function TasksPage() {
   const { tr } = useLocale();
+  const searchParams = useSearchParams();
+  const queryFromUrl = (searchParams.get("q") ?? "").trim();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -126,7 +129,7 @@ export default function TasksPage() {
     const metaJson = (await metaRes.json()) as MetaResponse;
 
     if (!taskRes.ok) {
-      setError(taskJson.error ?? "Failed to load tasks");
+      setError(taskJson.error ?? tr("Failed to load tasks"));
       return;
     }
 
@@ -136,7 +139,7 @@ export default function TasksPage() {
           companyJson.error ??
           contactJson.error ??
           metaJson.error ??
-          "Failed to load metadata",
+          tr("Failed to load metadata"),
       );
       return;
     }
@@ -155,14 +158,17 @@ export default function TasksPage() {
       if (saved) {
         const parsed = JSON.parse(saved) as Partial<TaskFilters>;
         initial = { ...initialFilters, ...parsed };
-        setFilters(initial);
       }
     } catch {
       initial = initialFilters;
     }
+    if (queryFromUrl) {
+      initial = { ...initial, q: queryFromUrl };
+    }
+    setFilters(initial);
     void loadData(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [queryFromUrl]);
 
   function resetForm() {
     setEditingId(null);
@@ -192,7 +198,7 @@ export default function TasksPage() {
 
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to save task");
+      setError(json.error ?? tr("Failed to save task"));
       setSaving(false);
       return;
     }
@@ -228,7 +234,7 @@ export default function TasksPage() {
 
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to update task");
+      setError(json.error ?? tr("Failed to update task"));
       return;
     }
 
@@ -239,7 +245,7 @@ export default function TasksPage() {
     const response = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setError(json.error ?? "Failed to delete task");
+      setError(json.error ?? tr("Failed to delete task"));
       return;
     }
     void loadData();
@@ -351,7 +357,7 @@ export default function TasksPage() {
       {error ? <p className="error">{error}</p> : null}
 
       <section className="panel stack">
-        <div className="subtabs" role="tablist" aria-label="Tasks workspace tabs">
+        <div className="subtabs" role="tablist" aria-label={tr("Tasks workspace tabs")}>
           <button
             className={`subtab ${activeTab === "list" ? "is-active" : ""}`}
             type="button"
@@ -389,10 +395,10 @@ export default function TasksPage() {
         <table>
           <thead>
             <tr>
-              <th>Alert</th>
-              <th>Task</th>
-              <th>Priority</th>
-              <th>Due date</th>
+              <th>{tr("Alert")}</th>
+              <th>{tr("Task")}</th>
+              <th>{tr("Priority")}</th>
+              <th>{tr("Due date")}</th>
             </tr>
           </thead>
           <tbody>
@@ -405,7 +411,7 @@ export default function TasksPage() {
                 <tr key={task.id}>
                   <td>{kind === "overdue" ? tr("Overdue") : tr("Due soon")}</td>
                   <td>{task.title}</td>
-                  <td>{task.priority}</td>
+                  <td>{tr(task.priority === "low" ? "Low" : task.priority === "high" ? "High" : task.priority === "urgent" ? "Urgent" : "Normal")}</td>
                   <td>{task.due_date ? new Date(task.due_date).toLocaleString() : "-"}</td>
                 </tr>
               ))
@@ -425,7 +431,7 @@ export default function TasksPage() {
             <AutocompleteInput
               value={filters.q}
               onChange={(nextValue) => setFilters((prev) => ({ ...prev, q: nextValue }))}
-              placeholder="Task title"
+              placeholder={tr("Task title")}
               suggestions={taskSearchSuggestions}
               listId="task-search-suggestions"
             />
@@ -468,7 +474,7 @@ export default function TasksPage() {
             </select>
           </label>
           <label className="col-2 stack">
-            Due from
+            {tr("Due from")}
             <input
               type="datetime-local"
               value={filters.from}
@@ -476,7 +482,7 @@ export default function TasksPage() {
             />
           </label>
           <label className="col-2 stack">
-            Due to
+            {tr("Due to")}
             <input
               type="datetime-local"
               value={filters.to}
@@ -665,13 +671,13 @@ export default function TasksPage() {
         </div>
 
         <div className="calendar-grid calendar-weekdays">
-          <div>Mon</div>
-          <div>Tue</div>
-          <div>Wed</div>
-          <div>Thu</div>
-          <div>Fri</div>
-          <div>Sat</div>
-          <div>Sun</div>
+          <div>{tr("Mon")}</div>
+          <div>{tr("Tue")}</div>
+          <div>{tr("Wed")}</div>
+          <div>{tr("Thu")}</div>
+          <div>{tr("Fri")}</div>
+          <div>{tr("Sat")}</div>
+          <div>{tr("Sun")}</div>
         </div>
 
         <div className="calendar-grid">
@@ -714,12 +720,12 @@ export default function TasksPage() {
         <table>
           <thead>
             <tr>
-              <th>Task</th>
-              <th>Due</th>
-              <th>Priority</th>
-              <th>Status</th>
-              <th>Lead</th>
-              <th>Assigned to</th>
+              <th>{tr("Task")}</th>
+              <th>{tr("Due")}</th>
+              <th>{tr("Priority")}</th>
+              <th>{tr("Status")}</th>
+              <th>{tr("Lead")}</th>
+              <th>{tr("Assigned to")}</th>
               <th />
             </tr>
           </thead>
@@ -728,7 +734,7 @@ export default function TasksPage() {
               <tr key={task.id}>
                 <td>{task.title}</td>
                 <td>{task.due_date ? format(new Date(task.due_date), "yyyy-MM-dd HH:mm") : "-"}</td>
-                <td>{task.priority}</td>
+                <td>{tr(task.priority === "low" ? "Low" : task.priority === "high" ? "High" : task.priority === "urgent" ? "Urgent" : "Normal")}</td>
                 <td>
                   <select
                     value={task.status}

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/components/locale-provider";
-import { Company, Product } from "@/lib/types";
+import { PaginationControls } from "@/components/pagination-controls";
+import { Company, Product, ProductCategory } from "@/lib/types";
 
 type CompanyAgent = {
   id: string;
@@ -39,6 +40,10 @@ type ProductDetailResponse = {
     country: string | null;
   }>;
   agents?: CompanyAgent[];
+  categories?: ProductCategory[];
+  categoryInfo?: ProductCategory | null;
+  suppliers?: Company[];
+  customers?: Company[];
   error?: string;
 };
 
@@ -47,7 +52,7 @@ type CompaniesResponse = { companies: Company[]; error?: string };
 type ProductForm = {
   name: string;
   sku: string;
-  category: string;
+  category_id: string;
   unit: string;
   default_purchase_price: string;
   default_sale_price: string;
@@ -66,7 +71,7 @@ type RelationForm = {
 const initialProductForm: ProductForm = {
   name: "",
   sku: "",
-  category: "",
+  category_id: "",
   unit: "kg",
   default_purchase_price: "",
   default_sale_price: "",
@@ -81,6 +86,8 @@ const initialRelationForm: RelationForm = {
   last_price: "",
   notes: "",
 };
+
+const PER_PAGE = 10;
 
 function relationLabel(
   value: "traded" | "potential",
@@ -98,8 +105,11 @@ export default function ProductProfilePage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [links, setLinks] = useState<ProductLink[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [relationCompanies, setRelationCompanies] = useState<ProductDetailResponse["companies"]>([]);
   const [agents, setAgents] = useState<CompanyAgent[]>([]);
+  const [suppliers, setSuppliers] = useState<Company[]>([]);
+  const [customers, setCustomers] = useState<Company[]>([]);
   const [productForm, setProductForm] = useState<ProductForm>(initialProductForm);
   const [relationForm, setRelationForm] = useState<RelationForm>(initialRelationForm);
   const [loading, setLoading] = useState(true);
@@ -107,14 +117,16 @@ export default function ProductProfilePage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [savingRelation, setSavingRelation] = useState(false);
+  const [suppliersPage, setSuppliersPage] = useState(1);
+  const [customersPage, setCustomersPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  function syncProductForm(nextProduct: Product) {
+  function syncProductForm(nextProduct: Product, nextCategoryId = "") {
     setProductForm({
       name: nextProduct.name,
       sku: nextProduct.sku ?? "",
-      category: nextProduct.category ?? "",
+      category_id: nextCategoryId,
       unit: nextProduct.unit ?? "kg",
       default_purchase_price: String(Number(nextProduct.default_purchase_price || 0)),
       default_sale_price: String(Number(nextProduct.default_sale_price || 0)),
@@ -137,16 +149,27 @@ export default function ProductProfilePage() {
     const companiesJson = (await companiesRes.json()) as CompaniesResponse;
 
     if (!productRes.ok || !productJson.product) {
-      setError(productJson.error ?? "Failed to load product");
+      setError(productJson.error ?? tr("Failed to load product"));
       setLoading(false);
       return;
     }
 
     setProduct(productJson.product);
-    syncProductForm(productJson.product);
+    setCategories(productJson.categories ?? []);
+    const matchedCategory =
+      productJson.categoryInfo ??
+      (productJson.categories ?? []).find(
+        (category) => category.name === productJson.product?.category,
+      ) ??
+      null;
+    syncProductForm(productJson.product, matchedCategory?.id ?? "");
     setLinks(productJson.links ?? []);
     setRelationCompanies(productJson.companies ?? []);
     setAgents(productJson.agents ?? []);
+    setSuppliers(productJson.suppliers ?? []);
+    setCustomers(productJson.customers ?? []);
+    setSuppliersPage(1);
+    setCustomersPage(1);
 
     if (companiesRes.ok) {
       setCompanies(companiesJson.companies ?? []);
@@ -177,6 +200,14 @@ export default function ProductProfilePage() {
     });
     return map;
   }, [agents]);
+  const pagedSuppliers = useMemo(
+    () => suppliers.slice((suppliersPage - 1) * PER_PAGE, suppliersPage * PER_PAGE),
+    [suppliers, suppliersPage],
+  );
+  const pagedCustomers = useMemo(
+    () => customers.slice((customersPage - 1) * PER_PAGE, customersPage * PER_PAGE),
+    [customers, customersPage],
+  );
 
   async function handleSaveProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -191,21 +222,25 @@ export default function ProductProfilePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...productForm,
+        category_id: productForm.category_id || null,
         default_purchase_price: Number(productForm.default_purchase_price || 0),
         default_sale_price: Number(productForm.default_sale_price || 0),
       }),
     });
 
     const json = (await response.json()) as { product?: Product; error?: string };
-    if (!response.ok || !json.product) {
-      setError(json.error ?? "Failed to update product");
+    const updatedProduct = json.product;
+    if (!response.ok || !updatedProduct) {
+      setError(json.error ?? tr("Failed to update product"));
       setSaving(false);
       return;
     }
 
-    setProduct(json.product);
-    syncProductForm(json.product);
-    setSuccess("Product updated.");
+    setProduct(updatedProduct);
+    const updatedCategory =
+      categories.find((category) => category.name === updatedProduct.category) ?? null;
+    syncProductForm(updatedProduct, updatedCategory?.id ?? "");
+    setSuccess(tr("Product updated."));
     setSaving(false);
     setEditing(false);
   }
@@ -219,7 +254,7 @@ export default function ProductProfilePage() {
     const response = await fetch(`/api/products/${id}`, { method: "DELETE" });
     const json = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) {
-      setError(json.error ?? "Failed to delete product");
+      setError(json.error ?? tr("Failed to delete product"));
       setDeleting(false);
       return;
     }
@@ -247,12 +282,12 @@ export default function ProductProfilePage() {
 
     const json = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) {
-      setError(json.error ?? "Failed to save relation");
+      setError(json.error ?? tr("Failed to save relation"));
       setSavingRelation(false);
       return;
     }
 
-    setSuccess("Product relation saved");
+    setSuccess(tr("Product relation saved"));
     setSavingRelation(false);
     setRelationForm(initialRelationForm);
     void loadData();
@@ -268,11 +303,11 @@ export default function ProductProfilePage() {
     });
     const json = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) {
-      setError(json.error ?? "Failed to delete relation");
+      setError(json.error ?? tr("Failed to delete relation"));
       return;
     }
 
-    setSuccess("Relation deleted");
+    setSuccess(tr("Relation deleted"));
     void loadData();
   }
 
@@ -304,7 +339,7 @@ export default function ProductProfilePage() {
             <h2>{product.name}</h2>
             <div className="row">
               <div className="stack col-3">
-                <p className="small">SKU</p>
+                <p className="small">{tr("SKU")}</p>
                 <p>{product.sku ?? "-"}</p>
               </div>
               <div className="stack col-3">
@@ -312,7 +347,7 @@ export default function ProductProfilePage() {
                 <p>{product.category ?? "-"}</p>
               </div>
               <div className="stack col-2">
-                <p className="small">Unit</p>
+                <p className="small">{tr("Unit")}</p>
                 <p>{product.unit}</p>
               </div>
               <div className="stack col-2">
@@ -320,18 +355,86 @@ export default function ProductProfilePage() {
                 <p>{product.is_active ? tr("Yes") : tr("No")}</p>
               </div>
               <div className="stack col-6">
-                <p className="small">Purchase</p>
+                <p className="small">{tr("Purchase")}</p>
                 <p>{Number(product.default_purchase_price || 0).toLocaleString()}</p>
               </div>
               <div className="stack col-6">
-                <p className="small">Sale</p>
+                <p className="small">{tr("Sale")}</p>
                 <p>{Number(product.default_sale_price || 0).toLocaleString()}</p>
               </div>
               <div className="stack col-12">
-                <p className="small">{tr("Notes")}</p>
+                <p className="small">{tr("Description")}</p>
                 <p>{product.notes ?? "-"}</p>
               </div>
             </div>
+          </section>
+
+          <section className="panel stack">
+            <h2>{tr("Suppliers for this product")}</h2>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>{tr("Name")}</th>
+                    <th>{tr("Sector")}</th>
+                    <th>{tr("Location")}</th>
+                    <th>{tr("Actions")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedSuppliers.map((supplier) => (
+                    <tr key={supplier.id}>
+                      <td>{supplier.name}</td>
+                      <td>{supplier.sector ?? "-"}</td>
+                      <td>{[supplier.city, supplier.country].filter(Boolean).join(", ") || "-"}</td>
+                      <td className="table-action-cell">
+                        <Link className="btn btn-secondary btn-detail" href={`/companies/${supplier.id}`}>
+                          {tr("View details")}
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <PaginationControls
+              page={suppliersPage}
+              totalPages={Math.max(1, Math.ceil(suppliers.length / PER_PAGE))}
+              onPageChange={setSuppliersPage}
+            />
+
+            <h2>{tr("Customers for this product")}</h2>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>{tr("Name")}</th>
+                    <th>{tr("Sector")}</th>
+                    <th>{tr("Location")}</th>
+                    <th>{tr("Actions")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedCustomers.map((customer) => (
+                    <tr key={customer.id}>
+                      <td>{customer.name}</td>
+                      <td>{customer.sector ?? "-"}</td>
+                      <td>{[customer.city, customer.country].filter(Boolean).join(", ") || "-"}</td>
+                      <td className="table-action-cell">
+                        <Link className="btn btn-secondary btn-detail" href={`/companies/${customer.id}`}>
+                          {tr("View details")}
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <PaginationControls
+              page={customersPage}
+              totalPages={Math.max(1, Math.ceil(customers.length / PER_PAGE))}
+              onPageChange={setCustomersPage}
+            />
           </section>
 
           <section className="panel stack">
@@ -398,7 +501,7 @@ export default function ProductProfilePage() {
                   />
                 </label>
                 <label className="col-2 stack">
-                  SKU
+                  {tr("SKU")}
                   <input
                     value={productForm.sku}
                     onChange={(event) =>
@@ -406,17 +509,24 @@ export default function ProductProfilePage() {
                     }
                   />
                 </label>
+              <label className="col-2 stack">
+                {tr("Category")}
+                <select
+                  value={productForm.category_id}
+                  onChange={(event) =>
+                    setProductForm((prev) => ({ ...prev, category_id: event.target.value }))
+                  }
+                >
+                  <option value="">{tr("No category")}</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
                 <label className="col-2 stack">
-                  {tr("Category")}
-                  <input
-                    value={productForm.category}
-                    onChange={(event) =>
-                      setProductForm((prev) => ({ ...prev, category: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="col-2 stack">
-                  Unit
+                  {tr("Unit")}
                   <input
                     value={productForm.unit}
                     onChange={(event) =>
@@ -459,11 +569,11 @@ export default function ProductProfilePage() {
                     }
                   />
                 </label>
-                <label className="col-12 stack">
-                  {tr("Notes")}
-                  <textarea
-                    value={productForm.notes}
-                    onChange={(event) =>
+              <label className="col-12 stack">
+                {tr("Description")}
+                <textarea
+                  value={productForm.notes}
+                  onChange={(event) =>
                       setProductForm((prev) => ({ ...prev, notes: event.target.value }))
                     }
                   />

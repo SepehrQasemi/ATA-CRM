@@ -62,7 +62,7 @@ export async function loginAsRole(page: Page, role: E2ERole): Promise<void> {
   await expect(page.getByRole("heading", { name: "ATA CRM" })).toBeVisible();
 
   await page.getByLabel("Email").fill(credentials.email);
-  await page.getByLabel("Password").fill(credentials.password);
+  await page.getByLabel("Password", { exact: true }).fill(credentials.password);
   await page.locator("form").getByRole("button", { name: /^Login$/ }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/);

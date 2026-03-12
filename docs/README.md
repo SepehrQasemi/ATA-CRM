@@ -2,15 +2,20 @@
 
 This folder contains the delivery package for the stable baseline of the CRM project.
 
+Latest scope note:
+- Product categories module is now part of the delivery (`/categories` + category profiles with paginated product/supplier/customer cards).
+- Presentation dataset is generated with `npm run seed:presentation` (clean data + 3 kept users).
+
 ## Core Reports
 - `rapport-projet-fr.md`: full French project report for submission.
-- `resume-projet-fa.md`: Persian executive summary.
+- `resume-projet-fa.md`: Persian executive summary (archived, not active in current UI scope).
 - `final-compliance-checklist.md`: requirement-by-requirement completion matrix.
 - `comparaison-enonce-preuves-fr.md`: professor requirement comparison with concrete evidence.
 - `checklist-demo.md`: operational checklist for the oral demo.
 - `presentation-oral-fr.md`: ready-to-use oral script (8-10 min).
 - `jeu-de-test-crm-fr.md`: formal test game for live defense.
-- `qa-proof-2026-03-10.md`: quality gate proof report (lint/build/test/e2e/release).
+- `qa-proof-2026-03-11.md`: latest quality gate proof report (lint/build/test/e2e/release + coverage + mobile responsive checks).
+- `guide-soutenance-prof-fr.md`: extracted professor expectations + defense strategy.
 - `release-baseline-v1.md`: safe baseline freeze procedure and rollback notes.
 
 ## Diagrams
@@ -25,4 +30,5 @@ This folder contains the delivery package for the stable baseline of the CRM pro
 
 ## Language Policy
 - Default language for technical docs: English.
-- Additional delivery docs: French and Persian.
+- Active delivery language: French.
+- Persian notes are archived documentation only for historical traceability.

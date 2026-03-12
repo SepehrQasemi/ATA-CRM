@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useLocale } from "@/components/locale-provider";
+import { roleLabel } from "@/lib/i18n";
 
 type Colleague = {
   id: string;
@@ -33,7 +34,7 @@ function displayName(colleague: Colleague): string {
 }
 
 export default function ColleagueProfilePage() {
-  const { tr } = useLocale();
+  const { tr, locale } = useLocale();
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
 
@@ -52,7 +53,7 @@ export default function ColleagueProfilePage() {
       const json = (await response.json()) as ColleagueDetailResponse;
 
       if (!response.ok || !json.colleague) {
-        setError(json.error ?? "Failed to load colleague");
+        setError(json.error ?? tr("Failed to load colleague"));
         setLoading(false);
         return;
       }
@@ -62,7 +63,7 @@ export default function ColleagueProfilePage() {
     }
 
     void loadColleague();
-  }, [id]);
+  }, [id, tr]);
 
   return (
     <div className="stack">
@@ -99,7 +100,7 @@ export default function ColleagueProfilePage() {
             </div>
             <div className="stack col-6">
               <p className="small">{tr("Role")}</p>
-              <p>{colleague.role ?? "-"}</p>
+              <p>{colleague.role ? roleLabel(colleague.role, locale) : "-"}</p>
             </div>
           </div>
 

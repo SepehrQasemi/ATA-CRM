@@ -3,14 +3,20 @@ import { fail, ok } from "@/lib/http";
 import { normalizeStageRows } from "@/lib/pipeline-stage-labels";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const ownershipFilter = (userId: string) => `owner_id.eq.${userId},assigned_to.eq.${userId}`;
+const FIXED_LEAD_SOURCES = new Set([
+  "Trade show",
+  "LinkedIn",
+  "Existing customer",
+  "Referral",
+  "Website",
+  "Cold call",
+  "Inbound",
+  "Other",
+]);
 
 export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
   const url = new URL(request.url);
   const stageId = url.searchParams.get("stage_id");
   const status = url.searchParams.get("status");
@@ -27,7 +33,6 @@ export async function GET(request: Request) {
     )
     .order("created_at", { ascending: false });
 
-  if (!isAdmin) query.or(ownershipFilter(user.id));
   if (stageId) query.eq("current_stage_id", stageId);
   if (status) query.eq("status", status);
   if (assignedTo) query.eq("assigned_to", assignedTo);
@@ -62,18 +67,25 @@ export async function POST(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
   const user = auth.user!;
+  const role = await getUserRole(user.id);
+  const isAdmin = role === "admin";
 
   const body = await request.json();
   if (!body.title) return fail("title is required", 400);
+  const source = body.source ? String(body.source).trim() : "";
+  const normalizedSource = source || "Trade show";
+  if (!FIXED_LEAD_SOURCES.has(normalizedSource)) {
+    return fail("source must be a supported lead source", 400);
+  }
 
   const payload = {
     title: String(body.title),
-    source: body.source ? String(body.source) : "Unknown",
+    source: normalizedSource,
     status: "open",
     estimated_value: Number(body.estimated_value || 0),
     company_id: body.company_id ? String(body.company_id) : null,
     contact_id: body.contact_id ? String(body.contact_id) : null,
-    assigned_to: body.assigned_to ? String(body.assigned_to) : user.id,
+    assigned_to: isAdmin && body.assigned_to ? String(body.assigned_to) : user.id,
     current_stage_id: body.current_stage_id ? String(body.current_stage_id) : null,
     owner_id: user.id,
     notes: body.notes ? String(body.notes) : null,

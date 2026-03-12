@@ -1,16 +1,12 @@
-import { getUserRole, requireAuthenticatedUser } from "@/lib/auth";
+import { requireAuthenticatedUser } from "@/lib/auth";
 import { fail, ok } from "@/lib/http";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const companyOwnershipFilter = (userId: string) => `owner_id.eq.${userId},owner_id.is.null`;
 const RELATION_TYPES = new Set(["traded", "potential"]);
 
 export async function GET(request: Request) {
   const auth = await requireAuthenticatedUser();
   if (auth.response) return auth.response;
-  const user = auth.user!;
-  const role = await getUserRole(user.id);
-  const isAdmin = role === "admin";
 
   const url = new URL(request.url);
   const q = (url.searchParams.get("q") ?? "").trim();
@@ -24,10 +20,6 @@ export async function GET(request: Request) {
       "id,name,sku,category,unit,default_purchase_price,default_sale_price,is_active,notes,owner_id,created_at",
     )
     .order("created_at", { ascending: false });
-
-  if (!isAdmin) {
-    productsQuery.eq("owner_id", user.id);
-  }
 
   if (q) {
     productsQuery.or(`name.ilike.%${q}%,sku.ilike.%${q}%`);
@@ -48,18 +40,15 @@ export async function GET(request: Request) {
     .select("id,name,company_role,sector,city,country,owner_id")
     .order("name", { ascending: true });
 
-  if (!isAdmin) {
-    companyQuery.or(companyOwnershipFilter(user.id));
-  }
-
   const linksQuery = supabaseAdmin
     .from("product_company_links")
     .select("id,product_id,company_id,relation_type,product_model,last_price,notes,owner_id,created_at")
     .order("created_at", { ascending: false });
 
-  if (!isAdmin) {
-    linksQuery.eq("owner_id", user.id);
-  }
+  const categoriesQuery = supabaseAdmin
+    .from("product_categories")
+    .select("id,name,description,created_at")
+    .order("name", { ascending: true });
 
   if (relationType && RELATION_TYPES.has(relationType)) {
     linksQuery.eq("relation_type", relationType);
@@ -72,27 +61,26 @@ export async function GET(request: Request) {
     .order("agent_rank", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
 
-  if (!isAdmin) {
-    agentsQuery.eq("owner_id", user.id);
-  }
-
   const [
     { data: products, error: productsError },
     { data: companies, error: companiesError },
     { data: links, error: linksError },
     { data: agents, error: agentsError },
-  ] = await Promise.all([productsQuery, companyQuery, linksQuery, agentsQuery]);
+    { data: categories, error: categoriesError },
+  ] = await Promise.all([productsQuery, companyQuery, linksQuery, agentsQuery, categoriesQuery]);
 
   if (productsError) return fail("Failed to load products", 500, productsError.message);
   if (companiesError) return fail("Failed to load companies", 500, companiesError.message);
   if (linksError) return fail("Failed to load product links", 500, linksError.message);
   if (agentsError) return fail("Failed to load company agents", 500, agentsError.message);
+  if (categoriesError) return fail("Failed to load categories", 500, categoriesError.message);
 
   return ok({
     products: products ?? [],
     companies: companies ?? [],
     links: links ?? [],
     agents: agents ?? [],
+    categories: categories ?? [],
   });
 }
 
@@ -104,10 +92,24 @@ export async function POST(request: Request) {
   const body = (await request.json()) as Record<string, unknown>;
   if (!body.name || !String(body.name).trim()) return fail("name is required", 400);
 
+  let categoryValue: string | null = null;
+  const categoryId = body.category_id ? String(body.category_id) : "";
+  if (categoryId) {
+    const { data: categoryRow, error: categoryError } = await supabaseAdmin
+      .from("product_categories")
+      .select("id,name")
+      .eq("id", categoryId)
+      .single();
+    if (categoryError || !categoryRow) return fail("Category not found", 404);
+    categoryValue = categoryRow.name;
+  } else if (body.category) {
+    categoryValue = String(body.category).trim() || null;
+  }
+
   const payload = {
     name: String(body.name).trim(),
     sku: body.sku ? String(body.sku).trim() || null : null,
-    category: body.category ? String(body.category).trim() || null : null,
+    category: categoryValue,
     unit: body.unit ? String(body.unit).trim() || "kg" : "kg",
     default_purchase_price: Number(body.default_purchase_price || 0),
     default_sale_price: Number(body.default_sale_price || 0),

@@ -85,7 +85,7 @@ export default function ContactProfilePage() {
       const companiesJson = (await companiesRes.json()) as CompaniesResponse;
 
       if (!contactRes.ok || !contactJson.contact) {
-        setError(contactJson.error ?? "Failed to load contact");
+        setError(contactJson.error ?? tr("Failed to load contact"));
         setLoading(false);
         return;
       }
@@ -102,7 +102,7 @@ export default function ContactProfilePage() {
     }
 
     void loadData();
-  }, [id]);
+  }, [id, tr]);
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -125,7 +125,7 @@ export default function ContactProfilePage() {
     const json = (await response.json()) as ContactDetailResponse;
 
     if (!response.ok || !json.contact) {
-      setError(json.error ?? "Failed to update contact");
+      setError(json.error ?? tr("Failed to update contact"));
       setSaving(false);
       return;
     }
@@ -134,7 +134,7 @@ export default function ContactProfilePage() {
     syncForm(json.contact);
     const currentCompany = companies.find((item) => item.id === (json.contact?.company_id ?? ""));
     setCompany(currentCompany ? { id: currentCompany.id, name: currentCompany.name } : null);
-    setSuccess("Contact updated.");
+    setSuccess(tr("Contact updated."));
     setEditing(false);
     setSaving(false);
   }
@@ -148,7 +148,7 @@ export default function ContactProfilePage() {
     const response = await fetch(`/api/contacts/${id}`, { method: "DELETE" });
     const json = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) {
-      setError(json.error ?? "Failed to delete contact");
+      setError(json.error ?? tr("Failed to delete contact"));
       setDeleting(false);
       return;
     }
@@ -207,7 +207,11 @@ export default function ContactProfilePage() {
             </div>
             <div className="stack col-4">
               <p className="small">{tr("Agent rank")}</p>
-              <p>{contact.is_company_agent ? `Agent ${contact.agent_rank ?? "-"}` : "-"}</p>
+              <p>
+                {contact.is_company_agent
+                  ? tr("Agent {rank}", { rank: contact.agent_rank ?? "-" })
+                  : "-"}
+              </p>
             </div>
             <div className="stack col-12">
               <p className="small">{tr("Notes")}</p>
@@ -293,9 +297,9 @@ export default function ContactProfilePage() {
                   onChange={(event) => setForm((prev) => ({ ...prev, agent_rank: event.target.value }))}
                   disabled={!form.is_company_agent}
                 >
-                  <option value="1">Agent 1</option>
-                  <option value="2">Agent 2</option>
-                  <option value="3">Agent 3</option>
+                  <option value="1">{tr("Agent {rank}", { rank: 1 })}</option>
+                  <option value="2">{tr("Agent {rank}", { rank: 2 })}</option>
+                  <option value="3">{tr("Agent {rank}", { rank: 3 })}</option>
                 </select>
               </label>
               <label className="col-12 stack">

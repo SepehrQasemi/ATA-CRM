@@ -6,6 +6,7 @@ type DashboardExportPayload = {
     lostLeads: number;
     conversionRate: number;
     pipelineValue: number;
+    weightedPipelineValue?: number;
     overdueTasks: number;
     dueSoonTasks: number;
     emailsSent: number;
@@ -45,6 +46,7 @@ export function buildDashboardCsvReport(payload: DashboardExportPayload) {
   lines.push(`lost_leads,${payload.kpis.lostLeads}`);
   lines.push(`conversion_rate_percent,${payload.kpis.conversionRate}`);
   lines.push(`pipeline_value,${payload.kpis.pipelineValue}`);
+  lines.push(`weighted_pipeline_value,${payload.kpis.weightedPipelineValue ?? 0}`);
   lines.push(`overdue_tasks,${payload.kpis.overdueTasks}`);
   lines.push(`due_soon_tasks,${payload.kpis.dueSoonTasks}`);
   lines.push(`emails_sent,${payload.kpis.emailsSent}`);
@@ -137,6 +139,7 @@ export function buildDashboardPdfReport(payload: DashboardExportPayload) {
     `Won / Lost: ${payload.kpis.wonLeads} / ${payload.kpis.lostLeads}`,
     `Conversion rate: ${payload.kpis.conversionRate}%`,
     `Pipeline value: ${payload.kpis.pipelineValue} EUR`,
+    `Weighted pipeline value: ${payload.kpis.weightedPipelineValue ?? 0} EUR`,
     `Overdue tasks: ${payload.kpis.overdueTasks}`,
     `Due soon tasks: ${payload.kpis.dueSoonTasks}`,
     `Sent emails: ${payload.kpis.emailsSent}`,

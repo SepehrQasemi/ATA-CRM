@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useLocale } from "@/components/locale-provider";
+import { roleLabel } from "@/lib/i18n";
 
 type AccessUser = {
   id: string;
@@ -27,7 +28,7 @@ type DraftRow = Partial<Pick<AccessUser, "role" | "position" | "department" | "p
 const ROLE_OPTIONS = ["standard_user", "commercial", "manager", "admin"];
 
 export default function AccessPage() {
-  const { tr } = useLocale();
+  const { tr, locale } = useLocale();
   const [actorRole, setActorRole] = useState<string>("standard_user");
   const [users, setUsers] = useState<AccessUser[]>([]);
   const [drafts, setDrafts] = useState<Record<string, DraftRow>>({});
@@ -47,7 +48,7 @@ export default function AccessPage() {
       const json = (await response.json()) as AccessResponse;
 
       if (!response.ok) {
-        setError(json.error ?? "Failed to load access data");
+        setError(json.error ?? tr("Failed to load access data"));
         setLoading(false);
         return;
       }
@@ -58,7 +59,7 @@ export default function AccessPage() {
     }
 
     void loadUsers();
-  }, []);
+  }, [tr]);
 
   function getValue(row: AccessUser, key: keyof DraftRow) {
     const draft = drafts[row.id];
@@ -91,7 +92,7 @@ export default function AccessPage() {
 
     const targetIsManagerOrAdmin = user.role === "manager" || user.role === "admin";
     if (!actorIsAdmin && targetIsManagerOrAdmin) {
-      setError("Only admin can manage manager/admin accounts.");
+      setError(tr("Only admin can manage manager/admin accounts."));
       return;
     }
 
@@ -117,7 +118,7 @@ export default function AccessPage() {
     const json = (await response.json()) as { user?: AccessUser; error?: string };
 
     if (!response.ok || !json.user) {
-      setError(json.error ?? "Failed to update user");
+      setError(json.error ?? tr("Failed to update user"));
       setSavingUserId(null);
       return;
     }
@@ -141,7 +142,7 @@ export default function AccessPage() {
       return next;
     });
 
-    setSuccess("Access updated.");
+    setSuccess(tr("Access updated."));
     setSavingUserId(null);
   }
 
@@ -213,7 +214,7 @@ export default function AccessPage() {
                         >
                           {ROLE_OPTIONS.map((role) => (
                             <option key={role} value={role}>
-                              {role}
+                              {roleLabel(role, locale)}
                             </option>
                           ))}
                         </select>

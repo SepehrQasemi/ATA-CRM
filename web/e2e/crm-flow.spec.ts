@@ -20,7 +20,7 @@ test.describe("CRM end-to-end", () => {
     await expect(page.getByRole("button", { name: "Back to login" })).toBeVisible();
 
     await page.getByRole("button", { name: "Back to login" }).click();
-    await expect(page.getByLabel("Password")).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
   });
 
   test("@smoke covers dashboard, companies, products, leads, tasks, and emails", async ({ page }) => {
@@ -28,6 +28,7 @@ test.describe("CRM end-to-end", () => {
     const productName = uniqueLabel("Product");
     const agentFirstName = `Agent${Date.now().toString().slice(-5)}`;
     const agentLastName = "Buyer";
+    const agentEmail = `agent.${Date.now()}@example.test`;
     const leadTitle = uniqueLabel("Lead");
     const taskTitle = uniqueLabel("Task");
     const sku = `SKU-${Date.now()}`;
@@ -72,7 +73,7 @@ test.describe("CRM end-to-end", () => {
       data: {
         first_name: agentFirstName,
         last_name: agentLastName,
-        email: `agent.${Date.now()}@example.test`,
+        email: agentEmail,
         company_id: companyId,
         is_company_agent: true,
         agent_rank: 1,
@@ -86,7 +87,7 @@ test.describe("CRM end-to-end", () => {
     const productForm = sectionByHeading(page, "New product");
     await productForm.getByLabel("Name").fill(productName);
     await productForm.getByLabel("SKU").fill(sku);
-    await productForm.getByLabel("Category").fill("Cocoa");
+    await pickSelectOptionByText(productForm.getByLabel("Category"), "Cocoa");
     await productForm.getByLabel("Purchase price").fill("1200");
     await productForm.getByLabel("Sale price").fill("1450");
     await productForm.getByRole("button", { name: "Create product" }).click();
@@ -154,8 +155,17 @@ test.describe("CRM end-to-end", () => {
     await page.getByRole("tab", { name: "New lead" }).click();
     const leadForm = sectionByHeading(page, "New lead");
     await leadForm.getByLabel("Title").fill(leadTitle);
-    await leadForm.getByLabel("Source").fill("E2E");
+    await leadForm.getByLabel("Source").selectOption("LinkedIn");
     await leadForm.getByLabel("Estimated value").fill("5200");
+    const companyInput = leadForm.getByLabel("Company");
+    await companyInput.fill("Demo");
+    await expect(page.locator("#lead-company-suggestions button").first()).toBeVisible();
+    await companyInput.fill(companyName);
+
+    const contactInput = leadForm.getByLabel("Contact");
+    await contactInput.fill(agentFirstName.slice(0, 4));
+    await expect(page.locator("#lead-contact-suggestions button").first()).toBeVisible();
+    await contactInput.fill(`${agentFirstName} ${agentLastName} - ${agentEmail}`);
     await leadForm.getByRole("button", { name: "Create lead" }).click();
 
     await expect(
@@ -193,6 +203,47 @@ test.describe("CRM end-to-end", () => {
         },
       )
       .not.toBe(stageBeforeMove);
+
+    const leadsSnapshot = await page.request.get("/api/leads");
+    expect(leadsSnapshot.ok()).toBeTruthy();
+    const leadsSnapshotJson = (await leadsSnapshot.json()) as {
+      leads?: Array<{ id: string; title: string }>;
+      stages?: Array<{ id: string; name: string }>;
+    };
+    const createdLeadId = leadsSnapshotJson.leads?.find((lead) => lead.title === leadTitle)?.id;
+    const negotiationStageId = leadsSnapshotJson.stages?.find((stage) =>
+      stage.name.toLowerCase().includes("negotiation"),
+    )?.id;
+    if (!createdLeadId || !negotiationStageId) {
+      throw new Error("Could not resolve lead/stage ids for negotiation check");
+    }
+
+    const moveToNegotiation = await page.request.post(
+      `/api/leads/${createdLeadId}/stage`,
+      {
+        data: {
+          stage_id: negotiationStageId,
+          comment: "E2E to negotiation",
+        },
+      },
+    );
+    expect(moveToNegotiation.ok()).toBeTruthy();
+
+    await page.reload();
+    await page.getByRole("tab", { name: "Pipeline board" }).click();
+    const negotiationLeadCard = sectionByHeading(page, "Pipeline board")
+      .locator(".lead-card", { hasText: leadTitle })
+      .first();
+    await expect(negotiationLeadCard).toBeVisible();
+    await expect(
+      negotiationLeadCard.getByRole("button", { name: /Mark Won|Marquer gagn/i }),
+    ).toBeVisible();
+    await expect(
+      negotiationLeadCard.getByRole("button", { name: /Mark Lost|Marquer perd/i }),
+    ).toBeVisible();
+    await expect(negotiationLeadCard.getByRole("button", { name: "Prev" })).toBeVisible();
+    await expect(negotiationLeadCard.getByRole("button", { name: "Create task" })).toBeVisible();
+    await expect(negotiationLeadCard.getByRole("button", { name: "Edit" })).toBeVisible();
 
     await page.getByRole("link", { name: "Tasks" }).click();
     await expect(page).toHaveURL(/\/tasks$/);

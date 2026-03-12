@@ -112,6 +112,38 @@ describe("PATCH /api/leads/[id]", () => {
     );
   });
 
+  it("ignores assigned_to changes for non-admin users", async () => {
+    mocks.getUserRole.mockResolvedValue("commercial");
+    const accessQuery = createFluentQuery({
+      data: { id: "lead-1", owner_id: "user-1", assigned_to: "user-1" },
+      error: null,
+    });
+    const updateQuery = createFluentQuery({
+      data: { id: "lead-1", title: "Owned Lead", assigned_to: "user-1" },
+      error: null,
+    });
+    mocks.from.mockReturnValueOnce(accessQuery).mockReturnValueOnce(updateQuery);
+
+    const response = await PATCH(
+      new Request("http://127.0.0.1:3000/api/leads/lead-1", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Owned Lead",
+          assigned_to: "user-99",
+        }),
+      }),
+      { params: Promise.resolve({ id: "lead-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    const payload = (updateQuery.update as { mock: { calls: Array<[Record<string, unknown>]> } })
+      .mock.calls[0][0] as {
+      assigned_to?: string;
+    };
+    expect(payload.assigned_to).toBeUndefined();
+  });
+
   it("supports admin delete path", async () => {
     mocks.getUserRole.mockResolvedValue("admin");
     const accessQuery = createFluentQuery({

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/components/locale-provider";
+import { roleLabel } from "@/lib/i18n";
 
 type Colleague = {
   id: string;
@@ -31,7 +32,7 @@ function displayName(colleague: Colleague): string {
 }
 
 export default function ColleaguesPage() {
-  const { tr } = useLocale();
+  const { tr, locale } = useLocale();
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export default function ColleaguesPage() {
       const json = (await response.json()) as ColleagueResponse & { error?: string };
 
       if (!response.ok) {
-        setError(json.error ?? "Failed to load colleagues");
+        setError(json.error ?? tr("Failed to load colleagues"));
         setLoading(false);
         return;
       }
@@ -56,7 +57,7 @@ export default function ColleaguesPage() {
     }
 
     void loadColleagues();
-  }, []);
+  }, [tr]);
 
   const filtered = useMemo(() => {
     const value = q.trim().toLowerCase();
@@ -116,7 +117,7 @@ export default function ColleaguesPage() {
                   <td>{row.position ?? "-"}</td>
                   <td>{row.email ?? "-"}</td>
                   <td>{row.department ?? "-"}</td>
-                  <td>{row.role ?? "-"}</td>
+                  <td>{row.role ? roleLabel(row.role, locale) : "-"}</td>
                   <td>
                     <Link className="btn btn-secondary" href={`/colleagues/${row.id}`}>
                       {tr("View profile")}

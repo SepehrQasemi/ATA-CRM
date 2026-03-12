@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "@/components/locale-provider";
+
 type PaginationControlsProps = {
   page: number;
   totalPages: number;
@@ -7,18 +9,19 @@ type PaginationControlsProps = {
 };
 
 export function PaginationControls({ page, totalPages, onPageChange }: PaginationControlsProps) {
+  const { tr } = useLocale();
   const safePage = Math.max(1, page);
   const safeTotalPages = Math.max(1, totalPages);
 
   return (
-    <nav className="inline-actions" aria-label="Pagination controls">
+    <nav className="inline-actions" aria-label={tr("Pagination controls")}>
       <button
         type="button"
         className="btn btn-secondary"
         onClick={() => onPageChange(safePage - 1)}
         disabled={safePage <= 1}
       >
-        Prev
+        {tr("Prev")}
       </button>
       <span data-testid="pagination-status">
         {safePage} / {safeTotalPages}
@@ -29,7 +32,7 @@ export function PaginationControls({ page, totalPages, onPageChange }: Paginatio
         onClick={() => onPageChange(safePage + 1)}
         disabled={safePage >= safeTotalPages}
       >
-        Next
+        {tr("Next")}
       </button>
     </nav>
   );
