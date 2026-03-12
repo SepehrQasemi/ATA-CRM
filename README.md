@@ -104,7 +104,7 @@ SaaS CRM project for a B2B company trading raw food ingredients.
    - Recommended source: `C:\dev\crm-secrets.env`
 2. Install dependencies:
 ```bash
-cd C:\dev\crm-food-trading
+cd C:\dev\ATA-CRM
 npm ci
 ```
 3. Apply Supabase migrations (linked project):
@@ -117,7 +117,7 @@ npm run dev
 ```
 
 ## One-Click Start (Windows)
-Use one of these options from `C:\dev\crm-food-trading`:
+Use one of these options from `C:\dev\ATA-CRM`:
 
 1. Double-click:
 - `open-crm.bat`
@@ -250,7 +250,7 @@ Important:
 Build and run with Docker Compose:
 
 ```bash
-cd C:\dev\crm-food-trading
+cd C:\dev\ATA-CRM
 docker compose up --build -d
 ```
 
